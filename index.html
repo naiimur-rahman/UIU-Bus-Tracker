@@ -78,12 +78,6 @@
             visibility: visible;
         }
 
-        /* Marker Transition */
-        .leaflet-marker-icon,
-        .leaflet-marker-shadow {
-            transition: transform 0.5s linear;
-        }
-
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -324,7 +318,7 @@
             },
             uiuCoords: [23.797911, 90.414391],
             presenceInterval: 30000,
-            minAccuracy: 50 // Meters. If GPS accuracy is worse than this, ignore point.
+            minAccuracy: 50 // Meters
         };
 
         /** GLOBAL STATE */
@@ -341,7 +335,7 @@
             activeUsers: new Map(),
             map: null,
             markers: {},
-            circles: {}, // Accuracy circles
+            circles: {}, 
             lastSentTime: 0
         };
 
@@ -398,7 +392,7 @@
                 app.switchView('view-landing');
             },
 
-            // --- Wake Lock (Prevent Screen Off) ---
+            // --- Wake Lock ---
             requestWakeLock: async () => {
                 if ('wakeLock' in navigator) {
                     try {
@@ -492,20 +486,18 @@
 
             cleanupStaleUsers: () => {
                 const now = Date.now();
-                // Cleanup users
                 for (const [id, ts] of state.activeUsers) {
                     if (now - ts > 45000) state.activeUsers.delete(id);
                 }
                 app.updateUserCount();
 
-                // Cleanup buses (stale > 60s)
                 for (const id in state.activeBuses) {
                     if (now - state.activeBuses[id].ts > 60000) {
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
                     }
                 }
-                app.updateBusList(); // Ensure list reflects cleanup
+                app.updateBusList();
             },
 
             updateUserCount: () => {
@@ -515,7 +507,6 @@
 
             // --- Location Logic ---
             handleLocationUpdate: (data) => {
-                // Ignore own updates
                 if (state.isBroadcasting && data.id === state.driverId) return;
                 
                 state.activeBuses[data.id] = data;
@@ -569,7 +560,7 @@
 
                 state.isBroadcasting = true;
                 app.updateBroadcastUI(true);
-                app.requestWakeLock(); // Keep screen on
+                app.requestWakeLock();
 
                 const options = {
                     enableHighAccuracy: true,
@@ -581,31 +572,28 @@
                     (position) => {
                         const { latitude, longitude, accuracy } = position.coords;
 
-                        // UI Updates
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
                         document.getElementById('val-last-update').innerText = new Date().toLocaleTimeString();
 
-                        // Filter Poor Accuracy
                         if (accuracy > CONFIG.minAccuracy) {
                             document.getElementById('val-accuracy').style.color = 'red';
-                            return; // Don't send bad data
+                            return; 
                         } else {
                             document.getElementById('val-accuracy').style.color = '';
                         }
 
-                        // Rate Limiting (Max 1 per 2 sec)
+                        // Rate Limiting (Reduced to 200ms for INSTANT updates)
                         const now = Date.now();
-                        if (now - state.lastSentTime < 2000) return;
+                        if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
 
-                        // Publish
                         if (state.client && state.isConnected) {
                             const payload = JSON.stringify({
                                 id: state.driverId,
                                 route: state.driverRoute,
                                 lat: latitude,
                                 lng: longitude,
-                                acc: accuracy, // Send accuracy to students
+                                acc: accuracy,
                                 ts: now
                             });
                             state.client.publish(CONFIG.topics.location, payload, { retain: false });
@@ -660,14 +648,15 @@
 
             // --- Student Map ---
             initMap: () => {
-                // Delay slightly to allow View to become visible, then invalidate size
                 setTimeout(() => {
                     if (!state.map) {
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         app.updateMapStyle();
                     }
-                    state.map.invalidateSize();
+                    requestAnimationFrame(() => {
+                        state.map.invalidateSize();
+                    });
                 }, 100);
             },
 
@@ -679,7 +668,6 @@
                 });
 
                 const isDark = document.documentElement.classList.contains('dark');
-                // Use standard OSM but apply CSS filter for dark mode
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OpenStreetMap',
                     className: isDark ? 'dark-map-tiles' : ''
@@ -694,26 +682,25 @@
                 else if (id.startsWith('N')) colorClass = 'bg-green-500';
                 else if (id.startsWith('A')) colorClass = 'bg-purple-500';
 
-                const iconHtml = `
-                    <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300">
-                        <span class="text-white text-[10px] font-bold">${id}</span>
-                        <div class="absolute -bottom-1 w-2 h-2 bg-white transform rotate-45"></div>
-                    </div>
-                `;
-
-                const icon = L.divIcon({
-                    className: 'custom-bus-marker', // Defined in CSS for smooth transition
-                    html: iconHtml,
-                    iconSize: [32, 32],
-                    iconAnchor: [16, 36],
-                    popupAnchor: [0, -36]
-                });
-
                 // Update Marker
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-                    state.markers[id].setIcon(icon); // Force redraw icon
                 } else {
+                    const iconHtml = `
+                        <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300">
+                            <span class="text-white text-[10px] font-bold">${id}</span>
+                            <div class="absolute -bottom-1 w-2 h-2 bg-white transform rotate-45"></div>
+                        </div>
+                    `;
+
+                    const icon = L.divIcon({
+                        className: 'custom-bus-marker',
+                        html: iconHtml,
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 36],
+                        popupAnchor: [0, -36]
+                    });
+
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
                     marker.bindPopup(`<b>Bus ${id}</b><br>${data.route}`);
                     state.markers[id] = marker;
@@ -757,24 +744,53 @@
                 const buses = Object.values(state.activeBuses);
 
                 if (buses.length === 0) {
-                    list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
+                    if (!list.querySelector('.fa-satellite-dish')) {
+                        list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
+                    }
                     return;
                 }
 
-                list.innerHTML = buses.map(bus => `
-                    <div onclick="app.focusBus('${bus.id}')" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
+                // Remove loading msg if exists
+                const loader = list.querySelector('.fa-satellite-dish');
+                if (loader) loader.parentElement.remove();
+
+                // Efficiently update or create items without rebuilding DOM
+                buses.forEach(bus => {
+                    let item = document.getElementById(`bus-${bus.id}`);
+                    if (!item) {
+                        item = document.createElement('div');
+                        item.id = `bus-${bus.id}`;
+                        item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
+                        item.onclick = () => app.focusBus(bus.id);
+                        item.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
+                                    <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
-                                <p class="text-[10px] text-green-500">Active Now</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300"></i>
-                    </div>
-                `).join('');
+                            <i class="fas fa-chevron-right text-slate-300"></i>
+                        `;
+                        list.appendChild(item);
+                    }
+                    
+                    // Flash effect for "Instant" feel
+                    const indicator = item.querySelector('.text-green-500');
+                    if (indicator) {
+                        indicator.style.opacity = '0.5';
+                        setTimeout(() => indicator.style.opacity = '1', 50);
+                    }
+                });
+
+                // Remove stale items
+                Array.from(list.children).forEach(child => {
+                    if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
+                        child.remove();
+                    }
+                });
             },
 
             focusBus: (id) => {
