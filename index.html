@@ -78,10 +78,6 @@
             visibility: visible;
         }
 
-        /* FIX: Removed the .leaflet-marker-icon transition 
-           This was causing the markers to drift/vanish during zoom.
-        */
-
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -586,8 +582,9 @@
                             document.getElementById('val-accuracy').style.color = '';
                         }
 
+                        // Rate Limiting (Reduced to 200ms for INSTANT updates)
                         const now = Date.now();
-                        if (now - state.lastSentTime < 2000) return;
+                        if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
 
                         if (state.client && state.isConnected) {
@@ -657,7 +654,6 @@
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         app.updateMapStyle();
                     }
-                    // FIX: Ensure correct sizing after transition
                     requestAnimationFrame(() => {
                         state.map.invalidateSize();
                     });
@@ -688,10 +684,8 @@
 
                 // Update Marker
                 if (state.markers[id]) {
-                    // FIX: Only update lat/lng to prevent flickering/vanish glitches
                     state.markers[id].setLatLng([lat, lng]);
                 } else {
-                    // Only create icon if new marker
                     const iconHtml = `
                         <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300">
                             <span class="text-white text-[10px] font-bold">${id}</span>
@@ -750,24 +744,53 @@
                 const buses = Object.values(state.activeBuses);
 
                 if (buses.length === 0) {
-                    list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
+                    if (!list.querySelector('.fa-satellite-dish')) {
+                        list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
+                    }
                     return;
                 }
 
-                list.innerHTML = buses.map(bus => `
-                    <div onclick="app.focusBus('${bus.id}')" class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
+                // Remove loading msg if exists
+                const loader = list.querySelector('.fa-satellite-dish');
+                if (loader) loader.parentElement.remove();
+
+                // Efficiently update or create items without rebuilding DOM
+                buses.forEach(bus => {
+                    let item = document.getElementById(`bus-${bus.id}`);
+                    if (!item) {
+                        item = document.createElement('div');
+                        item.id = `bus-${bus.id}`;
+                        item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
+                        item.onclick = () => app.focusBus(bus.id);
+                        item.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
+                                    <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
+                                </div>
                             </div>
-                            <div>
-                                <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
-                                <p class="text-[10px] text-green-500">Active Now</p>
-                            </div>
-                        </div>
-                        <i class="fas fa-chevron-right text-slate-300"></i>
-                    </div>
-                `).join('');
+                            <i class="fas fa-chevron-right text-slate-300"></i>
+                        `;
+                        list.appendChild(item);
+                    }
+                    
+                    // Flash effect for "Instant" feel
+                    const indicator = item.querySelector('.text-green-500');
+                    if (indicator) {
+                        indicator.style.opacity = '0.5';
+                        setTimeout(() => indicator.style.opacity = '1', 50);
+                    }
+                });
+
+                // Remove stale items
+                Array.from(list.children).forEach(child => {
+                    if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
+                        child.remove();
+                    }
+                });
             },
 
             focusBus: (id) => {
