@@ -159,7 +159,30 @@
             </button>
         </div>
 
-        <div class="absolute bottom-6 w-full text-center px-4 pb-[env(safe-area-inset-bottom)]">
+        <!-- External Projects -->
+        <div class="grid grid-cols-2 gap-4 w-full max-w-sm mt-6">
+            <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
+                        <i class="fas fa-comments text-sm"></i>
+                    </div>
+                    <h4 class="font-bold text-sm">Incognito Chat</h4>
+                </div>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously with fellow students.</p>
+            </a>
+
+            <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-green-500">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                        <i class="fas fa-calculator text-sm"></i>
+                    </div>
+                    <h4 class="font-bold text-sm">CGPA Calc</h4>
+                </div>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate your CGPA instantly.</p>
+            </a>
+        </div>
+
+        <div class="mt-8 mb-4 text-center px-4">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
                 Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
             </p>
@@ -310,7 +333,14 @@
                 path: '/mqtt',
                 username: 'naimur',
                 password: 'Sohan786@',
-                clientId: 'uiu-' + Math.random().toString(16).substr(2, 8)
+                clientId: (() => {
+                    let id = localStorage.getItem('mqtt_client_id');
+                    if (!id) {
+                        id = 'uiu-' + Math.random().toString(16).substr(2, 8);
+                        localStorage.setItem('mqtt_client_id', id);
+                    }
+                    return id;
+                })()
             },
             topics: {
                 location: 'uiu/bus/location',
