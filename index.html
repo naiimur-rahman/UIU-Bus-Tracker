@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>UIU Bus Tracker</title>
 
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -31,8 +30,8 @@
                             '50%': { transform: 'translateY(-10px)' },
                         },
                         'pulse-glow': {
-                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(249, 115, 22, 0.7)' },
-                            '50%': { opacity: '.8', boxShadow: '0 0 0 10px rgba(249, 115, 22, 0)' },
+                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(34, 197, 94, 0.7)' },
+                            '50%': { opacity: '.5', boxShadow: '0 0 0 15px rgba(34, 197, 94, 0)' },
                         }
                     }
                 }
@@ -40,13 +39,10 @@
         }
     </script>
 
-    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- Custom CSS -->
     <style>
         /* Glassmorphism */
         .glass {
@@ -60,7 +56,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        /* Map Tiles Filter for Dark Mode */
+        /* Map Tiles Filter for Dark Mode - Adjusted for better contrast */
         .dark-map-tiles {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
         }
@@ -73,16 +69,21 @@
             opacity: 0;
             pointer-events: none;
             transform: scale(0.95);
+            visibility: hidden; /* Fix for Map rendering issues */
         }
         .view-active {
             opacity: 1;
             pointer-events: auto;
             transform: scale(1);
             z-index: 10;
+            visibility: visible;
         }
 
-        /* Leaflet Tweaks */
-        .leaflet-control-attribution { font-size: 8px !important; }
+        /* Marker Transition for smooth movement */
+        .leaflet-marker-icon,
+        .leaflet-marker-shadow {
+            transition: transform 0.5s linear;
+        }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
@@ -100,27 +101,34 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- NEW: Bus Driving Animation --- */
+        @keyframes drive {
+            0% { transform: translateY(0) rotate(3deg); }
+            50% { transform: translateY(-6px) rotate(0deg); }
+            100% { transform: translateY(0) rotate(3deg); }
+        }
+        .animate-drive {
+            animation: drive 1.5s ease-in-out infinite;
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-gray-100 font-sans h-screen w-screen overflow-hidden transition-colors duration-300">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-screen w-screen overflow-hidden transition-colors duration-300">
 
-    <!-- Background Decoration -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
         <div class="absolute top-1/2 -right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
         <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 4s"></div>
     </div>
 
-    <!-- Theme Toggle (Floating) -->
     <button onclick="app.toggleTheme()" class="fixed top-4 right-4 z-[100] w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform">
         <i class="fas fa-moon dark:hidden"></i>
         <i class="fas fa-sun hidden dark:block"></i>
     </button>
 
-    <!-- ================= VIEW: LANDING ================= -->
     <div id="view-landing" class="view-section view-active flex flex-col items-center justify-center p-6 h-full relative z-10">
         <div class="text-center mb-12">
-            <div class="w-24 h-24 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-3">
+            <div class="w-24 h-24 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
                 <i class="fas fa-bus text-5xl text-white"></i>
             </div>
             <h1 class="text-4xl font-extrabold tracking-tight mb-2">
@@ -131,7 +139,6 @@
         </div>
 
         <div class="grid gap-4 w-full max-w-sm">
-            <!-- Student Button -->
             <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                 <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                 <div class="flex items-center justify-between">
@@ -145,7 +152,6 @@
                 </div>
             </button>
 
-            <!-- Driver Button -->
             <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                 <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                 <div class="flex items-center justify-between">
@@ -154,21 +160,19 @@
                         <p class="text-xs text-slate-500 dark:text-slate-400">Broadcast your location</p>
                     </div>
                     <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                        <i class="fas fa-steering-wheel text-xl"></i>
+                        <i class="fas fa-id-card text-xl"></i>
                     </div>
                 </div>
             </button>
         </div>
 
-        <!-- Footer -->
         <div class="absolute bottom-6 w-full text-center px-4">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for the students of UIU❤️
+                Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
             </p>
         </div>
     </div>
 
-    <!-- ================= VIEW: DRIVER SELECTION ================= -->
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6">
         <div class="flex items-center mb-8 mt-4">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors mr-4">
@@ -178,28 +182,21 @@
         </div>
 
         <div class="grid grid-cols-2 gap-4">
-            <!-- Kuril -->
             <button onclick="app.selectRoute('Kuril', 'K')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
                 <i class="fas fa-road text-3xl text-blue-500 mb-3"></i>
                 <span class="font-bold">Kuril</span>
                 <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
             </button>
-
-            <!-- NotunBazar -->
             <button onclick="app.selectRoute('NotunBazar', 'N')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
                 <i class="fas fa-shop text-3xl text-green-500 mb-3"></i>
                 <span class="font-bold">Notun Bazar</span>
                 <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
             </button>
-
-            <!-- Aftab Nagar -->
             <button onclick="app.selectRoute('Aftab Nagar', 'A')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
                 <i class="fas fa-building text-3xl text-purple-500 mb-3"></i>
                 <span class="font-bold">Aftab Nagar</span>
                 <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
             </button>
-
-            <!-- Transport -->
             <button onclick="app.selectRoute('Transport', 'R')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
                 <i class="fas fa-bus-alt text-3xl text-orange-500 mb-3"></i>
                 <span class="font-bold">Transport</span>
@@ -213,14 +210,11 @@
         </div>
     </div>
 
-    <!-- ================= VIEW: DRIVER DASHBOARD ================= -->
     <div id="view-driver-dashboard" class="view-section flex flex-col h-full bg-slate-50 dark:bg-slate-900 z-10">
-        <!-- Dashboard Header -->
         <div class="bg-slate-900 text-white p-8 rounded-b-[2.5rem] relative overflow-hidden shadow-2xl">
             <div class="absolute top-0 right-0 p-6 opacity-20">
                 <i class="fas fa-bus text-9xl"></i>
             </div>
-
             <div class="relative z-10">
                 <div class="flex justify-between items-start mb-6">
                     <button onclick="app.goHome()" class="text-slate-400 hover:text-white transition-colors">
@@ -233,13 +227,14 @@
                         </div>
                     </div>
                 </div>
-
                 <h1 class="text-3xl font-bold mb-1">Hello, Driver!</h1>
                 <p class="text-slate-400 text-sm">Assigned ID: <span id="driver-assigned-id" class="text-brand-500 font-mono text-lg font-bold">...</span></p>
+                <div id="wakelock-status" class="mt-2 text-[10px] text-slate-500">
+                    <i class="fas fa-mobile-alt"></i> Screen Wake Lock: <span id="wakelock-text">Off</span>
+                </div>
             </div>
         </div>
 
-        <!-- Dashboard Controls -->
         <div class="flex-grow flex flex-col items-center justify-center p-6 -mt-8 relative z-20">
             <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-xl text-center">
                 <div id="broadcast-ring" class="w-40 h-40 rounded-full border-4 border-slate-100 dark:border-slate-700 mx-auto mb-8 flex items-center justify-center transition-all duration-500 relative">
@@ -255,23 +250,20 @@
                 </button>
             </div>
 
-            <!-- Dashboard Stats -->
             <div class="grid grid-cols-2 gap-4 w-full max-w-sm mt-6">
                 <div class="glass p-4 rounded-2xl text-center">
                     <p class="text-xs text-slate-400 uppercase font-bold">Accuracy</p>
                     <p id="val-accuracy" class="text-xl font-bold text-slate-700 dark:text-slate-200">--</p>
                 </div>
                 <div class="glass p-4 rounded-2xl text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Updated</p>
+                    <p class="text-xs text-slate-400 uppercase font-bold">Last Update</p>
                     <p id="val-last-update" class="text-xl font-bold text-slate-700 dark:text-slate-200">--</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ================= VIEW: STUDENT MAP ================= -->
     <div id="view-student" class="view-section flex flex-col h-full z-10">
-        <!-- Floating Header -->
         <div class="absolute top-4 left-4 right-16 z-[400]">
             <div class="glass rounded-full p-2 pl-4 pr-2 flex justify-between items-center shadow-lg">
                 <div class="flex items-center gap-3">
@@ -292,12 +284,10 @@
             </div>
         </div>
 
-        <!-- Map -->
-        <div class="flex-grow relative bg-slate-200 dark:bg-slate-800">
-            <div id="map" class="h-full w-full outline-none"></div>
+        <div class="flex-grow relative bg-slate-200 dark:bg-slate-900 overflow-hidden">
+            <div id="map" class="h-full w-full outline-none z-0"></div>
         </div>
 
-        <!-- Bottom Sheet (Bus List) -->
         <div class="bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 relative transition-transform duration-300 transform translate-y-0" id="bottom-sheet">
             <div class="w-full flex justify-center pt-3 pb-1 cursor-pointer" onclick="app.toggleBottomSheet()">
                 <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
@@ -305,7 +295,6 @@
             <div class="p-4 pb-8 max-h-[40vh] overflow-y-auto">
                 <h3 class="font-bold mb-4 text-sm text-slate-500 uppercase tracking-wide">Active Transport</h3>
                 <div id="bus-list" class="space-y-2">
-                    <!-- Dynamic List -->
                     <div class="text-center py-8 text-slate-400 text-sm">
                         <i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>
                         Searching for buses...
@@ -315,15 +304,11 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-    <!-- Application Logic -->
     <script>
-        /**
-         * CONFIGURATION
-         */
+        /** CONFIGURATION */
         const CONFIG = {
             mqtt: {
                 protocol: 'wss',
@@ -335,72 +320,67 @@
                 clientId: 'uiu-' + Math.random().toString(16).substr(2, 8)
             },
             topics: {
-                location: 'uiu/bus/location', // Drivers publish here
-                presence: 'uiu/presence'      // Everyone publishes here for counting
+                location: 'uiu/bus/location',
+                presence: 'uiu/presence'
             },
             uiuCoords: [23.797911, 90.414391],
-            presenceInterval: 30000 // 30 seconds
+            presenceInterval: 30000,
+            minAccuracy: 50 // Meters. If GPS accuracy is worse than this, ignore point.
         };
 
-        /**
-         * GLOBAL STATE
-         */
+        /** GLOBAL STATE */
         const state = {
             client: null,
             isConnected: false,
-            role: null, // 'student', 'driver'
-
-            // Driver Specific
-            driverId: null,      // e.g., 'K1', 'R2'
-            driverRoute: null,   // e.g., 'Kuril'
+            role: null,
+            driverId: null,
+            driverRoute: null,
             isBroadcasting: false,
             watchId: null,
-
-            // Data
-            activeBuses: {},     // { 'K1': { lat, lng, ts, id } }
-            activeUsers: new Map(), // Map<clientId, lastSeenTimestamp>
-
-            // Map
+            wakeLock: null,
+            activeBuses: {},
+            activeUsers: new Map(),
             map: null,
             markers: {},
-            userLayer: null
+            circles: {}, // Accuracy circles
+            lastSentTime: 0
         };
 
-        /**
-         * APP CONTROLLER
-         */
+        /** APP CONTROLLER */
         const app = {
             init: () => {
                 app.loadTheme();
-                app.connectMqtt(); // Silent connect to gather state
-
-                // Start presence heartbeat
+                app.connectMqtt();
                 setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
-                setInterval(app.cleanupStaleUsers, 10000); // Cleanup every 10s
+                setInterval(app.cleanupStaleUsers, 10000);
             },
 
             // --- Theme & View ---
             toggleTheme: () => {
-                if (document.documentElement.classList.contains('dark')) {
-                    document.documentElement.classList.remove('dark');
+                const html = document.documentElement;
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
                     localStorage.setItem('theme', 'light');
                 } else {
-                    document.documentElement.classList.add('dark');
+                    html.classList.add('dark');
                     localStorage.setItem('theme', 'dark');
                 }
                 app.updateMapStyle();
             },
 
             loadTheme: () => {
-                if (localStorage.getItem('theme') === 'dark' ||
-                   (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                const theme = localStorage.getItem('theme');
+                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
                 }
             },
 
             switchView: (viewId) => {
                 document.querySelectorAll('.view-section').forEach(el => el.classList.remove('view-active'));
-                document.getElementById(viewId).classList.add('view-active');
+                const target = document.getElementById(viewId);
+                target.classList.add('view-active');
             },
 
             setRole: (role) => {
@@ -419,6 +399,30 @@
                 app.switchView('view-landing');
             },
 
+            // --- Wake Lock (Prevent Screen Off) ---
+            requestWakeLock: async () => {
+                if ('wakeLock' in navigator) {
+                    try {
+                        state.wakeLock = await navigator.wakeLock.request('screen');
+                        document.getElementById('wakelock-text').innerText = "Active";
+                        document.getElementById('wakelock-text').className = "text-green-500 font-bold";
+                        
+                        state.wakeLock.addEventListener('release', () => {
+                            document.getElementById('wakelock-text').innerText = "Inactive";
+                        });
+                    } catch (err) {
+                        console.error(`${err.name}, ${err.message}`);
+                    }
+                }
+            },
+
+            releaseWakeLock: () => {
+                if (state.wakeLock) {
+                    state.wakeLock.release();
+                    state.wakeLock = null;
+                }
+            },
+
             // --- MQTT Logic ---
             connectMqtt: () => {
                 console.log("Connecting to MQTT...");
@@ -428,27 +432,20 @@
                     console.log("MQTT Connected");
                     state.isConnected = true;
                     app.updateConnectionStatus('connected');
-
-                    // Subscribe to all topics
                     state.client.subscribe(CONFIG.topics.location);
                     state.client.subscribe(CONFIG.topics.presence);
-
-                    // Send initial heartbeat
                     app.sendHeartbeat();
                 });
 
                 state.client.on('message', (topic, message) => {
                     try {
                         const data = JSON.parse(message.toString());
-
                         if (topic === CONFIG.topics.location) {
                             app.handleLocationUpdate(data);
                         } else if (topic === CONFIG.topics.presence) {
                             app.handlePresenceUpdate(data);
                         }
-                    } catch (e) {
-                        console.error("Msg Parse Error", e);
-                    }
+                    } catch (e) { console.error("Msg Parse Error", e); }
                 });
 
                 state.client.on('error', (err) => {
@@ -456,15 +453,9 @@
                     state.isConnected = false;
                     app.updateConnectionStatus('error');
                 });
-
-                state.client.on('offline', () => {
-                    state.isConnected = false;
-                    app.updateConnectionStatus('offline');
-                });
             },
 
             updateConnectionStatus: (status) => {
-                // Update UI based on status
                 const dot = document.getElementById('driver-connection-dot');
                 const text = document.getElementById('driver-connection-text');
                 const studentStatus = document.getElementById('student-status');
@@ -485,7 +476,6 @@
                 }
             },
 
-            // --- Presence System ---
             sendHeartbeat: () => {
                 if (state.client && state.isConnected) {
                     state.client.publish(CONFIG.topics.presence, JSON.stringify({
@@ -497,43 +487,38 @@
             },
 
             handlePresenceUpdate: (data) => {
-                // Add to active users map with timestamp
                 state.activeUsers.set(data.id, data.ts);
                 app.updateUserCount();
             },
 
             cleanupStaleUsers: () => {
                 const now = Date.now();
-                // Remove users not seen in last 45s (buffer for 30s interval)
+                // Cleanup users
                 for (const [id, ts] of state.activeUsers) {
-                    if (now - ts > 45000) {
-                        state.activeUsers.delete(id);
-                    }
+                    if (now - ts > 45000) state.activeUsers.delete(id);
                 }
                 app.updateUserCount();
 
-                // Also clean up stale buses (no update in 2 mins)
+                // Cleanup buses (stale > 60s)
                 for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 120000) {
+                    if (now - state.activeBuses[id].ts > 60000) {
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
                     }
                 }
+                app.updateBusList(); // Ensure list reflects cleanup
             },
 
             updateUserCount: () => {
-                const count = state.activeUsers.size;
                 const el = document.getElementById('count-users');
-                if (el) el.innerText = count;
+                if (el) el.innerText = state.activeUsers.size;
             },
 
             // --- Location Logic ---
             handleLocationUpdate: (data) => {
-                // data: { id: 'K1', lat, lng, ts }
-
-                // Ignore own updates if broadcasting
+                // Ignore own updates
                 if (state.isBroadcasting && data.id === state.driverId) return;
-
+                
                 state.activeBuses[data.id] = data;
 
                 if (state.role === 'student') {
@@ -542,76 +527,54 @@
                 }
             },
 
-            // --- Driver Selection Logic ---
             selectRoute: (name, prefix) => {
-                // Show loader
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                // Small delay to ensure we have latest MQTT messages if just connected
                 setTimeout(() => {
                     const assignedId = app.assignNextId(prefix);
-
                     state.driverRoute = name;
                     state.driverId = assignedId;
-
-                    // Update Dashboard UI
                     document.getElementById('driver-assigned-id').innerText = name + ' (' + assignedId + ')';
-
-                    // Transition
                     if (loader) loader.classList.add('hidden');
                     app.switchView('view-driver-dashboard');
                 }, 1000);
             },
 
             assignNextId: (prefix) => {
-                // Find all active bus IDs starting with this prefix
                 const activeIds = Object.keys(state.activeBuses)
                     .filter(id => id.startsWith(prefix))
                     .map(id => parseInt(id.replace(prefix, '')))
                     .filter(num => !isNaN(num))
                     .sort((a, b) => a - b);
 
-                // Find first missing number
                 let nextNum = 1;
                 for (const num of activeIds) {
-                    if (num === nextNum) {
-                        nextNum++;
-                    } else if (num > nextNum) {
-                        break; // Found a gap
-                    }
+                    if (num === nextNum) nextNum++;
+                    else if (num > nextNum) break;
                 }
-
                 return prefix + nextNum;
             },
 
-            // Placeholders for next steps
-            initMap: () => {},
-            updateMapStyle: () => {},
-            updateBusMarker: () => {},
-            removeBusMarker: () => {},
-            updateBusList: () => {},
-            // --- Driver Dashboard Logic ---
+            // --- Driver Broadcasting ---
             toggleBroadcast: () => {
-                if (state.isBroadcasting) {
-                    app.stopBroadcast();
-                } else {
-                    app.startBroadcast();
-                }
+                if (state.isBroadcasting) app.stopBroadcast();
+                else app.startBroadcast();
             },
 
             startBroadcast: () => {
                 if (!navigator.geolocation) {
-                    alert("Geolocation is not supported by your browser.");
+                    alert("Geolocation not supported");
                     return;
                 }
 
                 state.isBroadcasting = true;
                 app.updateBroadcastUI(true);
+                app.requestWakeLock(); // Keep screen on
 
                 const options = {
                     enableHighAccuracy: true,
-                    timeout: 5000,
+                    timeout: 10000,
                     maximumAge: 0
                 };
 
@@ -619,26 +582,40 @@
                     (position) => {
                         const { latitude, longitude, accuracy } = position.coords;
 
-                        // Update Local Stats
+                        // UI Updates
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
                         document.getElementById('val-last-update').innerText = new Date().toLocaleTimeString();
 
-                        // Publish to MQTT
+                        // Filter Poor Accuracy
+                        if (accuracy > CONFIG.minAccuracy) {
+                            document.getElementById('val-accuracy').style.color = 'red';
+                            return; // Don't send bad data
+                        } else {
+                            document.getElementById('val-accuracy').style.color = '';
+                        }
+
+                        // Rate Limiting (Max 1 per 2 sec)
+                        const now = Date.now();
+                        if (now - state.lastSentTime < 2000) return;
+                        state.lastSentTime = now;
+
+                        // Publish
                         if (state.client && state.isConnected) {
                             const payload = JSON.stringify({
                                 id: state.driverId,
                                 route: state.driverRoute,
                                 lat: latitude,
                                 lng: longitude,
-                                ts: Date.now()
+                                acc: accuracy, // Send accuracy to students
+                                ts: now
                             });
-                            state.client.publish(CONFIG.topics.location, payload, { retain: true });
+                            state.client.publish(CONFIG.topics.location, payload, { retain: false });
                         }
                     },
                     (error) => {
                         console.error("GPS Error", error);
-                        app.stopBroadcast();
                         alert("GPS Error: " + error.message);
+                        app.stopBroadcast();
                     },
                     options
                 );
@@ -647,7 +624,7 @@
             stopBroadcast: () => {
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
-
+                app.releaseWakeLock();
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
@@ -658,7 +635,6 @@
                 const btn = document.getElementById('broadcast-btn');
                 const glow = document.getElementById('broadcast-glow');
                 const title = document.getElementById('broadcast-status-title');
-                const desc = document.getElementById('broadcast-status-desc');
                 const icon = document.getElementById('broadcast-icon');
 
                 if (isActive) {
@@ -666,13 +642,9 @@
                     btn.classList.replace('bg-brand-500', 'bg-red-500');
                     btn.classList.replace('hover:bg-brand-600', 'hover:bg-red-600');
                     btn.classList.add('animate-pulse');
-
                     glow.style.opacity = '1';
                     glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
-
                     title.innerText = "Broadcasting";
-                    desc.innerText = "Students can see your location";
-
                     icon.classList.remove('text-slate-300', 'dark:text-slate-600');
                     icon.classList.add('text-green-500');
                 } else {
@@ -680,86 +652,88 @@
                     btn.classList.replace('bg-red-500', 'bg-brand-500');
                     btn.classList.replace('hover:bg-red-600', 'hover:bg-brand-600');
                     btn.classList.remove('animate-pulse');
-
                     glow.style.opacity = '0';
-
                     title.innerText = "Ready?";
-                    desc.innerText = "Start your trip to share location";
-
                     icon.classList.add('text-slate-300', 'dark:text-slate-600');
                     icon.classList.remove('text-green-500');
                 }
             },
 
-            // --- Student View & Map Logic ---
+            // --- Student Map ---
             initMap: () => {
-                if (!state.map) {
-                    setTimeout(() => {
+                // Delay slightly to allow View to become visible, then invalidate size
+                setTimeout(() => {
+                    if (!state.map) {
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
-
-                        // Add Zoom Control to bottom right
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
-
                         app.updateMapStyle();
-                    }, 100);
-                }
+                    }
+                    state.map.invalidateSize();
+                }, 100);
             },
 
             updateMapStyle: () => {
                 if (!state.map) return;
 
-                // Remove existing tile layer if any
                 state.map.eachLayer((layer) => {
-                    if (layer instanceof L.TileLayer) {
-                        state.map.removeLayer(layer);
-                    }
+                    if (layer instanceof L.TileLayer) state.map.removeLayer(layer);
                 });
 
                 const isDark = document.documentElement.classList.contains('dark');
-
-                // Use OpenStreetMap for both, apply CSS filter for Dark Mode
-                const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap contributors',
+                // Use standard OSM but apply CSS filter for dark mode
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap',
                     className: isDark ? 'dark-map-tiles' : ''
                 }).addTo(state.map);
             },
 
             updateBusMarker: (data) => {
-                // data: { id, route, lat, lng, ts }
-                const { id, lat, lng } = data;
-
-                // Determine Icon Color based on route type (heuristic)
+                const { id, lat, lng, acc } = data;
+                
                 let colorClass = 'bg-orange-500';
                 if (id.startsWith('K')) colorClass = 'bg-blue-500';
-                if (id.startsWith('N')) colorClass = 'bg-green-500';
-                if (id.startsWith('A')) colorClass = 'bg-purple-500';
+                else if (id.startsWith('N')) colorClass = 'bg-green-500';
+                else if (id.startsWith('A')) colorClass = 'bg-purple-500';
 
                 const iconHtml = `
-                    <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative">
+                    <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300">
                         <span class="text-white text-[10px] font-bold">${id}</span>
                         <div class="absolute -bottom-1 w-2 h-2 bg-white transform rotate-45"></div>
                     </div>
                 `;
 
                 const icon = L.divIcon({
-                    className: 'custom-bus-marker',
+                    className: 'custom-bus-marker', // Defined in CSS for smooth transition
                     html: iconHtml,
                     iconSize: [32, 32],
                     iconAnchor: [16, 36],
                     popupAnchor: [0, -36]
                 });
 
+                // Update Marker
                 if (state.markers[id]) {
-                    // Animate movement (simple)
                     state.markers[id].setLatLng([lat, lng]);
-                    state.markers[id].setZIndexOffset(100);
+                    state.markers[id].setIcon(icon); // Force redraw icon
                 } else {
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
-                    marker.bindPopup(`<b>Bus ${id}</b><br>Updated: Now`);
+                    marker.bindPopup(`<b>Bus ${id}</b><br>${data.route}`);
                     state.markers[id] = marker;
-
-                    // Count Update
                     app.updateBusCount();
+                }
+
+                // Update Accuracy Circle
+                if (acc && acc > 10) {
+                    if (state.circles[id]) {
+                        state.circles[id].setLatLng([lat, lng]);
+                        state.circles[id].setRadius(acc);
+                    } else {
+                        state.circles[id] = L.circle([lat, lng], {
+                            radius: acc,
+                            color: 'transparent',
+                            fillColor: '#3b82f6',
+                            fillOpacity: 0.2
+                        }).addTo(state.map);
+                    }
                 }
             },
 
@@ -767,13 +741,16 @@
                 if (state.markers[id]) {
                     state.map.removeLayer(state.markers[id]);
                     delete state.markers[id];
-                    app.updateBusCount();
                 }
+                if (state.circles[id]) {
+                    state.map.removeLayer(state.circles[id]);
+                    delete state.circles[id];
+                }
+                app.updateBusCount();
             },
 
             updateBusCount: () => {
-                const count = Object.keys(state.markers).length;
-                document.getElementById('count-buses').innerText = count;
+                document.getElementById('count-buses').innerText = Object.keys(state.markers).length;
             },
 
             updateBusList: () => {
@@ -781,11 +758,7 @@
                 const buses = Object.values(state.activeBuses);
 
                 if (buses.length === 0) {
-                    list.innerHTML = `
-                        <div class="text-center py-8 text-slate-400 text-sm">
-                            <i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>
-                            Searching for buses...
-                        </div>`;
+                    list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
                     return;
                 }
 
@@ -796,7 +769,7 @@
                                 <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
                             </div>
                             <div>
-                                <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown Route'}</p>
+                                <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
                                 <p class="text-[10px] text-green-500">Active Now</p>
                             </div>
                         </div>
@@ -807,9 +780,9 @@
 
             focusBus: (id) => {
                 if (state.markers[id]) {
-                    state.map.flyTo(state.markers[id].getLatLng(), 16);
+                    state.map.setView(state.markers[id].getLatLng(), 16);
                     state.markers[id].openPopup();
-                    app.toggleBottomSheet(); // Close sheet
+                    app.toggleBottomSheet();
                 }
             },
 
@@ -825,7 +798,6 @@
             }
         };
 
-        // Initialize on load
         window.addEventListener('DOMContentLoaded', app.init);
     </script>
 </body>
