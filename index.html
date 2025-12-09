@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>UIU Bus Tracker</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom Styles for Map -->
+    <style>
+        #map { height: 100vh; width: 100%; z-index: 0; }
+        .leaflet-bottom.leaflet-right { z-index: 1000; } /* Fix copyright overlap if needed */
+
+        /* Pulse animation for the driver status */
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+        .status-pulse {
+            animation: pulse-green 2s infinite;
+        }
+
+        /* Views transitions */
+        .view-section {
+            position: absolute;
+            inset: 0;
+            transition: transform 0.3s ease-in-out;
+            background-color: white;
+            z-index: 40;
+        }
+        .view-hidden-right { transform: translateX(100%); }
+        .view-hidden-left { transform: translateX(-100%); }
+        .view-active { transform: translateX(0); }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen w-screen overflow-hidden font-sans text-slate-800">
+
+    <!-- Role Selection Screen -->
+    <div id="landing-page" class="view-section view-active z-50 flex flex-col items-center justify-center p-6">
+        <div class="text-center mb-10">
+            <div class="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <i class="fas fa-bus text-4xl text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-slate-800">UIU Bus Tracker</h1>
+            <p class="text-slate-500 mt-2">Real-time campus transport updates</p>
+        </div>
+
+        <div class="space-y-4 w-full max-w-sm">
+            <button onclick="app.selectRole('student')" class="w-full bg-white border-2 border-orange-500 text-orange-600 hover:bg-orange-50 p-4 rounded-xl flex items-center justify-between shadow-sm transition-all group">
+                <span class="font-bold text-lg">I am a Student</span>
+                <i class="fas fa-map-marked-alt text-2xl group-hover:scale-110 transition-transform"></i>
+            </button>
+
+            <button onclick="app.selectRole('driver')" class="w-full bg-slate-800 text-white hover:bg-slate-700 p-4 rounded-xl flex items-center justify-between shadow-lg transition-all group">
+                <span class="font-bold text-lg">I am a Driver</span>
+                <i class="fas fa-steering-wheel text-2xl group-hover:scale-110 transition-transform"></i>
+            </button>
+        </div>
+
+        <p class="absolute bottom-6 text-xs text-slate-400">United International University</p>
+    </div>
+
+    <!-- Student View: Map -->
+    <div id="student-view" class="view-section view-hidden-right flex flex-col">
+        <!-- Header -->
+        <div class="bg-white shadow-md p-4 z-10 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <button onclick="app.goHome()" class="text-slate-500 hover:text-orange-500 transition-colors">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <h2 class="font-bold text-lg">Live Map</h2>
+            </div>
+            <div id="student-status-badge" class="bg-slate-100 text-slate-500 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2">
+                <span class="w-2 h-2 bg-slate-400 rounded-full"></span>
+                Connecting...
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="flex-grow bg-slate-200 relative h-full w-full">
+            <div id="map" class="h-full w-full"></div>
+
+            <!-- Waiting Message -->
+            <div id="waiting-message" class="absolute inset-0 flex items-center justify-center bg-white/80 z-[1000] hidden">
+                <div class="text-center">
+                    <i class="fas fa-satellite-dish text-4xl text-orange-500 animate-bounce mb-3"></i>
+                    <p class="font-medium">Searching for buses...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Info Panel -->
+        <div class="bg-white p-4 pb-8 rounded-t-3xl shadow-[0_-5px_15px_rgba(0,0,0,0.1)] -mt-6 z-10 relative">
+            <div class="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4"></div>
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold">Active Buses</h3>
+                <span id="active-bus-count" class="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-bold">0</span>
+            </div>
+            <div id="bus-list" class="space-y-3 max-h-32 overflow-y-auto">
+                <p class="text-sm text-slate-400 text-center py-2">No buses currently active.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver View: Dashboard -->
+    <div id="driver-view" class="view-section view-hidden-right flex flex-col bg-slate-50">
+        <div class="bg-slate-800 text-white p-6 pb-12 rounded-b-[3rem] shadow-xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 p-4 opacity-10">
+                <i class="fas fa-bus text-9xl"></i>
+            </div>
+
+            <div class="flex justify-between items-start mb-6 relative z-10">
+                <button onclick="app.goHome()" class="text-slate-300 hover:text-white transition-colors">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </button>
+                <div class="text-right">
+                    <p class="text-slate-400 text-sm">Status</p>
+                    <p id="connection-status" class="font-bold text-red-400">Disconnected</p>
+                </div>
+            </div>
+
+            <div class="relative z-10">
+                <h2 class="text-3xl font-bold mb-1">Driver Console</h2>
+                <p class="text-slate-400 text-sm">Broadcasting Bus Location</p>
+            </div>
+        </div>
+
+        <div class="flex-grow flex flex-col items-center justify-center p-6 -mt-10">
+            <!-- Broadcast Button -->
+            <div class="bg-white rounded-3xl p-8 shadow-xl w-full max-w-sm text-center relative z-10">
+                <div id="broadcast-indicator" class="w-32 h-32 bg-slate-100 rounded-full mx-auto mb-6 flex items-center justify-center border-4 border-slate-200 transition-all duration-300">
+                    <i class="fas fa-satellite-dish text-4xl text-slate-400"></i>
+                </div>
+
+                <h3 id="broadcast-title" class="text-xl font-bold text-slate-800 mb-2">Ready to Start?</h3>
+                <p id="broadcast-desc" class="text-slate-500 text-sm mb-8">Click the button below to start sharing your location with students.</p>
+
+                <button id="toggle-broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-orange-500 text-white font-bold py-4 rounded-xl shadow-lg hover:bg-orange-600 active:scale-95 transition-all">
+                    START TRIP
+                </button>
+            </div>
+
+            <!-- Stats -->
+            <div class="mt-8 grid grid-cols-2 gap-4 w-full max-w-sm">
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Updates Sent</p>
+                    <p id="stats-updates" class="text-2xl font-bold text-slate-800">0</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Accuracy</p>
+                    <p id="stats-accuracy" class="text-2xl font-bold text-slate-800">-- m</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <script>
+        // Configuration
+        const MQTT_BROKER = 'wss://broker.hivemq.com:8884/mqtt';
+        const MQTT_TOPIC = 'uiu/bus/v1/location';
+        const UIU_COORDS = [23.797911, 90.414391]; // UIU Location (approx)
+
+        // App State
+        const state = {
+            role: null, // 'student' or 'driver'
+            isBroadcasting: false,
+            mqttClient: null,
+            map: null,
+            markers: {}, // { deviceId: Marker }
+            updatesSent: 0,
+            watchId: null,
+            deviceId: 'bus-' + Math.random().toString(36).substr(2, 9),
+            lastLocation: null
+        };
+
+        const app = {
+            // Navigation
+            selectRole: (role) => {
+                state.role = role;
+                document.getElementById('landing-page').classList.remove('view-active');
+                document.getElementById('landing-page').classList.add('view-hidden-left');
+
+                if (role === 'student') {
+                    document.getElementById('student-view').classList.remove('view-hidden-right');
+                    document.getElementById('student-view').classList.add('view-active');
+                    app.initStudentMode();
+                } else {
+                    document.getElementById('driver-view').classList.remove('view-hidden-right');
+                    document.getElementById('driver-view').classList.add('view-active');
+                    app.initDriverMode();
+                }
+            },
+
+            goHome: () => {
+                // Cleanup current mode
+                if (state.role === 'driver') {
+                    app.stopBroadcast();
+                    if (state.mqttClient) state.mqttClient.end();
+                } else if (state.role === 'student') {
+                    if (state.mqttClient) state.mqttClient.end();
+                    // Don't destroy map, just keep it there
+                }
+
+                // Reset Views
+                document.getElementById('landing-page').classList.remove('view-hidden-left');
+                document.getElementById('landing-page').classList.add('view-active');
+
+                document.getElementById('student-view').classList.add('view-hidden-right');
+                document.getElementById('student-view').classList.remove('view-active');
+
+                document.getElementById('driver-view').classList.add('view-hidden-right');
+                document.getElementById('driver-view').classList.remove('view-active');
+
+                state.role = null;
+            },
+
+            // --- Student Logic ---
+            initStudentMode: () => {
+                // Initialize Map if not already done
+                if (!state.map) {
+                    setTimeout(() => {
+                        state.map = L.map('map').setView(UIU_COORDS, 13);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '© OpenStreetMap contributors'
+                        }).addTo(state.map);
+                    }, 500); // Small delay for transition
+                }
+
+                // Connect MQTT
+                app.connectMqtt('student');
+            },
+
+            updateBusMarker: (data) => {
+                const { id, lat, lng, timestamp } = data;
+
+                // Create custom icon
+                const busIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: #f97316; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-bus text-white text-xs"></i>
+                    </div>`,
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                });
+
+                if (state.markers[id]) {
+                    // Update existing marker
+                    state.markers[id].setLatLng([lat, lng]);
+                    state.markers[id].getPopup().setContent(app.getPopupContent(id, timestamp));
+                } else {
+                    // Create new marker
+                    const marker = L.marker([lat, lng], { icon: busIcon }).addTo(state.map);
+                    marker.bindPopup(app.getPopupContent(id, timestamp));
+                    state.markers[id] = marker;
+
+                    // Zoom to fit if it's the first bus
+                    if (Object.keys(state.markers).length === 1) {
+                        state.map.setView([lat, lng], 15);
+                    }
+                }
+
+                app.updateBusList();
+            },
+
+            getPopupContent: (id, timestamp) => {
+                const timeStr = new Date(timestamp).toLocaleTimeString();
+                return `<b>Bus #${id.substr(0,4)}</b><br>Updated: ${timeStr}`;
+            },
+
+            updateBusList: () => {
+                const list = document.getElementById('bus-list');
+                const count = document.getElementById('active-bus-count');
+                const buses = Object.keys(state.markers);
+
+                count.innerText = buses.length;
+
+                if (buses.length === 0) {
+                    list.innerHTML = '<p class="text-sm text-slate-400 text-center py-2">No buses currently active.</p>';
+                    return;
+                }
+
+                list.innerHTML = buses.map(id => `
+                    <div onclick="app.focusBus('${id}')" class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 cursor-pointer hover:bg-orange-50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center text-orange-600">
+                                <i class="fas fa-bus"></i>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm text-slate-700">Bus #${id.substr(0,4)}</p>
+                                <p class="text-xs text-green-500 flex items-center gap-1">
+                                    <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Active
+                                </p>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-slate-300"></i>
+                    </div>
+                `).join('');
+            },
+
+            focusBus: (id) => {
+                if (state.markers[id]) {
+                    state.map.flyTo(state.markers[id].getLatLng(), 16);
+                    state.markers[id].openPopup();
+                }
+            },
+
+            // --- Driver Logic ---
+            initDriverMode: () => {
+                app.connectMqtt('driver');
+            },
+
+            toggleBroadcast: () => {
+                if (state.isBroadcasting) {
+                    app.stopBroadcast();
+                } else {
+                    app.startBroadcast();
+                }
+            },
+
+            startBroadcast: () => {
+                if (!navigator.geolocation) {
+                    alert("Geolocation is not supported by this browser.");
+                    return;
+                }
+
+                state.isBroadcasting = true;
+                app.updateDriverUI(true);
+
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                };
+
+                state.watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        const { latitude, longitude, accuracy } = position.coords;
+
+                        // Update stats
+                        state.updatesSent++;
+                        document.getElementById('stats-updates').innerText = state.updatesSent;
+                        document.getElementById('stats-accuracy').innerText = Math.round(accuracy) + ' m';
+
+                        // Publish to MQTT
+                        if (state.mqttClient && state.mqttClient.connected) {
+                            const payload = JSON.stringify({
+                                id: state.deviceId,
+                                lat: latitude,
+                                lng: longitude,
+                                timestamp: Date.now()
+                            });
+                            state.mqttClient.publish(MQTT_TOPIC, payload);
+                        }
+                    },
+                    (error) => {
+                        console.error("Error getting location", error);
+                        alert("Error accessing GPS: " + error.message);
+                        app.stopBroadcast();
+                    },
+                    options
+                );
+            },
+
+            stopBroadcast: () => {
+                state.isBroadcasting = false;
+                app.updateDriverUI(false);
+                if (state.watchId) {
+                    navigator.geolocation.clearWatch(state.watchId);
+                    state.watchId = null;
+                }
+            },
+
+            updateDriverUI: (isActive) => {
+                const btn = document.getElementById('toggle-broadcast-btn');
+                const indicator = document.getElementById('broadcast-indicator');
+                const title = document.getElementById('broadcast-title');
+                const desc = document.getElementById('broadcast-desc');
+
+                if (isActive) {
+                    btn.innerText = "STOP TRIP";
+                    btn.classList.replace('bg-orange-500', 'bg-red-500');
+                    btn.classList.replace('hover:bg-orange-600', 'hover:bg-red-600');
+
+                    indicator.classList.add('status-pulse', 'border-green-400');
+                    indicator.querySelector('i').classList.replace('text-slate-400', 'text-green-500');
+
+                    title.innerText = "Broadcasting Live";
+                    desc.innerText = "Your location is being shared with students.";
+                } else {
+                    btn.innerText = "START TRIP";
+                    btn.classList.replace('bg-red-500', 'bg-orange-500');
+                    btn.classList.replace('hover:bg-red-600', 'hover:bg-orange-600');
+
+                    indicator.classList.remove('status-pulse', 'border-green-400');
+                    indicator.querySelector('i').classList.replace('text-green-500', 'text-slate-400');
+
+                    title.innerText = "Ready to Start?";
+                    desc.innerText = "Click the button below to start sharing your location with students.";
+                }
+            },
+
+            // --- MQTT Common Logic ---
+            connectMqtt: (role) => {
+                const statusEl = role === 'student' ? document.getElementById('student-status-badge') : document.getElementById('connection-status');
+
+                if (role === 'driver') statusEl.innerText = "Connecting...";
+
+                state.mqttClient = mqtt.connect(MQTT_BROKER);
+
+                state.mqttClient.on('connect', () => {
+                    console.log(`Connected to MQTT as ${role}`);
+                    if (role === 'driver') {
+                        statusEl.innerText = "Connected";
+                        statusEl.classList.replace('text-red-400', 'text-green-400');
+                    } else {
+                        statusEl.innerHTML = '<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Live';
+                        statusEl.classList.replace('text-slate-500', 'text-green-700');
+                        statusEl.classList.replace('bg-slate-100', 'bg-green-100');
+
+                        // Subscribe
+                        state.mqttClient.subscribe(MQTT_TOPIC, (err) => {
+                            if (!err) console.log(`Subscribed to ${MQTT_TOPIC}`);
+                        });
+                    }
+                });
+
+                state.mqttClient.on('message', (topic, message) => {
+                    if (role === 'student' && topic === MQTT_TOPIC) {
+                        try {
+                            const data = JSON.parse(message.toString());
+                            app.updateBusMarker(data);
+                        } catch (e) {
+                            console.error("Error parsing message", e);
+                        }
+                    }
+                });
+
+                state.mqttClient.on('error', (err) => {
+                    console.error("MQTT Error", err);
+                    if (role === 'driver') {
+                         statusEl.innerText = "Error";
+                         statusEl.classList.replace('text-green-400', 'text-red-400');
+                    }
+                });
+            }
+        };
+    </script>
+</body>
+</html>
