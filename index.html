@@ -119,76 +119,77 @@
         <i class="fas fa-sun hidden dark:block"></i>
     </button>
 
-    <div id="view-landing" class="view-section view-active flex flex-col items-center justify-center p-6 h-full relative z-10">
-        <div class="text-center mb-12">
-            <div class="w-24 h-24 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
-                <i class="fas fa-bus text-5xl text-white"></i>
+    <div id="view-landing" class="view-section view-active flex flex-col items-center p-6 h-full relative z-10">
+        
+        <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm">
+            <div class="text-center mb-10">
+                <div class="w-24 h-24 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
+                    <i class="fas fa-bus text-5xl text-white"></i>
+                </div>
+                <h1 class="text-4xl font-extrabold tracking-tight mb-2">
+                    <span class="text-slate-800 dark:text-white">UIU</span>
+                    <span class="text-brand-500">Bus Tracker</span>
+                </h1>
+                <p class="text-slate-500 dark:text-slate-400">Next Gen Campus Transport</p>
             </div>
-            <h1 class="text-4xl font-extrabold tracking-tight mb-2">
-                <span class="text-slate-800 dark:text-white">UIU</span>
-                <span class="text-brand-500">Bus Tracker</span>
-            </h1>
-            <p class="text-slate-500 dark:text-slate-400">Next Gen Campus Transport</p>
+
+            <div class="grid gap-4 w-full">
+                <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+                    <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">I am a Student</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Track buses in real-time</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-blue-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-map-location-dot text-xl"></i>
+                        </div>
+                    </div>
+                </button>
+
+                <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+                    <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold mb-1">I am a Driver</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Broadcast your location</p>
+                        </div>
+                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-id-card text-xl"></i>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 w-full mt-6">
+                <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
+                            <i class="fas fa-comments text-sm"></i>
+                        </div>
+                        <h4 class="font-bold text-sm">Incognito Chat</h4>
+                    </div>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously with fellow students.</p>
+                </a>
+
+                <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-green-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
+                            <i class="fas fa-calculator text-sm"></i>
+                        </div>
+                        <h4 class="font-bold text-sm">CGPA Calculator</h4>
+                    </div>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate your CGPA instantly.</p>
+                </a>
+            </div>
         </div>
 
-        <div class="grid gap-4 w-full max-w-sm">
-            <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
-                <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-xl font-bold mb-1">I am a Student</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Track buses in real-time</p>
-                    </div>
-                    <div class="w-12 h-12 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-blue-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                        <i class="fas fa-map-location-dot text-xl"></i>
-                    </div>
-                </div>
-            </button>
-
-            <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
-                <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-xl font-bold mb-1">I am a Driver</h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Broadcast your location</p>
-                    </div>
-                    <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                        <i class="fas fa-id-card text-xl"></i>
-                    </div>
-                </div>
-            </button>
-        </div>
-
-        <!-- External Projects -->
-        <div class="grid grid-cols-2 gap-4 w-full max-w-sm mt-6">
-            <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
-                        <i class="fas fa-comments text-sm"></i>
-                    </div>
-                    <h4 class="font-bold text-sm">Incognito Chat</h4>
-                </div>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously with fellow students.</p>
-            </a>
-
-            <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-green-500">
-                <div class="flex items-center gap-2 mb-2">
-                    <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
-                        <i class="fas fa-calculator text-sm"></i>
-                    </div>
-                    <h4 class="font-bold text-sm">CGPA Calc</h4>
-                </div>
-                <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate your CGPA instantly.</p>
-            </a>
-        </div>
-
-        <div class="mt-8 mb-4 text-center px-4">
+        <div class="mt-auto pt-4 pb-2 text-center px-4 w-full">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
                 Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
             </p>
         </div>
     </div>
-
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6">
         <div class="flex items-center mb-8 mt-4">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors mr-4">
