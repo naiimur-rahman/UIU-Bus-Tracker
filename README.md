@@ -1,3 +1,13 @@
+# 🚌 UIU Bus Tracker
+
+[![Live Demo](https://img.shields.io/badge/demo-online-green.svg)](https://your-demo-link-here.com)
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+
+> **Next Gen Campus Transport.** A real-time, lightweight geolocation tracking system designed for United International University students and drivers.
+
+## ⚡ Overview
+**UIU Bus Tracker** is a Single Page Application (SPA) that bridges the gap between students and university transport...
 <!DOCTYPE html>
 <html lang="en">
 <head>
