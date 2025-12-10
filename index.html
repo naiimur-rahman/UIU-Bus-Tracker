@@ -69,9 +69,11 @@
             pointer-events: none;
             transform: scale(0.95);
             visibility: hidden;
-            overflow-y: auto;
+            overflow-y: hidden; /* Fixed screen */
             background-color: transparent;
             z-index: 0;
+            display: flex;
+            flex-direction: column;
         }
         
         /* Force Active View to be Visible */
@@ -81,6 +83,11 @@
             transform: scale(1) !important;
             z-index: 100 !important;
             visibility: visible !important;
+        }
+
+        /* Progress Bar Animation */
+        .progress-bar-animated {
+            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .loader {
@@ -114,9 +121,20 @@
             0% { transform: scale(1); opacity: 1; }
             100% { transform: scale(2); opacity: 0; }
         }
+        
+        /* Custom Marker CSS */
+        .custom-bus-marker {
+            background: transparent;
+            border: none;
+        }
+
+        /* Prevent Scroll Bounce */
+        body {
+            overscroll-behavior: none;
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
 
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
@@ -124,7 +142,7 @@
         <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 4s"></div>
     </div>
 
-    <div id="global-controls" class="z-[500] relative transition-opacity duration-300">
+    <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
         <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
             <i class="fas fa-moon dark:hidden"></i>
             <i class="fas fa-sun hidden dark:block"></i>
@@ -139,54 +157,52 @@
         </button>
     </div>
 
-    <div id="view-landing" class="view-section view-active flex flex-col items-center p-6 h-full z-10">
-        <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm">
-            <div class="text-center mb-10">
-                <div class="w-24 h-24 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
-                    <i class="fas fa-bus text-5xl text-white"></i>
+    <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
+        
+        <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
+            <div class="text-center mb-4"> <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
+                    <i class="fas fa-bus text-4xl text-white"></i>
                 </div>
-                <h1 class="text-4xl font-extrabold tracking-tight mb-2">
+                <h1 class="text-4xl font-extrabold tracking-tight mb-1">
                     <span class="text-slate-800 dark:text-white">UIU</span>
                     <span class="text-brand-500">Bus Tracker</span>
                 </h1>
-                <p class="text-slate-500 dark:text-slate-400">Next Gen Campus Transport</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
             </div>
 
-            <div class="grid gap-4 w-full">
-                <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+            <div class="grid gap-3 w-full"> <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-xl font-bold mb-1">Bus Kothay</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Where is the bus?</p>
+                            <h3 class="text-lg font-bold mb-1">Bus Kothay</h3>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Real-time tracking</p>
                         </div>
-                        <div class="w-12 h-12 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-blue-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                            <i class="fas fa-map-location-dot text-xl"></i>
+                        <div class="w-10 h-10 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-blue-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-map-location-dot text-lg"></i>
                         </div>
                     </div>
                 </button>
 
-                <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+                <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-xl font-bold mb-1">Start a Trip</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Share location with others</p>
+                            <h3 class="text-lg font-bold mb-1">Start a Trip</h3>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Share location with others</p>
                         </div>
-                        <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                            <i class="fas fa-id-card text-xl"></i>
+                        <div class="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+                            <i class="fas fa-id-card text-lg"></i>
                         </div>
                     </div>
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 w-full mt-6">
-                 <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
+            <div class="grid grid-cols-2 gap-3 w-full mt-4"> <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
                             <i class="fas fa-comments text-sm"></i>
                         </div>
-                        <h4 class="font-bold text-sm">Incognito Chat</h4>
+                        <h4 class="font-bold text-xs">Incognito Chat</h4>
                     </div>
                     <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously.</p>
                 </a>
@@ -196,21 +212,22 @@
                         <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
                             <i class="fas fa-calculator text-sm"></i>
                         </div>
-                        <h4 class="font-bold text-sm">CGPA Calc</h4>
+                        <h4 class="font-bold text-xs">CGPA Calculator</h4>
                     </div>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate CGPA.</p>
+                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate CGPA and more.</p>
                 </a>
             </div>
         </div>
-        <div class="mt-auto pt-4 pb-2 text-center px-4 w-full">
+        
+        <div class="pt-2 pb-4 text-center px-4 w-full shrink-0 z-50">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
                 Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
             </p>
         </div>
     </div>
 
-    <div id="view-captains-deck" class="view-section flex flex-col items-center p-6 h-full z-10 relative">
-        <div class="w-full flex justify-between items-center mb-6 mt-4">
+    <div id="view-captains-deck" class="view-section flex flex-col items-center p-6 h-full z-10 relative bg-slate-50 dark:bg-slate-900">
+        <div class="w-full flex justify-between items-center mb-4 mt-4 shrink-0">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
                 <i class="fas fa-arrow-left"></i>
             </button>
@@ -218,29 +235,45 @@
             <div class="w-10"></div>
         </div>
 
-        <div class="glass w-full max-w-sm rounded-3xl p-6 shadow-xl flex flex-col items-center text-center mb-6">
-             <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg ring-4 ring-white dark:ring-slate-700">
-                <i class="fas fa-trophy text-3xl text-white"></i>
+        <div class="w-full h-full overflow-y-auto pb-20 no-scrollbar">
+            <div class="glass w-full rounded-3xl p-6 shadow-xl flex flex-col items-center text-center mb-6 relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent"></div>
+                 <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg ring-4 ring-white dark:ring-slate-700 z-10">
+                    <i class="fas fa-trophy text-3xl text-white"></i>
+                </div>
+
+                <h3 id="deck-rank" class="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1 z-10">BRONZE</h3>
+                <p id="deck-points" class="text-3xl font-bold text-slate-800 dark:text-white mb-4 z-10">0 <span class="text-sm font-normal text-slate-500">pts</span></p>
+
+                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 mb-2 overflow-hidden z-10">
+                    <div id="deck-progress" class="bg-gradient-to-r from-brand-400 to-brand-600 h-3 rounded-full progress-bar-animated" style="width: 0%"></div>
+                </div>
+                <p id="next-tier-text" class="text-[10px] text-slate-400 z-10">... to next rank</p>
             </div>
 
-            <h3 id="deck-rank" class="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1">BRONZE</h3>
-            <p id="deck-points" class="text-3xl font-bold text-slate-800 dark:text-white mb-4">0 <span class="text-sm font-normal text-slate-500">pts</span></p>
-
-            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-4 overflow-hidden">
-                <div id="deck-progress" class="bg-brand-500 h-2 rounded-full" style="width: 0%"></div>
+            <div class="w-full mb-6">
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">All Tiers</h3>
+                <div class="flex justify-between items-center text-[10px] text-slate-400 px-2 bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm overflow-x-auto gap-4">
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-300 mb-1"></i><span>Rookie</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-400 mb-1"></i><span>Silver</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-yellow-400 mb-1"></i><span>Gold</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-500 mb-1"></i><span>Plat</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-cyan-400 mb-1"></i><span>Diamond</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-black dark:text-white mb-1"></i><span>Titan</span></div>
+                </div>
             </div>
-        </div>
 
-        <div class="w-full max-w-sm">
-            <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Top 5 Contributors</h3>
-            <div id="leaderboard-list" class="space-y-2 pb-6">
-                <div class="text-center text-xs text-slate-400 py-4">Loading Leaderboard...</div>
+            <div class="w-full">
+                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Top Contributors</h3>
+                <div id="leaderboard-list" class="space-y-2 pb-6">
+                    <div class="text-center text-xs text-slate-400 py-4">Loading Leaderboard...</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative">
-        <div class="w-full flex justify-between items-center mb-8 mt-4">
+    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative bg-slate-50 dark:bg-slate-900">
+        <div class="w-full flex justify-between items-center mb-8 mt-4 shrink-0">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
                 <i class="fas fa-arrow-left"></i>
             </button>
@@ -248,39 +281,46 @@
             <div class="w-10"></div>
         </div>
 
-        <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-xl flex flex-col items-center">
-            <div class="relative mb-6 group cursor-pointer" onclick="document.getElementById('profile-upload').click()">
-                <div class="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-4 border-white dark:border-slate-600 shadow-lg relative">
-                    <img id="profile-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover">
-                </div>
-                <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <i class="fas fa-camera text-white"></i>
-                </div>
-                <input type="file" id="profile-upload" class="hidden" accept="image/*" onchange="app.handleImagePreview(event)">
-            </div>
-
-            <div class="w-full space-y-4">
-                <div>
-                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
-                    <input type="text" id="profile-name" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all" placeholder="Enter your name (or blank for anonymous)">
+        <div class="w-full max-w-sm flex-grow flex flex-col items-center justify-center">
+            <div class="glass w-full rounded-3xl p-8 shadow-xl flex flex-col items-center border border-white/20">
+                <div class="relative mb-6 group cursor-pointer" onclick="document.getElementById('profile-upload').click()">
+                    <div class="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-4 border-white dark:border-slate-600 shadow-xl relative">
+                        <img id="profile-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover">
+                    </div>
+                    <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-camera text-white text-2xl"></i>
+                    </div>
+                    <div class="absolute bottom-0 right-0 bg-brand-500 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white shadow-md">
+                         <i class="fas fa-pen text-xs"></i>
+                    </div>
+                    <input type="file" id="profile-upload" class="hidden" accept="image/*" onchange="app.handleImagePreview(event)">
                 </div>
 
-                <div class="flex gap-2">
-                     <button onclick="app.removeProfilePhoto()" type="button" class="flex-1 bg-red-100 dark:bg-red-900/30 text-red-500 font-bold py-4 rounded-xl hover:bg-red-200 transition-colors">
-                        Remove Photo
-                    </button>
-                    <button onclick="app.saveProfile()" id="btn-save-profile" class="flex-[2] bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span>Save Profile</span>
-                    </button>
+                <div class="w-full space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Display Name</label>
+                        <input type="text" id="profile-name" class="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl p-4 font-bold focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" placeholder="e.g. Naimur">
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                         <button onclick="app.removeProfilePhoto()" type="button" class="flex-1 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold py-4 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex flex-col items-center justify-center gap-1">
+                            <i class="fas fa-trash-alt"></i>
+                            <span class="text-[10px]">Remove Pic</span>
+                        </button>
+                        <button onclick="app.saveProfile()" id="btn-save-profile" class="flex-[2] bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                            <span>Save Changes</span>
+                            <i class="fas fa-check"></i>
+                        </button>
+                    </div>
+                    <p id="profile-error" class="text-red-500 text-xs text-center hidden"></p>
+                    <p class="text-[10px] text-center text-slate-400">Leave name/photo blank to use Anonymous Avatar.</p>
                 </div>
-                <p id="profile-error" class="text-red-500 text-xs text-center hidden"></p>
-                <p class="text-[10px] text-center text-slate-400">Leave name/photo blank to use Anonymous Avatar.</p>
             </div>
         </div>
     </div>
 
-    <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6">
-        <div class="flex items-center mb-8 mt-4">
+    <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6 bg-slate-50 dark:bg-slate-900">
+        <div class="flex items-center mb-8 mt-4 shrink-0">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors mr-4">
                 <i class="fas fa-arrow-left"></i>
             </button>
@@ -300,7 +340,7 @@
             <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="mt-8 text-slate-400 hover:text-slate-600">Cancel</button>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
+        <div class="grid grid-cols-2 gap-4 overflow-y-auto pb-4">
             <button onclick="app.selectRoute('Kuril', 'K')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
                 <i class="fas fa-road text-3xl text-blue-500 mb-3"></i>
                 <span class="font-bold">Kuril</span>
@@ -353,7 +393,7 @@
             <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-50 dark:from-slate-900 to-transparent pointer-events-none z-[400]"></div>
         </div>
 
-        <div class="flex-grow flex flex-col items-center justify-start p-6 -mt-12 relative z-20">
+        <div class="flex-grow flex flex-col items-center justify-start p-6 -mt-12 relative z-20 overflow-y-auto">
             <div class="glass w-full max-w-sm rounded-3xl p-6 shadow-xl text-center backdrop-blur-xl border border-white/20">
                 <div class="flex items-center justify-between mb-6">
                       <div class="text-left">
@@ -462,13 +502,13 @@
 
         /** FIREBASE & CLOUDINARY CONFIG */
         const firebaseConfig = {
-            apiKey: "AIzaSyBx260kRaZe010DhaTxD7vPHER1ZIcQuxI",
-            authDomain: "uiu-incognito-chat.firebaseapp.com",
-            projectId: "uiu-incognito-chat",
-            storageBucket: "uiu-incognito-chat.firebasestorage.app",
-            messagingSenderId: "579619680960",
-            appId: "1:579619680960:web:11c11c4813eba3422cb325",
-            measurementId: "G-B2RGV7N5JX"
+          apiKey: "AIzaSyAklMLhNG8INCYKh_ADQOgm2CQCAGc4hgo",
+          authDomain: "uiu-bus-tracker-01.firebaseapp.com",
+          projectId: "uiu-bus-tracker-01",
+          storageBucket: "uiu-bus-tracker-01.firebasestorage.app",
+          messagingSenderId: "576909822280",
+          appId: "1:576909822280:web:29d4e8008b6c2033740b7d",
+          measurementId: "G-YDZN4Q5YHF"
         };
 
         const CLOUDINARY_CLOUD_NAME = 'dxjtj6wan';
@@ -506,10 +546,9 @@
                 location: 'uiu/bus/location',
                 presence: 'uiu/presence'
             },
-            // FIXED COORDINATES (Updated from images)
             uiuCoords: [23.79790, 90.44970], 
             presenceInterval: 15000,
-            minAccuracy: 50 // Meters
+            minAccuracy: 50
         };
 
         const BUS_STYLES = {
@@ -526,14 +565,15 @@
             client: null,
             isConnected: false,
             role: null,
-            driverId: null, // "K1"
+            driverId: null,
             driverRoute: null,
-            driverDestination: null, // "Kuril"
+            driverDestination: null,
             isBroadcasting: false,
             watchId: null,
             wakeLock: null,
             activeBuses: {},
             activeUsers: new Map(),
+            userCache: {},
             map: null,
             driverMap: null,
             driverMarker: null,
@@ -550,10 +590,10 @@
         const app = {
             init: () => {
                 app.loadTheme();
-                app.connectMqtt(); // Always connect on load to sync data
-                console.log("App Version: Final Fix");
+                app.connectMqtt();
+                console.log("App Version: Final Stable");
                 
-                // CHECK LOCALSTORAGE FOR CRASH RECOVERY (GHOST FIX)
+                // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
                 const savedRoute = localStorage.getItem('active_driver_route');
                 
@@ -564,7 +604,7 @@
                     state.driverDestination = localStorage.getItem('active_driver_dest');
                     state.driverDirection = localStorage.getItem('active_driver_dir');
                     
-                    app.setRole('driver-dashboard'); // Special internal role
+                    app.setRole('driver-dashboard');
                     document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
                     app.switchView('view-driver-dashboard');
                     app.initDriverMap();
@@ -607,8 +647,6 @@
             },
 
             switchView: (viewId) => {
-                // 1. Force hide all views immediately using manual styling
-                // This bypasses any CSS transition conflicts
                 const views = document.querySelectorAll('.view-section');
                 views.forEach(el => {
                     el.classList.remove('view-active');
@@ -617,27 +655,22 @@
                     el.style.zIndex = '0';
                 });
 
-                // 2. Force show target view
                 const target = document.getElementById(viewId);
                 if (target) {
                     target.classList.add('view-active');
-                    // Force browser reflow to ensure styles apply
                     void target.offsetWidth; 
                     target.style.opacity = '1';
                     target.style.pointerEvents = 'auto';
-                    target.style.zIndex = '100'; // Make sure it's on top
+                    target.style.zIndex = '100';
                     target.style.visibility = 'visible';
-                } else {
-                    console.error("View not found:", viewId);
                 }
 
-                // 3. Handle Global Controls Visibility
                 const globalControls = document.getElementById('global-controls');
                 if (globalControls) {
                     if (viewId === 'view-landing') {
-                        globalControls.classList.remove('opacity-0', 'pointer-events-none');
+                        globalControls.classList.remove('opacity-0', 'pointer-events-none', 'invisible');
                     } else {
-                        globalControls.classList.add('opacity-0', 'pointer-events-none');
+                        globalControls.classList.add('opacity-0', 'pointer-events-none', 'invisible');
                     }
                 }
             },
@@ -654,20 +687,13 @@
 
             goHome: async () => {
                 try {
-                    // 1. If currently broadcasting, handle the stop sequence
                     if (state.isBroadcasting) {
                         const confirmExit = confirm("Stop broadcasting and exit?");
                         if (!confirmExit) return;
-                        
-                        // Stop broadcast (this calculates points)
                         await app.stopBroadcast();
-                        
-                        // If the user earned points, stopBroadcast() will show the modal.
-                        // We MUST return here and let the modal's "Continue" button handle the final exit.
                         if (state.sessionPoints > 0) return; 
                     }
 
-                    // 2. Clear Session Data
                     state.driverId = null;
                     state.driverRoute = null;
                     state.driverDestination = null;
@@ -686,10 +712,7 @@
                     
                 } catch (error) {
                     console.error("Error during exit:", error);
-                    // Continue to exit even if there's an error
                 }
-
-                // 3. Force Switch to Landing Page
                 app.switchView('view-landing');
             },
 
@@ -726,7 +749,7 @@
                     username: CONFIG.mqtt.username,
                     password: CONFIG.mqtt.password,
                     clientId: CONFIG.mqtt.clientId,
-                    clean: true // Clean session
+                    clean: true
                 });
 
                 state.client.on('connect', () => {
@@ -810,9 +833,8 @@
                 }
                 app.updateUserCount();
 
-                // 2. Cleanup Buses (Ghost Fix)
+                // 2. Cleanup Buses
                 for (const id in state.activeBuses) {
-                    // Remove if no update for 60 seconds
                     if (now - state.activeBuses[id].ts > 60000) {
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
@@ -835,10 +857,10 @@
                     return;
                 }
 
-                if (state.isBroadcasting && data.id === state.driverId) return; // Don't track self
+                if (state.isBroadcasting && data.id === state.driverId) return;
 
                 const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return; // Ignore stale data
+                if (timeDiff > 120000) return;
                 
                 state.activeBuses[data.id] = data;
 
@@ -904,7 +926,9 @@
                 const id = CONFIG.mqtt.clientId;
                 if (!db) return;
 
-                // 1. Load Current User
+                // Reset progress bar for animation
+                document.getElementById('deck-progress').style.width = '0%';
+
                 try {
                     const docRef = doc(db, "users", id);
                     const docSnap = await getDoc(docRef);
@@ -912,58 +936,70 @@
                     if (docSnap.exists()) {
                         points = docSnap.data().totalPoints || 0;
                     } else {
-                        document.getElementById('deck-rank').innerText = "NO USER FOUND";
+                        document.getElementById('deck-rank').innerText = "ROOKIE";
                         document.getElementById('deck-rank').className = "text-xl font-bold text-slate-400";
                     }
 
                     document.getElementById('deck-points').innerHTML = `${points} <span class="text-sm font-normal text-slate-500">pts</span>`;
 
-                    let rank = "BRONZE";
+                    let rank = "ROOKIE";
                     let progress = 0;
-                    let color = "from-amber-700 to-amber-500"; // Bronze
+                    let nextTier = 100;
+                    let color = "from-slate-400 to-slate-500"; 
 
-                    // Bronze: 0-100, Silver: 101-500, Gold: 501-1000, Platinum: 1001-2500, Diamond: 2501-5000, Titanium: 5001+
-                    if (points > 5000) {
+                    if (points >= 5000) {
                         rank = "TITANIUM";
                         progress = 100;
+                        nextTier = 10000;
                         color = "from-slate-700 to-black";
-                    } else if (points > 2500) {
+                    } else if (points >= 2500) {
                         rank = "DIAMOND";
                         progress = ((points - 2500) / 2500) * 100;
+                        nextTier = 5000;
                         color = "from-blue-400 to-cyan-300";
-                    } else if (points > 1000) {
+                    } else if (points >= 1000) {
                         rank = "PLATINUM";
                         progress = ((points - 1000) / 1500) * 100;
+                        nextTier = 2500;
                         color = "from-slate-300 to-slate-400";
-                    } else if (points > 500) {
+                    } else if (points >= 500) {
                         rank = "GOLD";
                         progress = ((points - 500) / 500) * 100;
+                        nextTier = 1000;
                         color = "from-yellow-300 to-yellow-500";
-                    } else if (points > 100) {
+                    } else if (points >= 100) {
                         rank = "SILVER";
                         progress = ((points - 100) / 400) * 100;
-                        color = "from-slate-200 to-slate-400";
+                        nextTier = 500;
+                        color = "from-slate-300 to-slate-500";
                     } else {
-                        // Bronze
+                        rank = "ROOKIE";
                         progress = (points / 100) * 100;
+                        nextTier = 100;
+                        color = "from-brand-300 to-brand-500";
                     }
                     
                     const rankEl = document.getElementById('deck-rank');
                     rankEl.innerText = rank;
                     rankEl.className = `text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r ${color} mb-1`;
 
-                    document.getElementById('deck-progress').style.width = `${progress}%`;
+                    document.getElementById('next-tier-text').innerText = `${Math.max(0, nextTier - points)} pts to next rank`;
+
+                    // Animate Bar
+                    setTimeout(() => {
+                        document.getElementById('deck-progress').style.width = `${Math.min(100, progress)}%`;
+                    }, 100);
 
                 } catch (e) {
                     console.error("Error loading stats:", e);
                 }
 
-                // 2. Load Top Leaderboard
+                // Load Leaderboard
                 const listEl = document.getElementById('leaderboard-list');
                 listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><div class="loader mx-auto mb-2"></div>Loading Leaderboard...</div>';
 
                 try {
-                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(20)); // Limit 20 to find self and others
+                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(20));
                     const querySnapshot = await getDocs(q);
                     
                     listEl.innerHTML = '';
@@ -973,7 +1009,7 @@
 
                     querySnapshot.forEach((doc) => {
                         count++;
-                        if (count > 5) return; // Show top 5
+                        if (count > 5) return;
                         const d = doc.data();
                         const uId = doc.id;
 
@@ -1036,7 +1072,6 @@
                     state.driverMap = null;
                 }
 
-                // FIXED COORDINATES WITH SPECIFIC LOCATIONS
                 const COORDS = {
                     'UIU': CONFIG.uiuCoords, // 23.79790, 90.44970
                     'Kuril': [23.822339, 90.420163],
@@ -1096,9 +1131,8 @@
                     return;
                 }
 
-                // 20-METER CONFLICT CHECK
-                navigator.geolocation.getCurrentPosition((pos) => {
-                    const myLat = pos.coords.latitude;
+                const checkConflictAndStart = (pos) => {
+                     const myLat = pos.coords.latitude;
                     const myLng = pos.coords.longitude;
                     
                     let conflict = false;
@@ -1116,11 +1150,13 @@
 
                     if (conflict) {
                         alert("⚠️ Another Captain is tracking this bus nearby! Help preserve battery.");
-                        return; // BLOCK START
+                        return;
                     }
 
                     app.executeStartBroadcast();
-                }, (err) => {
+                };
+
+                navigator.geolocation.getCurrentPosition(checkConflictAndStart, (err) => {
                     alert("Please enable GPS");
                 }, { enableHighAccuracy: true });
             },
@@ -1186,8 +1222,6 @@
                     },
                     (error) => {
                         console.error("GPS Error", error);
-                        alert("GPS Error: " + error.message);
-                        app.stopBroadcast();
                     },
                     options
                 );
@@ -1213,7 +1247,6 @@
                 if (finalPoints > 0) {
                     await app.showSummary(finalPoints);
                 } 
-                // Removed redundant app.goHome() here to avoid loops
             },
 
             showSummary: async (points) => {
@@ -1234,7 +1267,6 @@
                             totalPoints = (data.totalPoints || 0) + points;
                             await updateDoc(docRef, { totalPoints: totalPoints });
                         } else {
-                            // First time user, set doc
                              await setDoc(docRef, { totalPoints: points, username: "", photoUrl: "" });
                         }
                     } catch (e) { console.error(e); }
@@ -1245,12 +1277,15 @@
                 document.getElementById('summary-name').innerText = name;
                 document.getElementById('summary-photo').src = photo;
                 modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.style.opacity = '1';
+                modal.style.pointerEvents = 'auto';
             },
 
             closeSummary: () => {
                 document.getElementById('trip-summary-modal').classList.add('opacity-0', 'pointer-events-none');
-                state.sessionPoints = 0; // Reset points so goHome knows we are done
-                app.goHome(); // Now trigger the actual exit
+                document.getElementById('trip-summary-modal').style.opacity = '0';
+                state.sessionPoints = 0; 
+                app.goHome(); 
             },
 
             updateBroadcastUI: (isActive) => {
@@ -1310,7 +1345,7 @@
             },
 
             fetchUserProfile: async (uid) => {
-                if (state.userCache[uid]) return state.userCache[uid];
+                if (state.userCache && state.userCache[uid]) return state.userCache[uid];
 
                 let userData = {
                     username: null,
@@ -1329,6 +1364,7 @@
                     }
                 } catch (e) { console.error(e); }
 
+                if (!state.userCache) state.userCache = {};
                 state.userCache[uid] = userData;
                 return userData;
             },
@@ -1388,14 +1424,11 @@
                 else if (id.startsWith('N')) colorClass = BUS_STYLES['N'];
                 else if (id.startsWith('A')) colorClass = BUS_STYLES['A'];
 
-                // 1. Fetch Profile if needed
                 let profile = { username: null, photoUrl: null };
                 if (uid) {
-                    // Check cache first to avoid async delay on common updates
-                    if (state.userCache[uid]) {
+                    if (state.userCache && state.userCache[uid]) {
                         profile = state.userCache[uid];
                     } else {
-                         // Fetch in background, update marker later
                          app.fetchUserProfile(uid).then(p => {
                              app.updateBusMarkerIcon(id, p, colorClass);
                          });
@@ -1407,9 +1440,7 @@
 
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-
-                    // Only update icon if profile just loaded or changed (Optimization: check a flag?)
-                    // For now, we update the icon if the marker exists, to ensure direction color updates
+                    
                     const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
                     state.markers[id].setIcon(icon);
 
@@ -1523,39 +1554,6 @@
                 }
             },
 
-            loadCaptainProfile: async (id) => {
-                const busData = state.activeBuses[id];
-                if (!busData || !busData.uid) {
-                     const el = document.getElementById(`popup-name-${id}`);
-                     if(el) el.innerText = "Captain";
-                     return;
-                }
-
-                if (!db) return;
-                try {
-                    const docRef = doc(db, "users", busData.uid);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        const nameEl = document.getElementById(`popup-name-${id}`);
-                        const imgEl = document.getElementById(`popup-img-${id}`);
-                        
-                        // ANONYMOUS FALLBACK
-                        const anonName = `Anonymous User ${busData.uid.substr(0,4)}`;
-                        const anonImg = `https://api.dicebear.com/7.x/avataaars/svg?seed=${busData.uid}`;
-
-                        if(nameEl) nameEl.innerText = data.username || anonName;
-                        if(imgEl) imgEl.src = data.photoUrl || anonImg;
-                    } else {
-                        // Document doesn't exist yet, show Anonymous
-                         const anonName = `Anonymous User ${busData.uid.substr(0,4)}`;
-                         const anonImg = `https://api.dicebear.com/7.x/avataaars/svg?seed=${busData.uid}`;
-                         document.getElementById(`popup-name-${id}`).innerText = anonName;
-                         document.getElementById(`popup-img-${id}`).src = anonImg;
-                    }
-                } catch (e) { console.error(e); }
-            },
-
             // --- Profile Logic ---
             openProfile: () => {
                 app.switchView('view-profile');
@@ -1596,10 +1594,11 @@
                         body: formData
                     });
                     const data = await res.json();
+                    if(data.error) throw data.error;
                     return data.secure_url;
                 } catch (err) {
                     console.error("Cloudinary Error:", err);
-                    alert("Image upload failed");
+                    alert("Image upload failed: " + (err.message || "Unknown Error"));
                     return null;
                 }
             },
@@ -1626,7 +1625,7 @@
             removeProfilePhoto: async () => {
                 if(!confirm("Remove profile photo?")) return;
                 document.getElementById('profile-preview').src = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                document.getElementById('profile-upload').value = ""; // Clear file input
+                document.getElementById('profile-upload').value = ""; 
             },
 
             saveProfile: async () => {
@@ -1639,9 +1638,9 @@
                 const fileInput = document.getElementById('profile-upload');
                 let photoUrl = document.getElementById('profile-preview').src;
                 
-                // Check if it's the default icon (meaning no photo uploaded/removed)
+                // Check if it's the default icon
                 if (photoUrl.includes('cdn-icons-png.flaticon.com')) {
-                    photoUrl = ""; // Save as empty string to trigger Anonymous Avatar later
+                    photoUrl = "";
                 }
 
                 // Upload New Photo if selected
@@ -1654,8 +1653,8 @@
                 if (db) {
                     try {
                         const updateData = {
-                            username: name, // Can be empty
-                            photoUrl: photoUrl // Can be empty
+                            username: name,
+                            photoUrl: photoUrl
                         };
                         
                         await setDoc(doc(db, "users", id), updateData, { merge: true });
