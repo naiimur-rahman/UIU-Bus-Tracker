@@ -40,6 +40,8 @@
     </script>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Leaflet Routing Machine CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -119,6 +121,15 @@
         <i class="fas fa-sun hidden dark:block"></i>
     </button>
 
+    <button onclick="app.openProfile()" class="fixed top-4 left-4 z-[100] w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-lg hover:scale-110 transition-transform">
+        <i class="fas fa-user"></i>
+    </button>
+
+    <button onclick="app.openCaptainsDeck()" class="fixed top-20 right-4 z-[100] w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform animate-float">
+        <i class="fas fa-trophy"></i>
+    </button>
+
+    <!-- LANDING VIEW -->
     <div id="view-landing" class="view-section view-active flex flex-col items-center p-6 h-full relative z-10">
         
         <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm">
@@ -147,12 +158,14 @@
                     </div>
                 </button>
 
+                <!-- Updated Text: "I am a Driver" -> "Share Location" or similar, but user prompt said "I am a Driver" -> "Start a Trip" in description,
+                     but clearer instruction: "mainly, it's not driver.... it's students profile. who are sharing location" -->
                 <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-6 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-xl font-bold mb-1">I am a Driver</h3>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Broadcast your location</p>
+                            <h3 class="text-xl font-bold mb-1">Start a Trip</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Share location with others</p>
                         </div>
                         <div class="w-12 h-12 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                             <i class="fas fa-id-card text-xl"></i>
@@ -190,12 +203,90 @@
             </p>
         </div>
     </div>
+
+    <!-- CAPTAIN'S DECK VIEW -->
+    <div id="view-captains-deck" class="view-section flex flex-col items-center p-6 h-full z-10 relative">
+        <div class="w-full flex justify-between items-center mb-8 mt-4">
+            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 class="text-2xl font-bold">Captain's Deck</h2>
+            <div class="w-10"></div>
+        </div>
+
+        <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-xl flex flex-col items-center text-center">
+             <div class="w-24 h-24 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-4 shadow-lg ring-4 ring-white dark:ring-slate-700">
+                <i class="fas fa-trophy text-4xl text-white"></i>
+            </div>
+
+            <h3 id="deck-rank" class="text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1">ROOKIE</h3>
+            <p id="deck-points" class="text-4xl font-bold text-slate-800 dark:text-white mb-6">0 <span class="text-sm font-normal text-slate-500">pts</span></p>
+
+            <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 mb-6 overflow-hidden">
+                <div id="deck-progress" class="bg-brand-500 h-2.5 rounded-full" style="width: 0%"></div>
+            </div>
+
+            <p class="text-sm text-slate-500 dark:text-slate-400 italic">
+                "Drive the community forward. Your small contribution helps everyone's journey."
+            </p>
+        </div>
+    </div>
+
+    <!-- PROFILE VIEW -->
+    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative">
+        <div class="w-full flex justify-between items-center mb-8 mt-4">
+            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h2 class="text-2xl font-bold">Your Profile</h2>
+            <div class="w-10"></div>
+        </div>
+
+        <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-xl flex flex-col items-center">
+            <div class="relative mb-6 group cursor-pointer" onclick="document.getElementById('profile-upload').click()">
+                <div class="w-24 h-24 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-4 border-white dark:border-slate-600 shadow-lg">
+                    <img id="profile-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover">
+                </div>
+                <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <i class="fas fa-camera text-white"></i>
+                </div>
+                <input type="file" id="profile-upload" class="hidden" accept="image/*" onchange="app.handleImagePreview(event)">
+            </div>
+
+            <div class="w-full space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Username</label>
+                    <input type="text" id="profile-name" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-xl p-4 font-bold focus:ring-2 focus:ring-brand-500 outline-none transition-all" placeholder="Enter your name">
+                </div>
+
+                <button onclick="app.saveProfile()" id="btn-save-profile" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span>Save Profile</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DRIVER/CAPTAIN SELECT VIEW -->
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6">
         <div class="flex items-center mb-8 mt-4">
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors mr-4">
                 <i class="fas fa-arrow-left"></i>
             </button>
             <h2 class="text-2xl font-bold">Select Route</h2>
+        </div>
+
+        <!-- Sub-Selection Modal (Hidden by default) -->
+        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 flex flex-col items-center justify-center p-6 text-center">
+            <h3 class="text-2xl font-bold mb-6">Which Direction?</h3>
+            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left">
+                <div class="font-bold text-lg">Going to Campus</div>
+                <div class="text-xs text-slate-500">From Destination &rarr; UIU</div>
+            </button>
+            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs glass p-6 rounded-xl hover:bg-brand-50 transition-colors border-l-4 border-l-blue-500 text-left">
+                <div class="font-bold text-lg">Leaving Campus</div>
+                <div class="text-xs text-slate-500">UIU &rarr; To Destination</div>
+            </button>
+            <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="mt-8 text-slate-400 hover:text-slate-600">Cancel</button>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -227,59 +318,91 @@
         </div>
     </div>
 
+    <!-- DRIVER/CAPTAIN DASHBOARD VIEW -->
     <div id="view-driver-dashboard" class="view-section flex flex-col h-full bg-slate-50 dark:bg-slate-900 z-10">
-        <div class="bg-slate-900 text-white pt-8 px-8 pb-32 rounded-b-[2.5rem] relative overflow-hidden shadow-2xl">
-            <div class="absolute top-0 right-0 p-6 opacity-20">
-                <i class="fas fa-bus text-9xl"></i>
+        <!-- Top Info Bar -->
+        <div class="absolute top-0 left-0 right-0 p-4 z-30 flex justify-between items-start pointer-events-none">
+            <div class="pointer-events-auto">
+                 <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass bg-slate-900/50 text-white flex items-center justify-center hover:scale-110 transition-transform">
+                    <i class="fas fa-power-off"></i>
+                </button>
             </div>
-            <div class="relative z-10">
-                <div class="flex justify-between items-start mb-6">
-                    <button onclick="app.goHome()" class="text-slate-400 hover:text-white transition-colors">
-                        <i class="fas fa-power-off"></i> Quit
-                    </button>
-                    <div class="text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <span id="driver-connection-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                            <span id="driver-connection-text" class="text-xs font-bold uppercase tracking-wider text-slate-400">Offline</span>
-                        </div>
-                    </div>
+            <div class="glass bg-slate-900/80 text-white px-4 py-2 rounded-xl text-right backdrop-blur-md">
+                 <div class="flex items-center justify-end gap-2 mb-1">
+                    <span id="driver-connection-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
+                    <span id="driver-connection-text" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Offline</span>
                 </div>
-                <h1 class="text-3xl font-bold mb-1">Hello, Driver!</h1>
-                <p class="text-slate-400 text-sm">Assigned ID: <span id="driver-assigned-id" class="text-brand-500 font-mono text-lg font-bold">...</span></p>
-                <div id="wakelock-status" class="mt-2 text-[10px] text-slate-500">
-                    <i class="fas fa-mobile-alt"></i> Screen Wake Lock: <span id="wakelock-text">Off</span>
+                <div class="text-xs text-slate-400">ID: <span id="driver-assigned-id" class="text-brand-500 font-mono font-bold">...</span></div>
+                <div id="wakelock-status" class="text-[8px] text-slate-500 mt-0.5">
+                    <i class="fas fa-mobile-alt"></i> Wake Lock: <span id="wakelock-text">Off</span>
                 </div>
             </div>
         </div>
 
-        <div class="flex-grow flex flex-col items-center justify-center p-6 -mt-8 relative z-20">
-            <div class="glass w-full max-w-sm rounded-3xl p-8 shadow-xl text-center">
-                <div id="broadcast-ring" class="w-40 h-40 rounded-full border-4 border-slate-100 dark:border-slate-700 mx-auto mb-8 flex items-center justify-center transition-all duration-500 relative">
-                    <div class="absolute inset-0 rounded-full animate-pulse-glow opacity-0 transition-opacity" id="broadcast-glow"></div>
-                    <i id="broadcast-icon" class="fas fa-location-arrow text-5xl text-slate-300 dark:text-slate-600 transition-colors"></i>
+        <!-- Map Area -->
+        <div class="h-[60%] w-full relative z-0">
+            <div id="driver-map" class="w-full h-full bg-slate-200 dark:bg-slate-800"></div>
+            <!-- Overlay Gradient -->
+            <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-50 dark:from-slate-900 to-transparent pointer-events-none z-[400]"></div>
+        </div>
+
+        <!-- Controls Area -->
+        <div class="flex-grow flex flex-col items-center justify-start p-6 -mt-12 relative z-20">
+            <div class="glass w-full max-w-sm rounded-3xl p-6 shadow-xl text-center backdrop-blur-xl border border-white/20">
+                <div class="flex items-center justify-between mb-6">
+                     <div class="text-left">
+                        <h2 id="broadcast-status-title" class="text-xl font-bold">Ready to Drive?</h2>
+                        <p id="broadcast-status-desc" class="text-slate-500 text-xs">Start trip to broadcast</p>
+                     </div>
+                     <div id="broadcast-ring" class="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center relative">
+                        <div class="absolute inset-0 rounded-full animate-pulse-glow opacity-0 transition-opacity" id="broadcast-glow"></div>
+                        <i id="broadcast-icon" class="fas fa-location-arrow text-slate-300 dark:text-slate-600 transition-colors"></i>
+                    </div>
                 </div>
 
-                <h2 id="broadcast-status-title" class="text-2xl font-bold mb-2">Ready?</h2>
-                <p id="broadcast-status-desc" class="text-slate-500 text-sm mb-8">Start your trip to share location</p>
-
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95">
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4">
                     START TRIP
                 </button>
-            </div>
 
-            <div class="grid grid-cols-2 gap-4 w-full max-w-sm mt-6">
+            <div class="grid grid-cols-3 gap-2 w-full max-w-sm mt-6">
+                <div class="glass p-4 rounded-2xl text-center">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Points</p>
+                    <p id="live-points" class="text-xl font-bold text-brand-500">0</p>
+                </div>
+                <div class="glass p-4 rounded-2xl text-center">
+                    <p class="text-xs text-slate-400 uppercase font-bold">Speed</p>
+                    <p id="val-speed" class="text-xl font-bold text-slate-700 dark:text-slate-200">0 <span class="text-[10px]">km/h</span></p>
+                </div>
                 <div class="glass p-4 rounded-2xl text-center">
                     <p class="text-xs text-slate-400 uppercase font-bold">Accuracy</p>
                     <p id="val-accuracy" class="text-xl font-bold text-slate-700 dark:text-slate-200">--</p>
                 </div>
-                <div class="glass p-4 rounded-2xl text-center">
-                    <p class="text-xs text-slate-400 uppercase font-bold">Last Update</p>
-                    <p id="val-last-update" class="text-xl font-bold text-slate-700 dark:text-slate-200">--</p>
-                </div>
             </div>
+        </div>
+
+        <!-- Trip Summary Modal -->
+        <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
+             <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
+                 <i class="fas fa-star text-6xl text-white"></i>
+             </div>
+             <h2 class="text-4xl font-black text-white mb-2">Awesome!</h2>
+             <p class="text-slate-400 mb-8">Trip Completed</p>
+
+             <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-6">
+                 <img id="summary-photo" src="" class="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-white">
+                 <h3 id="summary-name" class="font-bold text-white text-lg mb-1">...</h3>
+                 <div class="text-sm text-slate-400 mb-6">You have earned</div>
+                 <div class="text-5xl font-black text-brand-500 mb-2" id="summary-points">0</div>
+                 <div class="text-xs font-bold text-brand-500 uppercase tracking-widest">Points</div>
+             </div>
+
+             <button onclick="app.closeSummary()" class="mt-8 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
+                 Continue
+             </button>
         </div>
     </div>
 
+    <!-- STUDENT/MAP VIEW -->
     <div id="view-student" class="view-section flex flex-col h-full z-10">
         <div class="absolute top-4 left-4 right-16 z-[400]">
             <div class="glass rounded-full p-2 pl-4 pr-2 flex justify-between items-center shadow-lg">
@@ -321,11 +444,41 @@
         </div>
     </div>
 
+    <!-- SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
-    <script>
-        /** CONFIGURATION */
+    <!-- MODULE SCRIPT: Firebase & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+        /** FIREBASE & CLOUDINARY CONFIG */
+        const firebaseConfig = {
+            apiKey: "AIzaSyBx260kRaZe010DhaTxD7vPHER1ZIcQuxI",
+            authDomain: "uiu-incognito-chat.firebaseapp.com",
+            projectId: "uiu-incognito-chat",
+            storageBucket: "uiu-incognito-chat.firebasestorage.app",
+            messagingSenderId: "579619680960",
+            appId: "1:579619680960:web:11c11c4813eba3422cb325",
+            measurementId: "G-B2RGV7N5JX"
+        };
+
+        const CLOUDINARY_CLOUD_NAME = 'dxjtj6wan';
+        const CLOUDINARY_UPLOAD_PRESET = 'standard_upload';
+
+        // Init Firebase
+        let db = null;
+        try {
+            const fbApp = initializeApp(firebaseConfig);
+            db = getFirestore(fbApp);
+            console.log("Firebase initialized successfully");
+        } catch (e) {
+            console.error("Firebase Init Error:", e);
+        }
+
+        /** APP CONFIG */
         const CONFIG = {
             mqtt: {
                 protocol: 'wss',
@@ -352,12 +505,11 @@
             minAccuracy: 50 // Meters
         };
 
-        /** CUSTOMIZE BUS COLORS HERE */
         const BUS_STYLES = {
-            'K': 'bg-blue-500',      // Kuril
-            'N': 'bg-green-500',     // Notun Bazar
-            'A': 'bg-purple-500',    // Aftab Nagar
-            'default': 'bg-orange-500' // Others
+            'K': 'bg-blue-500',
+            'N': 'bg-green-500',
+            'A': 'bg-purple-500',
+            'default': 'bg-orange-500'
         };
 
         /** GLOBAL STATE */
@@ -375,7 +527,11 @@
             map: null,
             markers: {},
             circles: {}, 
-            lastSentTime: 0
+            lastSentTime: 0,
+            sessionPoints: 0,
+            sessionDistance: 0,
+            lastLat: null,
+            lastLng: null
         };
 
         /** APP CONTROLLER */
@@ -472,7 +628,6 @@
                 state.client.on('message', (topic, message) => {
                     const msgString = message.toString();
 
-                    // FIX 2: Safety Check for empty messages (prevents console crashes)
                     if (!msgString || msgString.length === 0) return;
 
                     try {
@@ -553,17 +708,14 @@
 
             // --- Location Logic ---
             handleLocationUpdate: (data) => {
-                // 1. Ignore own broadcasts
                 if (state.isBroadcasting && data.id === state.driverId) return;
 
-                // 2. FIX 1: Time Check to Ignore Stale Data (Ghost Buses)
                 const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) { // 120,000 ms = 2 minutes
-                    console.warn(`Ignored stale bus data: ${data.id} (${Math.round(timeDiff/1000)}s old)`);
+                if (timeDiff > 120000) {
+                    console.warn(`Ignored stale bus data: ${data.id}`);
                     return; 
                 }
                 
-                // 3. Process valid data
                 state.activeBuses[data.id] = data;
 
                 if (state.role === 'student') {
@@ -573,16 +725,42 @@
             },
 
             selectRoute: (name, prefix) => {
+                state.tempRouteName = name;
+                state.tempRoutePrefix = prefix;
+
+                // Show sub-selection
+                document.getElementById('route-sub-select').classList.remove('hidden');
+            },
+
+            confirmRoute: (direction) => {
+                const name = state.tempRouteName;
+                const prefix = state.tempRoutePrefix;
+                const fullRouteName = `${name} (${direction})`;
+
+                document.getElementById('route-sub-select').classList.add('hidden');
+
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
+                // CONFLICT CHECK (20m Rule) - Mock check for now, real check happens at Start Trip usually,
+                // but user asked "Before Start Trip executes".
+                // However, we are just assigning ID here. "Start Trip" is later.
+                // Let's do the check here or at Start Broadcast?
+                // User said: "Before 'Start Trip' executes... check 20m radius".
+                // "Start Trip" is the button on Dashboard.
+                // So I will proceed to Dashboard.
+
                 setTimeout(() => {
                     const assignedId = app.assignNextId(prefix);
-                    state.driverRoute = name;
+                    state.driverRoute = fullRouteName;
                     state.driverId = assignedId;
-                    document.getElementById('driver-assigned-id').innerText = name + ' (' + assignedId + ')';
+                    state.driverDestination = name; // Store raw destination for routing
+                    state.driverDirection = direction; // Store direction
+
+                    document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                     if (loader) loader.classList.add('hidden');
                     app.switchView('view-driver-dashboard');
+                    app.initDriverMap(); // Initialize the map on dashboard
                 }, 1000);
             },
 
@@ -601,6 +779,133 @@
                 return prefix + nextNum;
             },
 
+            // --- Gamification Logic ---
+            openCaptainsDeck: async () => {
+                app.switchView('view-captains-deck');
+                const id = CONFIG.mqtt.clientId;
+                if (!db) return;
+
+                try {
+                    const docRef = doc(db, "users", id);
+                    const docSnap = await getDoc(docRef);
+                    let points = 0;
+                    if (docSnap.exists()) points = docSnap.data().totalPoints || 0;
+
+                    document.getElementById('deck-points').innerHTML = `${points} <span class="text-sm font-normal text-slate-500">pts</span>`;
+
+                    // Ranking Logic
+                    let rank = "ROOKIE";
+                    let progress = 0;
+                    let color = "from-yellow-500 to-orange-600";
+
+                    if (points >= 500) {
+                        rank = "LEGEND";
+                        progress = 100;
+                        color = "from-purple-500 to-pink-600";
+                    } else if (points >= 100) {
+                        rank = "CAPTAIN";
+                        progress = ((points - 100) / 400) * 100;
+                        color = "from-blue-500 to-cyan-400";
+                    } else {
+                        progress = (points / 100) * 100;
+                    }
+
+                    const rankEl = document.getElementById('deck-rank');
+                    rankEl.innerText = rank;
+                    rankEl.className = `text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r ${color} mb-1`;
+                    document.getElementById('deck-progress').style.width = `${progress}%`;
+
+                } catch (e) {
+                    console.error("Error loading stats:", e);
+                }
+            },
+
+            calculateDistance: (lat1, lon1, lat2, lon2) => {
+                const R = 6371e3; // metres
+                const φ1 = lat1 * Math.PI/180;
+                const φ2 = lat2 * Math.PI/180;
+                const Δφ = (lat2-lat1) * Math.PI/180;
+                const Δλ = (lon2-lon1) * Math.PI/180;
+
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                        Math.cos(φ1) * Math.cos(φ2) *
+                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+                return R * c;
+            },
+
+            // --- Driver Broadcasting ---
+            // --- Driver Map & Routing ---
+            initDriverMap: () => {
+                if (state.driverMap) {
+                    state.driverMap.remove();
+                    state.driverMap = null;
+                }
+
+                // Coordinates
+                const COORDS = {
+                    'UIU': [23.797911, 90.414391],
+                    'Kuril': [23.8223, 90.4100],
+                    'NotunBazar': [23.7956, 90.4260],
+                    'Aftab Nagar': [23.7730, 90.4270],
+                    'Transport': [23.797911, 90.414391] // Default to UIU
+                };
+
+                // Determine Start & End
+                let start, end;
+                if (state.driverDirection === 'From UIU') {
+                    start = COORDS['UIU'];
+                    end = COORDS[state.driverDestination] || COORDS['Transport'];
+                } else {
+                    start = COORDS[state.driverDestination] || COORDS['Transport'];
+                    end = COORDS['UIU'];
+                }
+
+                setTimeout(() => {
+                    state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
+
+                    const isDark = document.documentElement.classList.contains('dark');
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap',
+                        className: isDark ? 'dark-map-tiles' : ''
+                    }).addTo(state.driverMap);
+
+                    // Add Routing Control (Hidden itinerary)
+                    L.Routing.control({
+                        waypoints: [
+                            L.latLng(start[0], start[1]),
+                            L.latLng(end[0], end[1])
+                        ],
+                        router: L.Routing.osrmv1({
+                            serviceUrl: 'https://router.project-osrm.org/route/v1'
+                        }),
+                        lineOptions: {
+                            styles: [{color: '#3b82f6', opacity: 0.8, weight: 6}]
+                        },
+                        createMarker: function() { return null; }, // Hide default markers
+                        addWaypoints: false,
+                        draggableWaypoints: false,
+                        fitSelectedRoutes: true,
+                        show: false // Hide text container
+                    }).addTo(state.driverMap);
+
+                    // Add Start/End Markers Custom
+                    L.marker(start).addTo(state.driverMap).bindPopup("Start");
+                    L.marker(end).addTo(state.driverMap).bindPopup("End");
+
+                    // Create Driver Marker
+                    const iconHtml = `
+                        <div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring">
+                            <div class="w-2 h-2 bg-white rounded-full"></div>
+                        </div>
+                    `;
+                    const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
+                    state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
+
+                }, 100);
+            },
+
             // --- Driver Broadcasting ---
             toggleBroadcast: () => {
                 if (state.isBroadcasting) app.stopBroadcast();
@@ -612,6 +917,46 @@
                     alert("Geolocation not supported");
                     return;
                 }
+
+                // 20-METER CONFLICT CHECK
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((pos) => {
+                         const myLat = pos.coords.latitude;
+                         const myLng = pos.coords.longitude;
+
+                         // Check active buses
+                         const buses = Object.values(state.activeBuses);
+                         let conflict = false;
+
+                         for (let bus of buses) {
+                             // Check if same route (e.g. both 'Kuril')
+                             if (bus.route && bus.route.includes(state.driverDestination)) {
+                                 const dist = app.calculateDistance(myLat, myLng, bus.lat, bus.lng);
+                                 if (dist < 20) { // 20 Meters
+                                     conflict = true;
+                                     break;
+                                 }
+                             }
+                         }
+
+                         if (conflict) {
+                             alert("⚠️ Another Captain is tracking this bus nearby! Help preserve battery.");
+                             return; // BLOCK START
+                         }
+
+                         // If No Conflict, Proceed
+                         app.executeStartBroadcast();
+                    });
+                }
+            },
+
+            executeStartBroadcast: () => {
+                // Reset Session Stats
+                state.sessionPoints = 0;
+                state.sessionDistance = 0;
+                state.lastLat = null;
+                state.lastLng = null;
+                document.getElementById('live-points').innerText = "0";
 
                 state.isBroadcasting = true;
                 app.updateBroadcastUI(true);
@@ -625,10 +970,33 @@
 
                 state.watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        const { latitude, longitude, accuracy } = position.coords;
+                        let { latitude, longitude, accuracy, speed } = position.coords;
+
+                        // Speed is m/s. Convert to km/h for display
+                        const speedKmh = (speed || 0) * 3.6;
+                        document.getElementById('val-speed').innerHTML = `${Math.round(speedKmh)} <span class="text-[10px]">km/h</span>`;
 
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
                         document.getElementById('val-last-update').innerText = new Date().toLocaleTimeString();
+
+                        // Scoring Logic: Only if speed > 3 km/h
+                        if (state.lastLat && state.lastLng && speedKmh > 3) {
+                            const dist = app.calculateDistance(state.lastLat, state.lastLng, latitude, longitude);
+                            // 1 km = 10 points => 1000m = 10 pts => 100m = 1 pt => 1m = 0.01 pt
+                            const pts = dist * 0.01;
+                            state.sessionPoints += pts;
+                            state.sessionDistance += dist;
+                            document.getElementById('live-points').innerText = Math.floor(state.sessionPoints);
+                        }
+
+                        // Update Map Marker
+                        if (state.driverMarker) {
+                            state.driverMarker.setLatLng([latitude, longitude]);
+                            if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                        }
+
+                        state.lastLat = latitude;
+                        state.lastLng = longitude;
 
                         if (accuracy > CONFIG.minAccuracy) {
                             document.getElementById('val-accuracy').style.color = 'red';
@@ -637,7 +1005,6 @@
                             document.getElementById('val-accuracy').style.color = '';
                         }
 
-                        // Rate Limiting (Reduced to 200ms for INSTANT updates)
                         const now = Date.now();
                         if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
@@ -645,13 +1012,13 @@
                         if (state.client && state.isConnected) {
                             const payload = JSON.stringify({
                                 id: state.driverId,
+                                uid: CONFIG.mqtt.clientId, // Include Device ID for Profile Lookup
                                 route: state.driverRoute,
                                 lat: latitude,
                                 lng: longitude,
                                 acc: accuracy,
                                 ts: now
                             });
-                            // retain: false ensures messages aren't saved on server forever
                             state.client.publish(CONFIG.topics.location, payload, { retain: false });
                         }
                     },
@@ -664,7 +1031,7 @@
                 );
             },
 
-            stopBroadcast: () => {
+            stopBroadcast: async () => {
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
@@ -672,6 +1039,51 @@
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
                 }
+
+                // Show Summary if points earned
+                const finalPoints = Math.floor(state.sessionPoints);
+                if (finalPoints > 0) {
+                    await app.showSummary(finalPoints);
+                } else {
+                    app.goHome();
+                }
+            },
+
+            showSummary: async (points) => {
+                const modal = document.getElementById('trip-summary-modal');
+                const id = CONFIG.mqtt.clientId;
+
+                // Fetch User Data
+                let name = "Captain";
+                let photo = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+                if (db) {
+                    try {
+                        const docRef = doc(db, "users", id);
+                        const docSnap = await getDoc(docRef);
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            name = data.username || name;
+                            photo = data.photoUrl || photo;
+
+                            // Update Total Points
+                            const newTotal = (data.totalPoints || 0) + points;
+                            await updateDoc(docRef, { totalPoints: newTotal });
+                        }
+                    } catch (e) { console.error(e); }
+                }
+
+                document.getElementById('summary-points').innerText = points;
+                document.getElementById('summary-name').innerText = name;
+                document.getElementById('summary-photo').src = photo;
+
+                modal.classList.remove('opacity-0', 'pointer-events-none');
+            },
+
+            closeSummary: () => {
+                const modal = document.getElementById('trip-summary-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                app.goHome();
             },
 
             updateBroadcastUI: (isActive) => {
@@ -733,13 +1145,11 @@
             updateBusMarker: (data) => {
                 const { id, lat, lng, acc } = data;
                 
-                // Determine Color based on ID prefix
                 let colorClass = BUS_STYLES.default;
                 if (id.startsWith('K')) colorClass = BUS_STYLES['K'];
                 else if (id.startsWith('N')) colorClass = BUS_STYLES['N'];
                 else if (id.startsWith('A')) colorClass = BUS_STYLES['A'];
 
-                // Update Marker
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
                 } else {
@@ -759,12 +1169,27 @@
                     });
 
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
-                    marker.bindPopup(`<b>Bus ${id}</b><br>${data.route}`);
+
+                    // Profile Popup Logic
+                    const popupContent = document.createElement('div');
+                    popupContent.innerHTML = `
+                        <div class="text-center p-2">
+                            <div class="w-12 h-12 rounded-full bg-slate-100 mx-auto mb-2 overflow-hidden">
+                                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover" id="popup-img-${id}">
+                            </div>
+                            <b class="text-brand-500 block mb-1">Bus ${id}</b>
+                            <p class="text-xs text-slate-500">${data.route}</p>
+                            <p class="text-[10px] font-bold text-slate-700 mt-1" id="popup-name-${id}">Loading Captain...</p>
+                        </div>
+                    `;
+
+                    marker.bindPopup(popupContent);
+                    marker.on('click', () => app.loadCaptainProfile(id));
+
                     state.markers[id] = marker;
                     app.updateBusCount();
                 }
 
-                // Update Accuracy Circle
                 if (acc && acc > 10) {
                     if (state.circles[id]) {
                         state.circles[id].setLatLng([lat, lng]);
@@ -807,11 +1232,9 @@
                     return;
                 }
 
-                // Remove loading msg if exists
                 const loader = list.querySelector('.fa-satellite-dish');
                 if (loader) loader.parentElement.remove();
 
-                // Efficiently update or create items without rebuilding DOM
                 buses.forEach(bus => {
                     let item = document.getElementById(`bus-${bus.id}`);
                     if (!item) {
@@ -834,7 +1257,6 @@
                         list.appendChild(item);
                     }
                     
-                    // Flash effect for "Instant" feel
                     const indicator = item.querySelector('.text-green-500');
                     if (indicator) {
                         indicator.style.opacity = '0.5';
@@ -842,7 +1264,6 @@
                     }
                 });
 
-                // Remove stale items
                 Array.from(list.children).forEach(child => {
                     if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
                         child.remove();
@@ -867,9 +1288,146 @@
                     sheet.classList.remove('translate-y-[80%]');
                     sheet.classList.add('translate-y-0');
                 }
+            },
+
+            loadCaptainProfile: async (id) => {
+                // ID in MQTT is usually prefix+Number (e.g., K1).
+                // However, our Firestore users are stored by Device ID (client ID).
+                // Issue: The Bus Broadcast currently sends `id` as "K1", but we need the original "mqtt_client_id" to fetch the profile.
+                // FIX: We need the driver to broadcast their original client ID as well, or we need to map K1 -> ClientID.
+                // Simpler approach: Include `uid` in the MQTT payload.
+
+                // Since I cannot change the MQTT payload structure in 'startBroadcast' easily without breaking 'activeBuses' logic potentially,
+                // I will update the payload in 'startBroadcast' to include 'uid'.
+                // Then here I can access it from `state.activeBuses[id].uid`.
+
+                const busData = state.activeBuses[id];
+                if (!busData || !busData.uid) {
+                     document.getElementById(`popup-name-${id}`).innerText = "Captain";
+                     return;
+                }
+
+                if (!db) return;
+                try {
+                    const docRef = doc(db, "users", busData.uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        document.getElementById(`popup-name-${id}`).innerText = data.username || "Captain";
+                        if (data.photoUrl) {
+                            document.getElementById(`popup-img-${id}`).src = data.photoUrl;
+                        }
+                    } else {
+                        document.getElementById(`popup-name-${id}`).innerText = "Captain";
+                    }
+                } catch (e) { console.error(e); }
+            },
+
+            // --- Profile Logic ---
+            openProfile: () => {
+                app.switchView('view-profile');
+                app.loadProfile();
+            },
+
+            handleImagePreview: (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        document.getElementById('profile-preview').src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            },
+
+            uploadToCloudinary: async (file) => {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
+
+                try {
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const data = await res.json();
+                    return data.secure_url;
+                } catch (err) {
+                    console.error("Cloudinary Error:", err);
+                    alert("Image upload failed");
+                    return null;
+                }
+            },
+
+            loadProfile: async () => {
+                const id = CONFIG.mqtt.clientId;
+                if (!db) return;
+
+                try {
+                    const docRef = doc(db, "users", id);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        document.getElementById('profile-name').value = data.username || '';
+                        if (data.photoUrl) {
+                            document.getElementById('profile-preview').src = data.photoUrl;
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error loading profile:", e);
+                }
+            },
+
+            saveProfile: async () => {
+                const btn = document.getElementById('btn-save-profile');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<div class="loader"></div>';
+                btn.disabled = true;
+
+                const name = document.getElementById('profile-name').value;
+                const fileInput = document.getElementById('profile-upload');
+                let photoUrl = document.getElementById('profile-preview').src;
+
+                if (!name) {
+                    alert("Please enter a name");
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+
+                if (fileInput.files.length > 0) {
+                    const uploadedUrl = await app.uploadToCloudinary(fileInput.files[0]);
+                    if (uploadedUrl) photoUrl = uploadedUrl;
+                }
+
+                const id = CONFIG.mqtt.clientId;
+                if (db) {
+                    try {
+                        await setDoc(doc(db, "users", id), {
+                            username: name,
+                            photoUrl: photoUrl,
+                            totalPoints: 0 // Initialize if new
+                        }, { merge: true });
+                        alert("Profile Saved!");
+                        app.goHome();
+                    } catch (e) {
+                        console.error("Error saving profile:", e);
+                        alert("Error saving profile");
+                    }
+                }
+
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
         };
 
+        // EXPOSE APP GLOBAL
+        window.app = app;
+        window.state = state;
+        window.db = db; // Expose DB for internal use
+
+        // Init App
         window.addEventListener('DOMContentLoaded', app.init);
     </script>
 </body>
