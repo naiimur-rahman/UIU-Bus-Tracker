@@ -214,7 +214,7 @@
             <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
                 <i class="fas fa-arrow-left"></i>
             </button>
-            <h2 class="text-2xl font-bold">Captain's Deck</h2>
+            <h2 class="text-2xl font-bold">Leaderboard</h2>
             <div class="w-10"></div>
         </div>
 
@@ -223,7 +223,7 @@
                 <i class="fas fa-trophy text-3xl text-white"></i>
             </div>
 
-            <h3 id="deck-rank" class="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1">ROOKIE</h3>
+            <h3 id="deck-rank" class="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1">BRONZE</h3>
             <p id="deck-points" class="text-3xl font-bold text-slate-800 dark:text-white mb-4">0 <span class="text-sm font-normal text-slate-500">pts</span></p>
 
             <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 mb-4 overflow-hidden">
@@ -390,15 +390,19 @@
              <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
                  <i class="fas fa-star text-6xl text-white"></i>
              </div>
-             <h2 class="text-4xl font-black text-white mb-2">Awesome!</h2>
-             <p class="text-slate-400 mb-8">Trip Completed</p>
+             <h2 class="text-4xl font-black text-white mb-2">Congratulations!</h2>
+             <p class="text-slate-400 mb-8 text-center px-4">Thanks for contributing. It means a lot for us.</p>
 
              <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-6">
                  <img id="summary-photo" src="" class="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-white">
                  <h3 id="summary-name" class="font-bold text-white text-lg mb-1">...</h3>
-                 <div class="text-sm text-slate-400 mb-6">You have earned</div>
-                 <div class="text-5xl font-black text-brand-500 mb-2" id="summary-points">0</div>
-                 <div class="text-xs font-bold text-brand-500 uppercase tracking-widest">Points</div>
+                 <div class="text-sm text-slate-400 mb-4">You have earned</div>
+                 <div class="text-5xl font-black text-brand-500 mb-2 animate-pulse" id="summary-points">0</div>
+                 <div class="text-xs font-bold text-brand-500 uppercase tracking-widest mb-4">Points</div>
+                 <div class="border-t border-slate-700 pt-4">
+                     <p class="text-xs text-slate-400">Total Points</p>
+                     <p id="summary-total-points" class="text-xl font-bold text-white">0</p>
+                 </div>
              </div>
 
              <button onclick="app.closeSummary()" class="mt-8 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
@@ -512,7 +516,9 @@
             'K': 'bg-blue-500',
             'N': 'bg-green-500',
             'A': 'bg-purple-500',
-            'default': 'bg-orange-500'
+            'default': 'bg-orange-500',
+            'to_uiu': 'bg-green-600',
+            'from_uiu': 'bg-red-600'
         };
 
         /** GLOBAL STATE */
@@ -569,6 +575,16 @@
             },
 
             // --- Theme & View ---
+            escapeHtml: (text) => {
+                if (!text) return text;
+                return String(text)
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            },
+
             toggleTheme: () => {
                 const html = document.documentElement;
                 if (html.classList.contains('dark')) {
@@ -657,6 +673,11 @@
                     state.driverDestination = null;
                     state.driverDirection = null;
                     state.role = null;
+
+                    if (state.driverMap) {
+                        state.driverMap.remove();
+                        state.driverMap = null;
+                    }
 
                     localStorage.removeItem('active_driver_id');
                     localStorage.removeItem('active_driver_route');
@@ -891,60 +912,82 @@
                     if (docSnap.exists()) {
                         points = docSnap.data().totalPoints || 0;
                     } else {
-                        // User has no record
                         document.getElementById('deck-rank').innerText = "NO USER FOUND";
                         document.getElementById('deck-rank').className = "text-xl font-bold text-slate-400";
                     }
 
                     document.getElementById('deck-points').innerHTML = `${points} <span class="text-sm font-normal text-slate-500">pts</span>`;
 
-                    let rank = "ROOKIE";
+                    let rank = "BRONZE";
                     let progress = 0;
-                    let color = "from-yellow-500 to-orange-600";
+                    let color = "from-amber-700 to-amber-500"; // Bronze
 
-                    if (docSnap.exists()) {
-                        if (points >= 500) {
-                            rank = "LEGEND";
-                            progress = 100;
-                            color = "from-purple-500 to-pink-600";
-                        } else if (points >= 100) {
-                            rank = "CAPTAIN";
-                            progress = ((points - 100) / 400) * 100;
-                            color = "from-blue-500 to-cyan-400";
-                        } else {
-                            progress = (points / 100) * 100;
-                        }
-                        
-                        const rankEl = document.getElementById('deck-rank');
-                        rankEl.innerText = rank;
-                        rankEl.className = `text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r ${color} mb-1`;
+                    // Bronze: 0-100, Silver: 101-500, Gold: 501-1000, Platinum: 1001-2500, Diamond: 2501-5000, Titanium: 5001+
+                    if (points > 5000) {
+                        rank = "TITANIUM";
+                        progress = 100;
+                        color = "from-slate-700 to-black";
+                    } else if (points > 2500) {
+                        rank = "DIAMOND";
+                        progress = ((points - 2500) / 2500) * 100;
+                        color = "from-blue-400 to-cyan-300";
+                    } else if (points > 1000) {
+                        rank = "PLATINUM";
+                        progress = ((points - 1000) / 1500) * 100;
+                        color = "from-slate-300 to-slate-400";
+                    } else if (points > 500) {
+                        rank = "GOLD";
+                        progress = ((points - 500) / 500) * 100;
+                        color = "from-yellow-300 to-yellow-500";
+                    } else if (points > 100) {
+                        rank = "SILVER";
+                        progress = ((points - 100) / 400) * 100;
+                        color = "from-slate-200 to-slate-400";
+                    } else {
+                        // Bronze
+                        progress = (points / 100) * 100;
                     }
                     
+                    const rankEl = document.getElementById('deck-rank');
+                    rankEl.innerText = rank;
+                    rankEl.className = `text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r ${color} mb-1`;
+
                     document.getElementById('deck-progress').style.width = `${progress}%`;
 
                 } catch (e) {
                     console.error("Error loading stats:", e);
                 }
 
-                // 2. Load Top 5 Leaderboard
+                // 2. Load Top Leaderboard
                 const listEl = document.getElementById('leaderboard-list');
-                listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><div class="loader mx-auto mb-2"></div>Loading Top 5...</div>';
+                listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><div class="loader mx-auto mb-2"></div>Loading Leaderboard...</div>';
 
                 try {
-                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(5));
+                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(20)); // Limit 20 to find self and others
                     const querySnapshot = await getDocs(q);
                     
-                    listEl.innerHTML = ''; // Clear loader
+                    listEl.innerHTML = '';
                     
                     let count = 0;
+                    let anonCount = 1;
+
                     querySnapshot.forEach((doc) => {
                         count++;
+                        if (count > 5) return; // Show top 5
                         const d = doc.data();
                         const uId = doc.id;
-                        const name = d.username || `Anonymous ${uId.substr(0,4)}`;
-                        const pts = d.totalPoints || 0;
-                        const img = d.photoUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${uId}`;
 
+                        let name = d.username;
+                        let img = d.photoUrl;
+
+                        if (!name) {
+                            name = `Anonymous User ${anonCount++}`;
+                        }
+                        if (!img) {
+                             img = `https://api.dicebear.com/7.x/avataaars/svg?seed=${uId}`;
+                        }
+
+                        const pts = d.totalPoints || 0;
                         const isMe = (uId === id) ? 'border-brand-500 border-2' : 'border-transparent border';
 
                         const row = document.createElement('div');
@@ -955,7 +998,7 @@
                                 <img src="${img}" class="w-full h-full object-cover">
                             </div>
                             <div class="flex-grow">
-                                <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate w-32">${name}</div>
+                                <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate w-32">${app.escapeHtml(name)}</div>
                                 <div class="text-[10px] text-brand-500 font-bold">${pts} pts</div>
                             </div>
                         `;
@@ -963,7 +1006,7 @@
                     });
 
                     if (count === 0) {
-                        listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">No Captains yet. Be the first!</div>';
+                        listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">No Contributors yet. Be the first!</div>';
                     }
 
                 } catch(e) {
@@ -996,9 +1039,9 @@
                 // FIXED COORDINATES WITH SPECIFIC LOCATIONS
                 const COORDS = {
                     'UIU': CONFIG.uiuCoords, // 23.79790, 90.44970
-                    'Kuril': [23.82226, 90.40989], // Kuril Bishwa Road Bus Stand (Under Flyover)
-                    'NotunBazar': [23.79636, 90.42537], // Madani Ave near DESCO Office
-                    'Aftab Nagar': [23.7730, 90.4270],
+                    'Kuril': [23.822339, 90.420163],
+                    'NotunBazar': [23.797881, 90.424652],
+                    'Aftab Nagar': [23.767860, 90.425833],
                     'Transport': CONFIG.uiuCoords 
                 };
 
@@ -1029,6 +1072,15 @@
                     `;
                     const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
                     state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
+
+                    // Jump to UIU Button
+                    const jumpBtn = L.control({position: 'bottomright'});
+                    jumpBtn.onAdd = function(map) {
+                        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                        div.innerHTML = `<button onclick="state.driverMap.setView(CONFIG.uiuCoords, 16)" class="bg-white w-10 h-10 rounded-md flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50"><i class="fas fa-university text-xl"></i></button>`;
+                        return div;
+                    };
+                    jumpBtn.addTo(state.driverMap);
                 }, 100);
             },
 
@@ -1169,6 +1221,7 @@
                 const id = CONFIG.mqtt.clientId;
                 let name = "Captain";
                 let photo = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                let totalPoints = points;
 
                 if (db) {
                     try {
@@ -1178,13 +1231,17 @@
                             const data = docSnap.data();
                             name = data.username || name;
                             photo = data.photoUrl || photo;
-                            const newTotal = (data.totalPoints || 0) + points;
-                            await updateDoc(docRef, { totalPoints: newTotal });
+                            totalPoints = (data.totalPoints || 0) + points;
+                            await updateDoc(docRef, { totalPoints: totalPoints });
+                        } else {
+                            // First time user, set doc
+                             await setDoc(docRef, { totalPoints: points, username: "", photoUrl: "" });
                         }
                     } catch (e) { console.error(e); }
                 }
 
                 document.getElementById('summary-points').innerText = points;
+                document.getElementById('summary-total-points').innerText = totalPoints;
                 document.getElementById('summary-name').innerText = name;
                 document.getElementById('summary-photo').src = photo;
                 modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -1231,6 +1288,15 @@
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         
+                        // Jump to UIU Button
+                        const jumpBtn = L.control({position: 'bottomright'});
+                        jumpBtn.onAdd = function(map) {
+                            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                            div.innerHTML = `<button onclick="state.map.setView(CONFIG.uiuCoords, 16)" class="bg-white w-8 h-8 flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50 rounded-sm mb-[2px]"><i class="fas fa-university"></i></button>`;
+                            return div;
+                        };
+                        jumpBtn.addTo(state.map);
+
                         const uiuIcon = L.divIcon({
                              className: '',
                              html: '<div class="text-2xl">🎓</div>',
@@ -1241,6 +1307,55 @@
                     }
                     requestAnimationFrame(() => { state.map.invalidateSize(); });
                 }, 100);
+            },
+
+            fetchUserProfile: async (uid) => {
+                if (state.userCache[uid]) return state.userCache[uid];
+
+                let userData = {
+                    username: null,
+                    photoUrl: null
+                };
+
+                if (!db) return userData;
+
+                try {
+                    const docRef = doc(db, "users", uid);
+                    const docSnap = await getDoc(docRef);
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        userData.username = data.username;
+                        userData.photoUrl = data.photoUrl;
+                    }
+                } catch (e) { console.error(e); }
+
+                state.userCache[uid] = userData;
+                return userData;
+            },
+
+            createBusIcon: (name, photo, colorClass) => {
+                 const isDefaultPhoto = !photo || photo.includes('flaticon') || photo.includes('dicebear');
+                 const imgHtml = isDefaultPhoto
+                    ? `<div class="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500"><i class="fas fa-user"></i></div>`
+                    : `<img src="${photo}" class="w-full h-full object-cover">`;
+
+                 return L.divIcon({
+                    className: 'custom-bus-marker',
+                    html: `
+                        <div class="flex flex-col items-center">
+                            <div class="mb-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold shadow-sm whitespace-nowrap text-slate-700">
+                                ${app.escapeHtml(name)}
+                            </div>
+                            <div class="${colorClass} w-10 h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300 overflow-hidden">
+                                ${imgHtml}
+                            </div>
+                            <div class="w-0 h-0 border-l-[6px] border-l-transparent border-t-[8px] border-t-${colorClass.replace('bg-', '')} border-r-[6px] border-r-transparent -mt-1"></div>
+                        </div>
+                    `,
+                    iconSize: [60, 60],
+                    iconAnchor: [30, 50],
+                    popupAnchor: [0, -50]
+                });
             },
 
             updateMapStyle: () => {
@@ -1255,44 +1370,62 @@
                 }).addTo(state.map);
             },
 
-            updateBusMarker: (data) => {
-                const { id, lat, lng, acc } = data;
+            updateBusMarkerIcon: (id, profile, colorClass) => {
+                if (!state.markers[id]) return;
+                const displayName = profile.username || id;
+                const displayPhoto = profile.photoUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
+                state.markers[id].setIcon(icon);
+            },
+
+            updateBusMarker: async (data) => {
+                const { id, lat, lng, acc, uid } = data;
+
                 let colorClass = BUS_STYLES.default;
-                if (id.startsWith('K')) colorClass = BUS_STYLES['K'];
+                if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
+                else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
+                else if (id.startsWith('K')) colorClass = BUS_STYLES['K'];
                 else if (id.startsWith('N')) colorClass = BUS_STYLES['N'];
                 else if (id.startsWith('A')) colorClass = BUS_STYLES['A'];
 
+                // 1. Fetch Profile if needed
+                let profile = { username: null, photoUrl: null };
+                if (uid) {
+                    // Check cache first to avoid async delay on common updates
+                    if (state.userCache[uid]) {
+                        profile = state.userCache[uid];
+                    } else {
+                         // Fetch in background, update marker later
+                         app.fetchUserProfile(uid).then(p => {
+                             app.updateBusMarkerIcon(id, p, colorClass);
+                         });
+                    }
+                }
+
+                const displayName = profile.username || id;
+                const displayPhoto = profile.photoUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
+
+                    // Only update icon if profile just loaded or changed (Optimization: check a flag?)
+                    // For now, we update the icon if the marker exists, to ensure direction color updates
+                    const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
+                    state.markers[id].setIcon(icon);
+
                 } else {
-                    const iconHtml = `
-                        <div class="${colorClass} w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300">
-                            <span class="text-white text-[10px] font-bold">${id}</span>
-                            <div class="absolute -bottom-1 w-2 h-2 bg-white transform rotate-45"></div>
-                        </div>
-                    `;
-                    const icon = L.divIcon({
-                        className: 'custom-bus-marker',
-                        html: iconHtml,
-                        iconSize: [32, 32],
-                        iconAnchor: [16, 36],
-                        popupAnchor: [0, -36]
-                    });
+                    const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
                     
                     const popupContent = document.createElement('div');
                     popupContent.innerHTML = `
                         <div class="text-center p-2">
-                            <div class="w-12 h-12 rounded-full bg-slate-100 mx-auto mb-2 overflow-hidden">
-                                <img src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover" id="popup-img-${id}">
-                            </div>
-                            <b class="text-brand-500 block mb-1">Bus ${id}</b>
-                            <p class="text-xs text-slate-500">${data.route}</p>
-                            <p class="text-[10px] font-bold text-slate-700 mt-1" id="popup-name-${id}">Loading Captain...</p>
+                            <b class="text-brand-500 block mb-1">${app.escapeHtml(displayName)}</b>
+                            <p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>
+                            <p class="text-[10px] font-bold text-slate-700 mt-1">Bus ${app.escapeHtml(id)}</p>
                         </div>
                     `;
                     marker.bindPopup(popupContent);
-                    marker.on('click', () => app.loadCaptainProfile(id));
                     state.markers[id] = marker;
                     app.updateBusCount();
                 }
@@ -1351,10 +1484,10 @@
                         item.innerHTML = `
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                    <span class="font-bold text-slate-700 dark:text-slate-200">${bus.id}</span>
+                                    <span class="font-bold text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.id)}</span>
                                 </div>
                                 <div>
-                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${bus.route || 'Unknown'}</p>
+                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
                                     <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
                                 </div>
                             </div>
