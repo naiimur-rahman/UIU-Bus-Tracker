@@ -853,24 +853,40 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                setTimeout(() => {
-                    const assignedId = app.assignNextId(prefix);
-                    
-                    state.driverRoute = fullRouteName;
-                    state.driverId = assignedId;
-                    state.driverDestination = name;
-                    state.driverDirection = direction;
+                // NEW LOGIC: Wait for Connection + Data Sync
+                let attempts = 0;
+                const syncInterval = setInterval(() => {
+                    attempts++;
 
-                    localStorage.setItem('active_driver_id', assignedId);
-                    localStorage.setItem('active_driver_route', fullRouteName);
-                    localStorage.setItem('active_driver_dest', name);
-                    localStorage.setItem('active_driver_dir', direction);
+                    // Wait until:
+                    // 1. MQTT is connected
+                    // 2. AND we have waited at least 500ms (attempts > 5) to receive data
+                    const isReady = state.isConnected && attempts > 5;
+                    const isTimedOut = attempts > 50; // Force start after 5 seconds if internet is bad
 
-                    document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
-                    if (loader) loader.classList.add('hidden');
-                    app.switchView('view-driver-dashboard');
-                    app.initDriverMap();
-                }, 1000);
+                    if (isReady || isTimedOut) {
+                        clearInterval(syncInterval);
+                        
+                        // NOW we calculate the ID, knowing we have the latest data from other drivers
+                        const assignedId = app.assignNextId(prefix);
+                        
+                        state.driverRoute = fullRouteName;
+                        state.driverId = assignedId;
+                        state.driverDestination = name;
+                        state.driverDirection = direction;
+
+                        localStorage.setItem('active_driver_id', assignedId);
+                        localStorage.setItem('active_driver_route', fullRouteName);
+                        localStorage.setItem('active_driver_dest', name);
+                        localStorage.setItem('active_driver_dir', direction);
+
+                        document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
+                        if (loader) loader.classList.add('hidden');
+                        
+                        app.switchView('view-driver-dashboard');
+                        app.initDriverMap();
+                    }
+                }, 100); // Check every 100ms
             },
 
             assignNextId: (prefix) => {
