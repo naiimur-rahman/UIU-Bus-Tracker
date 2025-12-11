@@ -890,101 +890,113 @@
                     return;
                 }
                 
-                // INSTANT UI UPDATE - NO WAITING
-                state.isBroadcasting = true;
-                app.updateBroadcastUI(true);
-                
-                if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-                state.currentSmoothedSpeed = 0;
-                
-                state.tripStartTime = Date.now();
-                if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                state.uptimeInterval = setInterval(() => {
-                    const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-                    const m = Math.floor(diff / 60).toString().padStart(2, '0');
-                    const s = (diff % 60).toString().padStart(2, '0');
-                    const el = document.getElementById('val-uptime');
-                    if(el) el.innerText = `${m}:${s}`;
-                }, 1000);
+                try {
+                    // INSTANT UI UPDATE - NO WAITING
+                    state.isBroadcasting = true;
+                    app.updateBroadcastUI(true);
 
-                app.requestWakeLock();
+                    if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+                    state.currentSmoothedSpeed = 0;
 
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
+                    state.tripStartTime = Date.now();
+                    if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+                    state.uptimeInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
+                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const s = (diff % 60).toString().padStart(2, '0');
+                        const el = document.getElementById('val-uptime');
+                        if(el) el.innerText = `${m}:${s}`;
+                    }, 1000);
 
-                let isFirstFix = true; 
+                    app.requestWakeLock();
 
-                state.watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        if (!state.isBroadcasting) return;
+                    const options = {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    };
 
-                        const { latitude, longitude, accuracy, speed } = position.coords;
-                        const now = Date.now();
+                    let isFirstFix = true;
 
-                        // Conflict Check Inside Loop
-                        if (isFirstFix) {
-                            let conflict = false;
-                            const buses = Object.values(state.activeBuses);
-                            for (let bus of buses) {
-                                if (bus.id === state.driverId) continue;
-                                if (now - bus.ts > 60000) continue;
-                                if (bus.route === state.driverRoute) {
-                                    const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
-                                    if (dist < 20) { 
-                                        conflict = true; break;
+                    state.watchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            if (!state.isBroadcasting) return;
+
+                            const { latitude, longitude, accuracy, speed } = position.coords;
+                            const now = Date.now();
+
+                            // Conflict Check Inside Loop
+                            if (isFirstFix) {
+                                let conflict = false;
+                                const buses = Object.values(state.activeBuses);
+                                for (let bus of buses) {
+                                    if (bus.id === state.driverId) continue;
+                                    if (now - bus.ts > 60000) continue;
+                                    if (bus.route === state.driverRoute) {
+                                        const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+                                        if (dist < 20) {
+                                            conflict = true; break;
+                                        }
                                     }
                                 }
+                                if (conflict) {
+                                    alert("⚠️ Another Captain is active nearby! Stopping.");
+                                    app.stopBroadcast();
+                                    return;
+                                }
+                                isFirstFix = false;
                             }
-                            if (conflict) {
-                                alert("⚠️ Another Captain is active nearby! Stopping.");
-                                app.stopBroadcast();
-                                return;
+
+                            // SMOOTH SPEED (EMA Filter)
+                            let rawSpeedKmh = (speed || 0) * 3.6;
+
+                            // Improved Stationary Logic
+                            if (rawSpeedKmh < 4.8) {
+                                rawSpeedKmh = 0;
+                                state.currentSmoothedSpeed = 0; // Force stop to prevent decay
+                            } else {
+                                // EMA: New = (Old * 0.8) + (Raw * 0.2)
+                                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
                             }
-                            isFirstFix = false;
-                        }
 
-                        // SMOOTH SPEED (EMA Filter)
-                        let rawSpeedKmh = (speed || 0) * 3.6;
-                        if (rawSpeedKmh < 3.0) rawSpeedKmh = 0; // Filter drift
-                        
-                        // EMA: New = (Old * 0.8) + (Raw * 0.2)
-                        state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
-                        
-                        const displaySpeed = Math.round(state.currentSmoothedSpeed);
-                        document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
-                        document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
+                            const displaySpeed = Math.round(state.currentSmoothedSpeed);
+                            document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
+                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
 
-                        if (state.driverMarker) {
-                            state.driverMarker.setLatLng([latitude, longitude]);
-                            if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
-                        }
+                            if (state.driverMarker) {
+                                state.driverMarker.setLatLng([latitude, longitude]);
+                                if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                            }
 
-                        state.lastLat = latitude;
-                        state.lastLng = longitude;
+                            state.lastLat = latitude;
+                            state.lastLng = longitude;
 
-                        if (now - state.lastSentTime < 200) return;
-                        state.lastSentTime = now;
+                            if (now - state.lastSentTime < 200) return;
+                            state.lastSentTime = now;
 
-                        if (state.client && state.isConnected) {
-                            const payload = JSON.stringify({
-                                id: state.driverId,
-                                uid: CONFIG.mqtt.clientId, 
-                                route: state.driverRoute,
-                                lat: latitude,
-                                lng: longitude,
-                                acc: accuracy,
-                                speed: displaySpeed, 
-                                ts: now
-                            });
-                            state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                        }
-                    },
-                    (error) => { console.error("GPS Error", error); },
-                    options
-                );
+                            if (state.client && state.isConnected) {
+                                const payload = JSON.stringify({
+                                    id: state.driverId,
+                                    uid: CONFIG.mqtt.clientId,
+                                    route: state.driverRoute,
+                                    lat: latitude,
+                                    lng: longitude,
+                                    acc: accuracy,
+                                    speed: displaySpeed,
+                                    ts: now
+                                });
+                                state.client.publish(CONFIG.topics.location, payload, { retain: true });
+                            }
+                        },
+                        (error) => { console.error("GPS Error", error); },
+                        options
+                    );
+                } catch (e) {
+                    console.error("Start Broadcast Error:", e);
+                    alert("Error starting trip. Please refresh.");
+                    state.isBroadcasting = false;
+                    app.updateBroadcastUI(false);
+                }
             },
 
             stopBroadcast: async () => {
@@ -1021,7 +1033,8 @@
 
             showSummary: () => {
                 const modal = document.getElementById('trip-summary-modal');
-                modal.classList.remove('opacity-0', 'pointer-events-none');
+                modal.classList.remove('opacity-0', 'pointer-events-none', 'z-[-1]');
+                modal.classList.add('z-50');
                 modal.style.opacity = '1';
                 modal.style.pointerEvents = 'auto';
 
@@ -1035,8 +1048,12 @@
             },
 
             closeSummary: () => {
+                if (window.confetti) {
+                    try { window.confetti.reset(); } catch(e) {}
+                }
                 const modal = document.getElementById('trip-summary-modal');
-                modal.classList.add('opacity-0', 'pointer-events-none');
+                modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
+                modal.classList.remove('z-50');
                 modal.style.opacity = '0';
                 app.goHome(); 
             },
