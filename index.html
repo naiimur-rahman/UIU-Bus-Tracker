@@ -988,34 +988,40 @@
             },
 
             stopBroadcast: async () => {
+                // mark broadcasting stopped and restore UI
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
-                
-                // FORCE KILL GHOSTS
+
+                // remove driver from activeBuses (so others see we stopped)
                 if (state.driverId && state.activeBuses[state.driverId]) {
                     delete state.activeBuses[state.driverId];
                 }
-                
+
+                // stop geolocation watch
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
                 }
 
+                // clear uptime timer
                 if (state.uptimeInterval) {
                     clearInterval(state.uptimeInterval);
                     state.uptimeInterval = null;
                 }
                 const uptimeEl = document.getElementById('val-uptime');
-                if(uptimeEl) uptimeEl.innerText = "00:00";
+                if (uptimeEl) uptimeEl.innerText = "00:00";
 
+                // publish offline (retain) so others know we're offline
                 if (state.client && state.isConnected) {
-                      state.client.publish(CONFIG.topics.location, JSON.stringify({
+                    state.client.publish(CONFIG.topics.location, JSON.stringify({
                         id: state.driverId,
                         status: 'offline'
-                      }), { retain: true });
+                    }), { retain: true });
                 }
 
+                // Show trip summary, but DON'T wipe driverId/route here.
+                // Keeping driverId & route allows the driver to START again quickly.
                 app.showSummary();
             },
 
@@ -1035,10 +1041,26 @@
             },
 
             closeSummary: () => {
+                // Hide the modal gently
                 const modal = document.getElementById('trip-summary-modal');
-                modal.classList.add('opacity-0', 'pointer-events-none');
-                modal.style.opacity = '0';
-                app.goHome(); 
+                if (modal) {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                    modal.style.opacity = '0';
+                }
+
+                // Do NOT auto-goHome() here — preserve driver session so START TRIP works again.
+                // Reset the broadcast UI to "ready" state so button is clickable.
+                state.isBroadcasting = false;
+                app.updateBroadcastUI(false);
+
+                // Ensure watchId cleared (safety)
+                if (state.watchId) {
+                    navigator.geolocation.clearWatch(state.watchId);
+                    state.watchId = null;
+                }
+
+                // If you want the driver to explicitly end the session and go home,
+                // they can press the back/home button which calls app.goHome()
             },
 
             updateBroadcastUI: (isActive) => {
