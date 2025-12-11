@@ -84,11 +84,6 @@
             visibility: visible !important;
         }
 
-        /* Progress Bar Animation */
-        .progress-bar-animated {
-            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
         .loader {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #f97316;
@@ -131,13 +126,6 @@
         body {
             overscroll-behavior: none;
         }
-
-        #view-profile {
-            background-color: rgb(248 250 252) !important;
-        }
-        .dark #view-profile {
-            background-color: rgb(15 23 42) !important;
-        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
@@ -153,16 +141,13 @@
             <i class="fas fa-moon dark:hidden"></i>
             <i class="fas fa-sun hidden dark:block"></i>
         </button>
-
-        <button onclick="app.openCaptainsDeck()" class="fixed top-4 left-4 w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform animate-float cursor-pointer pointer-events-auto">
-            <i class="fas fa-trophy"></i>
-        </button>
     </div>
 
     <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
         
         <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
-            <div class="text-center mb-4"> <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
+            <div class="text-center mb-4"> 
+                <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
                     <i class="fas fa-bus text-4xl text-white"></i>
                 </div>
                 <h1 class="text-4xl font-extrabold tracking-tight mb-1">
@@ -172,7 +157,8 @@
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
             </div>
 
-            <div class="grid gap-3 w-full"> <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+            <div class="grid gap-3 w-full"> 
+                <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
                         <div>
@@ -199,7 +185,8 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 w-full mt-4"> <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
+            <div class="grid grid-cols-2 gap-3 w-full mt-4"> 
+                <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
                             <i class="fas fa-comments text-sm"></i>
@@ -227,55 +214,6 @@
             </p>
         </div>
     </div>
-
-    <div id="view-captains-deck" class="view-section flex flex-col items-center p-6 h-full z-10 relative bg-slate-50 dark:bg-slate-900">
-        <div class="w-full flex justify-between items-center mb-4 mt-4 shrink-0">
-            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h2 class="text-2xl font-bold">Leaderboard</h2>
-            <div class="w-10"></div>
-        </div>
-
-        <div class="w-full h-full overflow-y-auto pb-20 no-scrollbar">
-            <div class="glass w-full rounded-3xl p-6 shadow-xl flex flex-col items-center text-center mb-6 relative overflow-hidden">
-                <div class="absolute inset-0 bg-gradient-to-br from-brand-500/10 to-transparent"></div>
-                 <div class="w-20 h-20 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg ring-4 ring-white dark:ring-slate-700 z-10">
-                    <i class="fas fa-trophy text-3xl text-white"></i>
-                </div>
-
-                <h3 id="deck-rank" class="text-xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-orange-600 mb-1 z-10">BRONZE</h3>
-                <p id="deck-points" class="text-3xl font-bold text-slate-800 dark:text-white mb-4 z-10">0 <span class="text-sm font-normal text-slate-500">pts</span></p>
-
-                <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 mb-2 overflow-hidden z-10">
-                    <div id="deck-progress" class="bg-gradient-to-r from-brand-400 to-brand-600 h-3 rounded-full progress-bar-animated" style="width: 0%"></div>
-                </div>
-                <p id="next-tier-text" class="text-[10px] text-slate-400 z-10">... to next rank</p>
-            </div>
-
-            <div class="w-full mb-6">
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">All Tiers</h3>
-                <div class="flex justify-between items-center text-[10px] text-slate-400 px-2 bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm overflow-x-auto gap-4">
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-orange-500 mb-1"></i><span>Bronze</span></div>
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-400 mb-1"></i><span>Silver</span></div>
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-yellow-400 mb-1"></i><span>Gold</span></div>
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-500 mb-1"></i><span>Plat</span></div>
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-cyan-400 mb-1"></i><span>Diamond</span></div>
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-black dark:text-white mb-1"></i><span>Titan</span></div>
-                </div>
-            </div>
-
-            <div class="w-full">
-                <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">Top Contributors</h3>
-                <div id="leaderboard-list" class="space-y-2 pb-6">
-                    <div class="text-center text-xs text-slate-400 py-4">Loading Leaderboard...</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative !bg-gray-50 !dark:bg-slate-900 hidden">
-        </div>
 
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6 bg-slate-50 dark:bg-slate-900">
         <div class="flex items-center mb-8 mt-4 shrink-0">
@@ -368,54 +306,34 @@
                     START TRIP
                 </button>
 
-            <div class="grid grid-cols-2 gap-3 w-full max-w-sm mt-6 px-4"> 
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Points</p>
-        <p id="live-points" class="text-2xl font-black text-brand-500 mt-1">0</p>
-    </div>
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
-        <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
-    </div>
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
-        <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
-    </div>
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
-        <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
-    </div>
-</div>
-        </div>
+                <div class="grid grid-cols-3 gap-3 w-full max-w-sm mt-6 px-1"> 
+                    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
+                        <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
+                    </div>
+                    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
+                        <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
+                    </div>
+                    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
+                        <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
+                    </div>
+                </div>
+            </div>
 
-        <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
-             <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
-                 <i class="fas fa-star text-6xl text-white"></i>
-             </div>
-             <h2 class="text-4xl font-black text-white mb-2">Congratulations!</h2>
-             <p class="text-slate-400 mb-8 text-center px-4">Thanks for contributing. It means a lot for us.</p>
-
-             <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-6">
-                 <img id="summary-photo" src="" class="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-white">
-
-                 <div class="mb-4">
-                    <input type="text" id="username-input" placeholder="Enter Your Name" class="w-full bg-slate-800/50 border border-slate-600 rounded-lg py-2 px-3 text-white text-center font-bold focus:outline-none focus:border-brand-500 placeholder-slate-500">
+            <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
+                 <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
+                     <i class="fas fa-check text-6xl text-white"></i>
                  </div>
+                 <h2 class="text-4xl font-black text-white mb-2">Trip Ended</h2>
+                 <p class="text-slate-400 mb-8 text-center px-4">Thank you for contributing!</p>
 
-                 <div class="text-sm text-slate-400 mb-4">You have earned</div>
-                 <div class="text-5xl font-black text-brand-500 mb-2 animate-pulse" id="summary-points">0</div>
-                 <div class="text-xs font-bold text-brand-500 uppercase tracking-widest mb-4">Points</div>
-                 <div class="border-t border-slate-700 pt-4">
-                     <p class="text-xs text-slate-400">Total Points</p>
-                     <p id="summary-total-points" class="text-xl font-bold text-white">0</p>
-                 </div>
-             </div>
-
-             <button id="btn-save-trip" onclick="app.saveTripDetails()" class="mt-8 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100">
-                 Save & Continue
-             </button>
+                 <button onclick="app.closeSummary()" class="mt-4 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
+                     Go Home
+                 </button>
+            </div>
         </div>
-    </div>
     </div>
 
     <div id="view-student" class="view-section flex flex-col h-full z-10">
@@ -463,31 +381,7 @@
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-        /** FIREBASE CONFIG */
-        const firebaseConfig = {
-          apiKey: "AIzaSyAklMLhNG8INCYKh_ADQOgm2CQCAGc4hgo",
-          authDomain: "uiu-bus-tracker-01.firebaseapp.com",
-          projectId: "uiu-bus-tracker-01",
-          storageBucket: "uiu-bus-tracker-01.firebasestorage.app",
-          messagingSenderId: "576909822280",
-          appId: "1:576909822280:web:29d4e8008b6c2033740b7d",
-          measurementId: "G-YDZN4Q5YHF"
-        };
-
-        // Init Firebase
-        let db = null;
-        try {
-            const fbApp = initializeApp(firebaseConfig);
-            db = getFirestore(fbApp);
-            console.log("Firebase initialized");
-        } catch (e) {
-            console.error("Firebase Init Error:", e);
-        }
-
+    <script>
         /** APP CONFIG */
         const CONFIG = {
             mqtt: {
@@ -515,7 +409,7 @@
             minAccuracy: 50
         };
 
-        // COLORS updated for new requirements
+        // COLORS
         const BUS_STYLES = {
             'K': 'bg-blue-500',   // Kuril - Blue
             'N': 'bg-green-500',  // Notun Bazar - Green
@@ -545,12 +439,10 @@
             markers: {},
             circles: {}, 
             lastSentTime: 0,
-            sessionPoints: 0,
-            sessionDistance: 0,
             lastLat: null,
             lastLng: null,
-            tripStartTime: null, // Added for uptime
-            uptimeInterval: null // Added for uptime
+            tripStartTime: null,
+            uptimeInterval: null
         };
 
         /** APP CONTROLLER */
@@ -558,7 +450,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Fixed Save Logic");
+                console.log("App Version: Simplified No-DB");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -658,7 +550,6 @@
                         const confirmExit = confirm("Stop broadcasting and exit?");
                         if (!confirmExit) return;
                         await app.stopBroadcast();
-                        if (state.sessionPoints > 0) return; 
                     }
 
                     state.driverId = null;
@@ -852,7 +743,7 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                // NEW LOGIC: Wait for Connection + Data Sync
+                // Wait for Connection + Data Sync
                 let attempts = 0;
                 const syncInterval = setInterval(() => {
                     attempts++;
@@ -896,105 +787,6 @@
                     else if (num > nextNum) break;
                 }
                 return prefix + nextNum;
-            },
-
-            // --- Gamification Logic ---
-            openCaptainsDeck: async () => {
-                app.switchView('view-captains-deck');
-                const id = CONFIG.mqtt.clientId;
-                if (!db) return;
-
-                document.getElementById('deck-progress').style.width = '0%';
-
-                try {
-                    const docRef = doc(db, "users", id);
-                    const docSnap = await getDoc(docRef);
-                    let points = 0;
-                    if (docSnap.exists()) {
-                        points = docSnap.data().totalPoints || 0;
-                    } else {
-                        document.getElementById('deck-rank').innerText = "BRONZE";
-                        document.getElementById('deck-rank').className = "text-xl font-bold text-slate-400";
-                    }
-
-                    document.getElementById('deck-points').innerHTML = `${points} <span class="text-sm font-normal text-slate-500">pts</span>`;
-
-                    let rank = "BRONZE";
-                    let progress = 0;
-                    let nextTier = 100;
-                    let color = "from-brand-300 to-brand-500"; 
-
-                    if (points >= 5000) {
-                        rank = "TITANIUM"; progress = 100; nextTier = 10000; color = "from-slate-700 to-black";
-                    } else if (points >= 2500) {
-                        rank = "DIAMOND"; progress = ((points - 2500) / 2500) * 100; nextTier = 5000; color = "from-blue-400 to-cyan-300";
-                    } else if (points >= 1000) {
-                        rank = "PLATINUM"; progress = ((points - 1000) / 1500) * 100; nextTier = 2500; color = "from-slate-300 to-slate-400";
-                    } else if (points >= 500) {
-                        rank = "GOLD"; progress = ((points - 500) / 500) * 100; nextTier = 1000; color = "from-yellow-300 to-yellow-500";
-                    } else if (points >= 100) {
-                        rank = "SILVER"; progress = ((points - 100) / 400) * 100; nextTier = 500; color = "from-slate-300 to-slate-500";
-                    } else {
-                        rank = "BRONZE"; progress = (points / 100) * 100; nextTier = 100; color = "from-orange-300 to-orange-500";
-                    }
-                    
-                    const rankEl = document.getElementById('deck-rank');
-                    rankEl.innerText = rank;
-                    rankEl.className = `text-2xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r ${color} mb-1`;
-                    document.getElementById('next-tier-text').innerText = `${Math.max(0, nextTier - points)} pts to next rank`;
-                    setTimeout(() => {
-                        document.getElementById('deck-progress').style.width = `${Math.min(100, progress)}%`;
-                    }, 100);
-
-                } catch (e) {
-                    console.error("Error loading stats:", e);
-                }
-
-                const listEl = document.getElementById('leaderboard-list');
-                listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><div class="loader mx-auto mb-2"></div>Loading Leaderboard...</div>';
-
-                try {
-                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(5));
-                    const querySnapshot = await getDocs(q);
-                    
-                    listEl.innerHTML = '';
-                    let count = 0;
-                    let anonCount = 1;
-
-                    querySnapshot.forEach((doc) => {
-                        count++;
-                        const d = doc.data();
-                        const uId = doc.id;
-                        let name = d.username;
-                        let img = d.photoUrl;
-
-                        if (!name) name = `Anonymous User ${anonCount++}`;
-                        if (!img) img = `https://api.dicebear.com/7.x/avataaars/svg?seed=${uId}`;
-
-                        const pts = d.totalPoints || 0;
-                        const isMe = (uId === id) ? 'border-brand-500 border-2' : 'border-transparent border';
-
-                        const row = document.createElement('div');
-                        row.className = `flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl shadow-sm ${isMe}`;
-                        row.innerHTML = `
-                            <div class="font-bold text-slate-300 text-lg w-6">#${count}</div>
-                            <div class="w-10 h-10 rounded-full bg-slate-100 overflow-hidden">
-                                <img src="${img}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="flex-grow">
-                                <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate w-32">${app.escapeHtml(name)}</div>
-                                <div class="text-xs text-brand-500 font-extrabold">${pts} pts</div>
-                            </div>
-                        `;
-                        listEl.appendChild(row);
-                    });
-
-                    if (count === 0) listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4">No Contributors yet. Be the first!</div>';
-
-                } catch(e) {
-                    console.error("Leaderboard error:", e);
-                    listEl.innerHTML = '<div class="text-center text-xs text-red-400 py-4">Failed to load leaderboard</div>';
-                }
             },
 
             calculateDistance: (lat1, lon1, lat2, lon2) => {
@@ -1107,11 +899,8 @@
             },
 
             executeStartBroadcast: () => {
-                state.sessionPoints = 0;
-                state.sessionDistance = 0;
                 state.lastLat = null;
                 state.lastLng = null;
-                document.getElementById('live-points').innerText = "0";
 
                 state.tripStartTime = Date.now();
                 state.uptimeInterval = setInterval(() => {
@@ -1135,17 +924,14 @@
                 state.watchId = navigator.geolocation.watchPosition(
                     (position) => {
                         let { latitude, longitude, accuracy, speed } = position.coords;
-                        const speedKmh = (speed || 0) * 3.6;
+                        
+                        // FIX SPEED: Handle null, and filter out low-speed drift
+                        if (speed === null || speed < 0) speed = 0;
+                        let speedKmh = speed * 3.6;
+                        if (speedKmh < 1.0) speedKmh = 0; // Filter out noise under 1km/h
+
                         document.getElementById('val-speed').innerHTML = `${Math.round(speedKmh)} <span class="text-[10px]">km/h</span>`;
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
-
-                        if (state.lastLat && state.lastLng && speedKmh > 3) {
-                            const dist = app.calculateDistance(state.lastLat, state.lastLng, latitude, longitude);
-                            const pts = dist * 0.01; 
-                            state.sessionPoints += pts;
-                            state.sessionDistance += dist;
-                            document.getElementById('live-points').innerText = Math.floor(state.sessionPoints);
-                        }
 
                         if (state.driverMarker) {
                             state.driverMarker.setLatLng([latitude, longitude]);
@@ -1202,89 +988,26 @@
                       }), { retain: true }); 
                 }
 
-                const finalPoints = Math.floor(state.sessionPoints);
-                if (finalPoints > 0) {
-                    await app.showSummary(finalPoints);
-                } 
+                app.showSummary();
             },
 
-            showSummary: async (points) => {
+            showSummary: () => {
                 const modal = document.getElementById('trip-summary-modal');
-                const id = CONFIG.mqtt.clientId;
-                let name = "";
-                let photo = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`;
-                let totalPoints = points;
-
+                
                 confetti({
                     particleCount: 150,
                     spread: 70,
                     origin: { y: 0.6 }
                 });
 
-                if (db) {
-                    try {
-                        const docRef = doc(db, "users", id);
-                        const docSnap = await getDoc(docRef);
-                        if (docSnap.exists()) {
-                            const data = docSnap.data();
-                            name = data.username || "";
-                            totalPoints = (data.totalPoints || 0) + points;
-                            // FIXED: Changed to setDoc with merge to prevent partial update errors
-                            await setDoc(docRef, { totalPoints: totalPoints }, { merge: true });
-                        } else {
-                            await setDoc(docRef, { totalPoints: points, username: "", photoUrl: photo });
-                        }
-                    } catch (e) { console.error(e); }
-                }
-
-                document.getElementById('summary-points').innerText = points;
-                document.getElementById('summary-total-points').innerText = totalPoints;
-
-                const nameInput = document.getElementById('username-input');
-                if (nameInput) nameInput.value = name;
-
-                document.getElementById('summary-photo').src = photo;
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modal.style.opacity = '1';
                 modal.style.pointerEvents = 'auto';
             },
 
-            // --- FIXED: ADDED ASYNC AWAIT & VISUAL FEEDBACK ---
-            saveTripDetails: async () => {
-                const btn = document.getElementById('btn-save-trip');
-                const nameInput = document.getElementById('username-input');
-                const newName = nameInput ? nameInput.value.trim() : "";
-                const id = CONFIG.mqtt.clientId;
-
-                if (btn) {
-                    btn.innerText = "Saving...";
-                    btn.disabled = true;
-                }
-
-                if (db && newName) {
-                      try {
-                        const docRef = doc(db, "users", id);
-                        // FIXED: Using setDoc with merge for reliability
-                        await setDoc(docRef, { username: newName }, { merge: true });
-                        console.log("Name saved.");
-                    } catch (e) { 
-                        console.error("Error saving name:", e); 
-                        alert("Could not save name. Check internet.");
-                    }
-                }
-                
-                app.closeSummary();
-                // Reset button state
-                if (btn) {
-                    btn.innerText = "Save & Continue";
-                    btn.disabled = false;
-                }
-            },
-
             closeSummary: () => {
                 document.getElementById('trip-summary-modal').classList.add('opacity-0', 'pointer-events-none');
                 document.getElementById('trip-summary-modal').style.opacity = '0';
-                state.sessionPoints = 0; 
                 app.goHome(); 
             },
 
