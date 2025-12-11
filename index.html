@@ -1222,12 +1222,13 @@
                 const uptimeEl = document.getElementById('val-uptime');
                 if(uptimeEl) uptimeEl.innerText = "00:00";
 
-                if (state.client && state.isConnected) {
-                      state.client.publish(CONFIG.topics.location, JSON.stringify({
-                        id: state.driverId,
-                        status: 'offline'
-                      }));
-                }
+                // Fixed Code
+if (state.client && state.isConnected) {
+      state.client.publish(CONFIG.topics.location, JSON.stringify({
+        id: state.driverId,
+        status: 'offline'
+      }), { retain: true }); // <--- FIX: Added retain: true
+}
 
                 const finalPoints = Math.floor(state.sessionPoints);
                 if (finalPoints > 0) {
