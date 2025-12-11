@@ -275,9 +275,10 @@
                     </div>
                 </div>
 
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4">
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4 relative z-50">
                     START TRIP
                 </button>
+            </div>
 
             <div class="grid grid-cols-2 gap-3 w-full max-w-sm mt-6 px-4"> 
                 <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
@@ -306,7 +307,6 @@
                  Close
              </button>
         </div>
-    </div>
     </div>
 
     <div id="view-student" class="view-section flex flex-col h-full z-10">
@@ -426,7 +426,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Instant Start & Smooth Speed Fixed");
+                console.log("App Version: Map Clear Fix & Structure Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -819,6 +819,13 @@
                         state.driverMap.remove();
                     } catch(e) {}
                     state.driverMap = null;
+                }
+
+                // FIX: CLEAN MAP CONTAINER FORCEFULLY
+                const mapContainer = document.getElementById('driver-map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = '';
+                    mapContainer._leaflet_id = null;
                 }
 
                 const COORDS = {
