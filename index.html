@@ -1238,13 +1238,18 @@
                                     <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
                                     <div class="flex items-center gap-2">
                                         <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
-                                        <p class="text-[10px] text-slate-400">| ${Math.round(bus.speed || 0)} km/h</p>
+                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Math.round(bus.speed || 0)}</span> km/h</p>
                                     </div>
                                 </div>
                             </div>
                             <i class="fas fa-chevron-right text-slate-300"></i>
                         `;
                         list.appendChild(item);
+                    } else {
+                        const speedEl = document.getElementById(`speed-${bus.id}`);
+                        if (speedEl) {
+                            speedEl.innerText = Math.round(bus.speed || 0);
+                        }
                     }
                 });
 
