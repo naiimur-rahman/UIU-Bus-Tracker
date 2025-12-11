@@ -397,7 +397,11 @@
 
              <div class="glass p-8 rounded-3xl text-center max-w-xs w-full mx-6">
                  <img id="summary-photo" src="" class="w-16 h-16 rounded-full mx-auto mb-4 border-2 border-white">
-                 <h3 id="summary-name" class="font-bold text-white text-lg mb-1">...</h3>
+
+                 <div class="mb-4">
+                    <input type="text" id="username-input" placeholder="Enter Your Name" class="w-full bg-slate-800/50 border border-slate-600 rounded-lg py-2 px-3 text-white text-center font-bold focus:outline-none focus:border-brand-500 placeholder-slate-500">
+                 </div>
+
                  <div class="text-sm text-slate-400 mb-4">You have earned</div>
                  <div class="text-5xl font-black text-brand-500 mb-2 animate-pulse" id="summary-points">0</div>
                  <div class="text-xs font-bold text-brand-500 uppercase tracking-widest mb-4">Points</div>
@@ -407,8 +411,8 @@
                  </div>
              </div>
 
-             <button onclick="app.closeSummary()" class="mt-8 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
-                 Continue
+             <button onclick="app.saveTripDetails()" class="mt-8 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
+                 Save & Continue
              </button>
         </div>
     </div>
@@ -457,12 +461,13 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-        /** FIREBASE & CLOUDINARY CONFIG */
+        /** FIREBASE CONFIG */
         const firebaseConfig = {
           apiKey: "AIzaSyAklMLhNG8INCYKh_ADQOgm2CQCAGc4hgo",
           authDomain: "uiu-bus-tracker-01.firebaseapp.com",
@@ -472,9 +477,6 @@
           appId: "1:576909822280:web:29d4e8008b6c2033740b7d",
           measurementId: "G-YDZN4Q5YHF"
         };
-
-        const CLOUDINARY_CLOUD_NAME = 'dxjtj6wan';
-        const CLOUDINARY_UPLOAD_PRESET = 'standard_upload';
 
         // Init Firebase
         let db = null;
@@ -983,7 +985,7 @@
                 listEl.innerHTML = '<div class="text-center text-xs text-slate-400 py-4"><div class="loader mx-auto mb-2"></div>Loading Leaderboard...</div>';
 
                 try {
-                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(20));
+                    const q = query(collection(db, "users"), orderBy("totalPoints", "desc"), limit(5));
                     const querySnapshot = await getDocs(q);
                     
                     listEl.innerHTML = '';
@@ -993,7 +995,6 @@
 
                     querySnapshot.forEach((doc) => {
                         count++;
-                        if (count > 5) return;
                         const d = doc.data();
                         const uId = doc.id;
 
@@ -1019,7 +1020,7 @@
                             </div>
                             <div class="flex-grow">
                                 <div class="font-bold text-sm text-slate-700 dark:text-slate-200 truncate w-32">${app.escapeHtml(name)}</div>
-                                <div class="text-[10px] text-brand-500 font-bold">${pts} pts</div>
+                                <div class="text-xs text-brand-500 font-extrabold">${pts} pts</div>
                             </div>
                         `;
                         listEl.appendChild(row);
@@ -1255,9 +1256,16 @@
             showSummary: async (points) => {
                 const modal = document.getElementById('trip-summary-modal');
                 const id = CONFIG.mqtt.clientId;
-                let name = "Captain";
-                let photo = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+                let name = "";
+                let photo = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`;
                 let totalPoints = points;
+
+                // Trigger Confetti
+                confetti({
+                    particleCount: 150,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                });
 
                 if (db) {
                     try {
@@ -1265,23 +1273,41 @@
                         const docSnap = await getDoc(docRef);
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            name = data.username || name;
-                            photo = data.photoUrl || photo;
+                            name = data.username || "";
                             totalPoints = (data.totalPoints || 0) + points;
+                            // Update points only, keep existing name if not changed
                             await updateDoc(docRef, { totalPoints: totalPoints });
                         } else {
-                             await setDoc(docRef, { totalPoints: points, username: "", photoUrl: "" });
+                             await setDoc(docRef, { totalPoints: points, username: "", photoUrl: photo });
                         }
                     } catch (e) { console.error(e); }
                 }
 
                 document.getElementById('summary-points').innerText = points;
                 document.getElementById('summary-total-points').innerText = totalPoints;
-                document.getElementById('summary-name').innerText = name;
+
+                const nameInput = document.getElementById('username-input');
+                if (nameInput) nameInput.value = name;
+
                 document.getElementById('summary-photo').src = photo;
                 modal.classList.remove('opacity-0', 'pointer-events-none');
                 modal.style.opacity = '1';
                 modal.style.pointerEvents = 'auto';
+            },
+
+            saveTripDetails: async () => {
+                const nameInput = document.getElementById('username-input');
+                const newName = nameInput ? nameInput.value.trim() : "";
+                const id = CONFIG.mqtt.clientId;
+
+                if (db && newName) {
+                     try {
+                        const docRef = doc(db, "users", id);
+                        await updateDoc(docRef, { username: newName });
+                    } catch (e) { console.error("Error saving name:", e); }
+                }
+
+                app.closeSummary();
             },
 
             closeSummary: () => {
