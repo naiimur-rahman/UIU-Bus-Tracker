@@ -15,7 +15,7 @@
                         brand: {
                             50: '#fff7ed',
                             100: '#ffedd5',
-                            500: '#f97316', // Orange
+                            500: '#f97316', 
                             600: '#ea580c',
                             900: '#7c2d12',
                         }
@@ -43,7 +43,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Glassmorphism */
         .glass {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
@@ -54,13 +53,9 @@
             background: rgba(15, 23, 42, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        /* Map Tiles Filter for Dark Mode */
         .dark-map-tiles {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
         }
-
-        /* View Transitions */
         .view-section {
             position: absolute;
             inset: 0;
@@ -69,13 +64,11 @@
             pointer-events: none;
             transform: scale(0.95);
             visibility: hidden;
-            overflow-y: hidden; /* Fixed screen */
+            overflow-y: hidden;
             z-index: 0;
             display: flex;
             flex-direction: column;
         }
-        
-        /* Force Active View to be Visible */
         .view-active {
             opacity: 1 !important;
             pointer-events: auto !important;
@@ -83,7 +76,6 @@
             z-index: 100 !important;
             visibility: visible !important;
         }
-
         .loader {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #f97316;
@@ -93,46 +85,21 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         @keyframes drive {
             0% { transform: translateY(0) rotate(3deg); }
             50% { transform: translateY(-6px) rotate(0deg); }
             100% { transform: translateY(0) rotate(3deg); }
         }
-        .animate-drive {
-            animation: drive 1.5s ease-in-out infinite;
-        }
-        
+        .animate-drive { animation: drive 1.5s ease-in-out infinite; }
         .pulse-ring::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0; right: 0;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: ring 1.5s infinite;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; right: 0;
+            border-radius: 50%; border: 2px solid white; animation: ring 1.5s infinite;
         }
-        @keyframes ring {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
-        }
-        
-        /* Custom Marker CSS - Reset */
-        .leaflet-div-icon {
-            background: transparent;
-            border: none;
-        }
-
-        /* Prevent Scroll Bounce */
-        body {
-            overscroll-behavior: none;
-        }
-
-        #view-profile {
-            background-color: rgb(248 250 252) !important;
-        }
-        .dark #view-profile {
-            background-color: rgb(15 23 42) !important;
-        }
+        @keyframes ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .leaflet-div-icon { background: transparent; border: none; }
+        body { overscroll-behavior: none; }
+        #view-profile { background-color: rgb(248 250 252) !important; }
+        .dark #view-profile { background-color: rgb(15 23 42) !important; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
@@ -451,7 +418,7 @@
             lastLng: null,
             tripStartTime: null,
             uptimeInterval: null,
-            speedBuffer: [] // For speed smoothing
+            currentSmoothedSpeed: 0 // New variable for speed smoothing
         };
 
         /** APP CONTROLLER */
@@ -459,7 +426,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Final Fix - Instant Start");
+                console.log("App Version: Instant Start & Smooth Speed");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -566,30 +533,28 @@
                         await app.stopBroadcast();
                     }
 
-                    // CRITICAL: Stop GPS immediately
+                    // Force Clear Watch
                     if (state.watchId) {
                         navigator.geolocation.clearWatch(state.watchId);
                         state.watchId = null;
                     }
 
-                    // Reset all variables
                     state.driverId = null;
                     state.driverRoute = null;
                     state.driverDestination = null;
                     state.driverDirection = null;
                     state.role = null;
                     state.isBroadcasting = false;
-                    state.speedBuffer = []; 
-                    state.activeBuses = {}; // FULL RESET of cached buses
+                    state.currentSmoothedSpeed = 0;
+                    state.activeBuses = {}; // Full reset
 
-                    // FIX: Remove Map Instance to prevent "Map already initialized" error
+                    // FIX: Remove Map Instance
                     if (state.driverMap) {
-                        state.driverMap.off(); // Remove listeners
-                        state.driverMap.remove(); // Destroy
+                        state.driverMap.off();
+                        state.driverMap.remove();
                         state.driverMap = null;
                     }
                     
-                    // Reset Markers
                     state.driverMarker = null;
 
                     localStorage.removeItem('active_driver_id');
@@ -643,7 +608,6 @@
                 state.client.on('connect', () => {
                     console.log("MQTT Connected");
                     if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    
                     state.isConnected = true;
                     app.updateConnectionStatus('connected');
                     state.client.subscribe(CONFIG.topics.location);
@@ -654,7 +618,6 @@
                 state.client.on('message', (topic, message) => {
                     const msgString = message.toString();
                     if (!msgString) return;
-
                     try {
                         const data = JSON.parse(msgString);
                         if (topic === CONFIG.topics.location) {
@@ -777,7 +740,6 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                // Clear any old watchers before starting new logic
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
@@ -786,7 +748,6 @@
                 let attempts = 0;
                 const syncInterval = setInterval(() => {
                     attempts++;
-                    // Check if connected, or force start if taking too long (>3s)
                     if (state.isConnected || attempts > 30) {
                         clearInterval(syncInterval);
                         
@@ -813,7 +774,6 @@
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                         if (loader) loader.classList.add('hidden');
                         
-                        // FIX: Reset UI buttons
                         app.updateBroadcastUI(false);
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
@@ -837,15 +797,12 @@
             },
 
             calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; // metres
+                const R = 6371e3; 
                 const φ1 = lat1 * Math.PI/180;
                 const φ2 = lat2 * Math.PI/180;
                 const Δφ = (lat2-lat1) * Math.PI/180;
                 const Δλ = (lon2-lon1) * Math.PI/180;
-
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                 return R * c;
             },
@@ -920,16 +877,13 @@
                     return;
                 }
                 
-                // CRITICAL: UI Feedback immediately
-                app.updateBroadcastUI(true); 
+                // INSTANT UI UPDATE - NO WAITING
+                app.updateBroadcastUI(true);
                 state.isBroadcasting = true;
                 
-                // Clear old stuff
                 if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-                state.speedBuffer = [];
-                state.sessionPoints = 0;
+                state.currentSmoothedSpeed = 0;
                 
-                // Start Timer
                 state.tripStartTime = Date.now();
                 if (state.uptimeInterval) clearInterval(state.uptimeInterval);
                 state.uptimeInterval = setInterval(() => {
@@ -948,66 +902,45 @@
                     maximumAge: 0
                 };
 
-                let isFirstFix = true; // Flag to check conflict only on first GPS point
+                let isFirstFix = true; 
 
                 state.watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        // Safety check: if user stopped while waiting for GPS
                         if (!state.isBroadcasting) return;
 
                         const { latitude, longitude, accuracy, speed } = position.coords;
                         const now = Date.now();
 
-                        // --- CONFLICT CHECK (First Fix Only) ---
+                        // Conflict Check Inside Loop
                         if (isFirstFix) {
                             let conflict = false;
                             const buses = Object.values(state.activeBuses);
-                            
                             for (let bus of buses) {
-                                // Ignore self
                                 if (bus.id === state.driverId) continue;
-                                
-                                // Ignore stale data (> 1 minute old)
                                 if (now - bus.ts > 60000) continue;
-
                                 if (bus.route === state.driverRoute) {
                                     const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
-                                    if (dist < 20) { // 20 Meters
-                                        conflict = true;
-                                        break;
+                                    if (dist < 20) { 
+                                        conflict = true; break;
                                     }
                                 }
                             }
-
                             if (conflict) {
-                                alert("⚠️ Another Captain is active nearby! Stopping to save battery.");
-                                app.stopBroadcast(); // Auto-stop
+                                alert("⚠️ Another Captain is active nearby! Stopping.");
+                                app.stopBroadcast();
                                 return;
                             }
                             isFirstFix = false;
                         }
-                        // ---------------------------------------
 
-                        // Speed Smoothing
-                        const rawSpeedKmh = (speed || 0) * 3.6;
-                        if (rawSpeedKmh >= 0) {
-                            state.speedBuffer.push(rawSpeedKmh);
-                            if (state.speedBuffer.length > 5) state.speedBuffer.shift(); 
-                        }
-
-                        let weightedSum = 0;
-                        let weightTotal = 0;
-                        state.speedBuffer.forEach((val, idx) => {
-                            const weight = idx + 1; 
-                            weightedSum += val * weight;
-                            weightTotal += weight;
-                        });
+                        // SMOOTH SPEED (EMA Filter)
+                        let rawSpeedKmh = (speed || 0) * 3.6;
+                        if (rawSpeedKmh < 3.0) rawSpeedKmh = 0; // Filter drift
                         
-                        let avgSpeed = 0;
-                        if (weightTotal > 0) avgSpeed = weightedSum / weightTotal;
-                        if (avgSpeed < 1) avgSpeed = 0; 
-
-                        const displaySpeed = Math.round(avgSpeed);
+                        // EMA: New = (Old * 0.8) + (Raw * 0.2)
+                        state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
+                        
+                        const displaySpeed = Math.round(state.currentSmoothedSpeed);
                         document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
 
@@ -1036,9 +969,7 @@
                             state.client.publish(CONFIG.topics.location, payload, { retain: true });
                         }
                     },
-                    (error) => {
-                        console.error("GPS Error", error);
-                    },
+                    (error) => { console.error("GPS Error", error); },
                     options
                 );
             },
@@ -1048,12 +979,11 @@
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
                 
-                // CRITICAL FIX: Kill "Ghost Bus" in local memory immediately
+                // FORCE KILL GHOSTS
                 if (state.driverId && state.activeBuses[state.driverId]) {
                     delete state.activeBuses[state.driverId];
                 }
                 
-                // Force Kill GPS Watcher
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
