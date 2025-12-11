@@ -15,7 +15,7 @@
                         brand: {
                             50: '#fff7ed',
                             100: '#ffedd5',
-                            500: '#f97316', // Orange
+                            500: '#f97316', 
                             600: '#ea580c',
                             900: '#7c2d12',
                         }
@@ -43,7 +43,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Glassmorphism */
         .glass {
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
@@ -54,13 +53,9 @@
             background: rgba(15, 23, 42, 0.7);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        /* Map Tiles Filter for Dark Mode */
         .dark-map-tiles {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
         }
-
-        /* View Transitions */
         .view-section {
             position: absolute;
             inset: 0;
@@ -69,13 +64,11 @@
             pointer-events: none;
             transform: scale(0.95);
             visibility: hidden;
-            overflow-y: hidden; /* Fixed screen */
+            overflow-y: hidden;
             z-index: 0;
             display: flex;
             flex-direction: column;
         }
-        
-        /* Force Active View to be Visible */
         .view-active {
             opacity: 1 !important;
             pointer-events: auto !important;
@@ -83,12 +76,6 @@
             z-index: 100 !important;
             visibility: visible !important;
         }
-
-        /* Progress Bar Animation */
-        .progress-bar-animated {
-            transition: width 1.5s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-
         .loader {
             border: 3px solid #f3f3f3;
             border-top: 3px solid #f97316;
@@ -98,46 +85,21 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
         @keyframes drive {
             0% { transform: translateY(0) rotate(3deg); }
             50% { transform: translateY(-6px) rotate(0deg); }
             100% { transform: translateY(0) rotate(3deg); }
         }
-        .animate-drive {
-            animation: drive 1.5s ease-in-out infinite;
-        }
-        
+        .animate-drive { animation: drive 1.5s ease-in-out infinite; }
         .pulse-ring::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; bottom: 0; right: 0;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: ring 1.5s infinite;
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; right: 0;
+            border-radius: 50%; border: 2px solid white; animation: ring 1.5s infinite;
         }
-        @keyframes ring {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
-        }
-        
-        /* Custom Marker CSS - Reset */
-        .leaflet-div-icon {
-            background: transparent;
-            border: none;
-        }
-
-        /* Prevent Scroll Bounce */
-        body {
-            overscroll-behavior: none;
-        }
-
-        #view-profile {
-            background-color: rgb(248 250 252) !important;
-        }
-        .dark #view-profile {
-            background-color: rgb(15 23 42) !important;
-        }
+        @keyframes ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
+        .leaflet-div-icon { background: transparent; border: none; }
+        body { overscroll-behavior: none; }
+        #view-profile { background-color: rgb(248 250 252) !important; }
+        .dark #view-profile { background-color: rgb(15 23 42) !important; }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
@@ -153,13 +115,12 @@
             <i class="fas fa-moon dark:hidden"></i>
             <i class="fas fa-sun hidden dark:block"></i>
         </button>
-
     </div>
 
     <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
-        
         <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
-            <div class="text-center mb-4"> <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
+            <div class="text-center mb-4"> 
+                <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
                     <i class="fas fa-bus text-4xl text-white"></i>
                 </div>
                 <h1 class="text-4xl font-extrabold tracking-tight mb-1">
@@ -169,7 +130,8 @@
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
             </div>
 
-            <div class="grid gap-3 w-full"> <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
+            <div class="grid gap-3 w-full"> 
+                <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
                         <div>
@@ -196,7 +158,8 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 w-full mt-4"> <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
+            <div class="grid grid-cols-2 gap-3 w-full mt-4"> 
+                <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
                             <i class="fas fa-comments text-sm"></i>
@@ -224,7 +187,6 @@
             </p>
         </div>
     </div>
-
 
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6 bg-slate-50 dark:bg-slate-900">
         <div class="flex items-center mb-8 mt-4 shrink-0">
@@ -313,24 +275,25 @@
                     </div>
                 </div>
 
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4">
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4 relative z-50">
                     START TRIP
                 </button>
+            </div>
 
             <div class="grid grid-cols-2 gap-3 w-full max-w-sm mt-6 px-4"> 
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
-        <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
-    </div>
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
-        <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
-    </div>
-    <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-        <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
-        <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
-    </div>
-</div>
+                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
+                    <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
+                </div>
+                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
+                    <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
+                </div>
+                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
+                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
+                    <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
+                </div>
+            </div>
         </div>
 
         <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
@@ -344,7 +307,6 @@
                  Close
              </button>
         </div>
-    </div>
     </div>
 
     <div id="view-student" class="view-section flex flex-col h-full z-10">
@@ -420,7 +382,6 @@
             minAccuracy: 50
         };
 
-        // COLORS updated for new requirements
         const BUS_STYLES = {
             'K': 'bg-blue-500',   // Kuril - Blue
             'N': 'bg-green-500',  // Notun Bazar - Green
@@ -434,6 +395,7 @@
         const state = {
             client: null,
             isConnected: false,
+            connectionDebounce: null, 
             role: null,
             driverId: null,
             driverRoute: null,
@@ -454,9 +416,9 @@
             sessionDistance: 0,
             lastLat: null,
             lastLng: null,
-            tripStartTime: null, // Added for uptime
-            uptimeInterval: null, // Added for uptime
-            speedBuffer: []
+            tripStartTime: null,
+            uptimeInterval: null,
+            currentSmoothedSpeed: 0
         };
 
         /** APP CONTROLLER */
@@ -464,7 +426,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Final Stable");
+                console.log("App Version: Map Clear Fix & Structure Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -520,7 +482,9 @@
             },
 
             switchView: (viewId) => {
-                console.log("Switching to:", viewId);
+                document.getElementById('selection-loader').classList.add('hidden');
+                document.getElementById('route-sub-select').classList.add('hidden');
+
                 const views = document.querySelectorAll('.view-section');
                 views.forEach(el => {
                     el.classList.remove('view-active');
@@ -537,8 +501,6 @@
                     target.style.pointerEvents = 'auto';
                     target.style.zIndex = '100';
                     target.style.visibility = 'visible';
-                } else {
-                    console.error("View not found:", viewId);
                 }
 
                 const globalControls = document.getElementById('global-controls');
@@ -558,6 +520,8 @@
                     app.initMap();
                 } else if (role === 'driver-select') {
                     app.switchView('view-driver-select');
+                } else if (role === 'driver-dashboard') {
+                    app.switchView('view-driver-dashboard');
                 }
             },
 
@@ -567,7 +531,12 @@
                         const confirmExit = confirm("Stop broadcasting and exit?");
                         if (!confirmExit) return;
                         await app.stopBroadcast();
-                        if (state.sessionPoints > 0) return; 
+                    }
+
+                    // Force Clear Watch
+                    if (state.watchId) {
+                        navigator.geolocation.clearWatch(state.watchId);
+                        state.watchId = null;
                     }
 
                     state.driverId = null;
@@ -575,11 +544,20 @@
                     state.driverDestination = null;
                     state.driverDirection = null;
                     state.role = null;
+                    state.isBroadcasting = false;
+                    state.currentSmoothedSpeed = 0;
+                    state.activeBuses = {}; // Full reset
 
+                    // FIX: Safer Map Removal
                     if (state.driverMap) {
-                        state.driverMap.remove();
+                        try {
+                            state.driverMap.off();
+                            state.driverMap.remove();
+                        } catch (e) { console.log("Map cleanup warning", e); }
                         state.driverMap = null;
                     }
+                    
+                    state.driverMarker = null;
 
                     localStorage.removeItem('active_driver_id');
                     localStorage.removeItem('active_driver_route');
@@ -602,6 +580,7 @@
                         
                         state.wakeLock.addEventListener('release', () => {
                             document.getElementById('wakelock-text').innerText = "Inactive";
+                            document.getElementById('wakelock-text').className = "";
                         });
                     } catch (err) {
                         console.error(`${err.name}, ${err.message}`);
@@ -630,6 +609,7 @@
 
                 state.client.on('connect', () => {
                     console.log("MQTT Connected");
+                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     state.isConnected = true;
                     app.updateConnectionStatus('connected');
                     state.client.subscribe(CONFIG.topics.location);
@@ -640,7 +620,6 @@
                 state.client.on('message', (topic, message) => {
                     const msgString = message.toString();
                     if (!msgString) return;
-
                     try {
                         const data = JSON.parse(msgString);
                         if (topic === CONFIG.topics.location) {
@@ -648,20 +627,24 @@
                         } else if (topic === CONFIG.topics.presence) {
                             app.handlePresenceUpdate(data);
                         }
-                    } catch (e) { 
-                        console.error("Msg Parse Error:", e); 
-                    }
+                    } catch (e) { console.error("Msg Parse Error:", e); }
                 });
 
                 state.client.on('error', (err) => {
                     console.error("MQTT Error", err);
-                    state.isConnected = false;
-                    app.updateConnectionStatus('error');
+                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
+                    state.connectionDebounce = setTimeout(() => {
+                        state.isConnected = false;
+                        app.updateConnectionStatus('error');
+                    }, 2000);
                 });
                 
                 state.client.on('close', () => {
-                    state.isConnected = false;
-                    app.updateConnectionStatus('offline');
+                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
+                    state.connectionDebounce = setTimeout(() => {
+                        state.isConnected = false;
+                        app.updateConnectionStatus('offline');
+                    }, 2000);
                 });
             },
 
@@ -703,15 +686,13 @@
 
             cleanupStaleUsers: () => {
                 const now = Date.now();
-                // 1. Cleanup Viewers
                 for (const [id, ts] of state.activeUsers) {
                     if (now - ts > 45000) state.activeUsers.delete(id);
                 }
                 app.updateUserCount();
 
-                // 2. Cleanup Buses - UPDATED TO 10 SECONDS
                 for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 10000) { // Changed to 10 seconds
+                    if (now - state.activeBuses[id].ts > 45000) { 
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
                     }
@@ -736,7 +717,7 @@
                 if (state.isBroadcasting && data.id === state.driverId) return;
 
                 const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return;
+                if (timeDiff > 120000) return; 
                 
                 state.activeBuses[data.id] = data;
 
@@ -761,21 +742,24 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                // NEW LOGIC: Wait for Connection + Data Sync
+                if (state.watchId) {
+                    navigator.geolocation.clearWatch(state.watchId);
+                    state.watchId = null;
+                }
+
                 let attempts = 0;
                 const syncInterval = setInterval(() => {
                     attempts++;
-
-                    // Wait until:
-                    // 1. MQTT is connected
-                    // 2. AND we have waited at least 500ms (attempts > 5) to receive data
-                    const isReady = state.isConnected && attempts > 5;
-                    const isTimedOut = attempts > 50; // Force start after 5 seconds if internet is bad
-
-                    if (isReady || isTimedOut) {
+                    if (state.isConnected || attempts > 30) {
                         clearInterval(syncInterval);
                         
-                        // NOW we calculate the ID, knowing we have the latest data from other drivers
+                        const now = Date.now();
+                        for (const id in state.activeBuses) {
+                            if (now - state.activeBuses[id].ts > 30000) { 
+                                delete state.activeBuses[id];
+                            }
+                        }
+
                         const assignedId = app.assignNextId(prefix);
                         
                         state.driverRoute = fullRouteName;
@@ -791,10 +775,14 @@
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                         if (loader) loader.classList.add('hidden');
                         
+                        // FIX: Ensure button state is fresh
+                        state.isBroadcasting = false;
+                        app.updateBroadcastUI(false);
+                        
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
                     }
-                }, 100); // Check every 100ms
+                }, 100);
             },
 
             assignNextId: (prefix) => {
@@ -813,15 +801,12 @@
             },
 
             calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; // metres
+                const R = 6371e3; 
                 const φ1 = lat1 * Math.PI/180;
                 const φ2 = lat2 * Math.PI/180;
                 const Δφ = (lat2-lat1) * Math.PI/180;
                 const Δλ = (lon2-lon1) * Math.PI/180;
-
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                        Math.cos(φ1) * Math.cos(φ2) *
-                        Math.sin(Δλ/2) * Math.sin(Δλ/2);
+                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
                 return R * c;
             },
@@ -829,12 +814,22 @@
             // --- Driver Map & Routing ---
             initDriverMap: () => {
                 if (state.driverMap) {
-                    state.driverMap.remove();
+                    try {
+                        state.driverMap.off();
+                        state.driverMap.remove();
+                    } catch(e) {}
                     state.driverMap = null;
                 }
 
+                // FIX: CLEAN MAP CONTAINER FORCEFULLY
+                const mapContainer = document.getElementById('driver-map');
+                if (mapContainer) {
+                    mapContainer.innerHTML = '';
+                    mapContainer._leaflet_id = null;
+                }
+
                 const COORDS = {
-                    'UIU': CONFIG.uiuCoords, // 23.79790, 90.44970
+                    'UIU': CONFIG.uiuCoords, 
                     'Kuril': [23.822339, 90.420163],
                     'Notun Bazar': [23.797881, 90.424652],
                     'Aftab Nagar': [23.767860, 90.425833],
@@ -851,6 +846,8 @@
                 }
 
                 setTimeout(() => {
+                    if (!document.getElementById('driver-map')) return; 
+                    
                     state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
                     const isDark = document.documentElement.classList.contains('dark');
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -869,7 +866,6 @@
                     const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
                     state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
 
-                    // Jump to UIU Button
                     const jumpBtn = L.control({position: 'bottomright'});
                     jumpBtn.onAdd = function(map) {
                         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
@@ -877,7 +873,9 @@
                         return div;
                     };
                     jumpBtn.addTo(state.driverMap);
-                }, 100);
+                    
+                    requestAnimationFrame(() => { state.driverMap.invalidateSize(); });
+                }, 200);
             },
 
             // --- Driver Broadcasting ---
@@ -891,46 +889,16 @@
                     alert("Geolocation not supported");
                     return;
                 }
-
-                const checkConflictAndStart = (pos) => {
-                     const myLat = pos.coords.latitude;
-                    const myLng = pos.coords.longitude;
-                    
-                    let conflict = false;
-                    const buses = Object.values(state.activeBuses);
-                    
-                    for (let bus of buses) {
-                        if (bus.route === state.driverRoute && bus.id !== state.driverId) {
-                            const dist = app.calculateDistance(myLat, myLng, bus.lat, bus.lng);
-                            if (dist < 20) { // 20 Meters
-                                conflict = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (conflict) {
-                        alert("⚠️ Another Captain is tracking this bus nearby! Help preserve battery.");
-                        return;
-                    }
-
-                    app.executeStartBroadcast();
-                };
-
-                navigator.geolocation.getCurrentPosition(checkConflictAndStart, (err) => {
-                    alert("Please enable GPS");
-                }, { enableHighAccuracy: true });
-            },
-
-            executeStartBroadcast: () => {
-                state.sessionPoints = 0;
-                state.sessionDistance = 0;
-                state.lastLat = null;
-                state.lastLng = null;
-                state.speedBuffer = [];
-
-                // Start Timer
+                
+                // INSTANT UI UPDATE - NO WAITING
+                state.isBroadcasting = true;
+                app.updateBroadcastUI(true);
+                
+                if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+                state.currentSmoothedSpeed = 0;
+                
                 state.tripStartTime = Date.now();
+                if (state.uptimeInterval) clearInterval(state.uptimeInterval);
                 state.uptimeInterval = setInterval(() => {
                     const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
                     const m = Math.floor(diff / 60).toString().padStart(2, '0');
@@ -939,8 +907,6 @@
                     if(el) el.innerText = `${m}:${s}`;
                 }, 1000);
 
-                state.isBroadcasting = true;
-                app.updateBroadcastUI(true);
                 app.requestWakeLock();
 
                 const options = {
@@ -949,19 +915,45 @@
                     maximumAge: 0
                 };
 
+                let isFirstFix = true; 
+
                 state.watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        let { latitude, longitude, accuracy, speed } = position.coords;
+                        if (!state.isBroadcasting) return;
 
-                        // Speed Smoothing
-                        const rawSpeedKmh = (speed || 0) * 3.6;
-                        state.speedBuffer.push(rawSpeedKmh);
-                        if (state.speedBuffer.length > 5) state.speedBuffer.shift();
+                        const { latitude, longitude, accuracy, speed } = position.coords;
+                        const now = Date.now();
 
-                        let avgSpeed = state.speedBuffer.reduce((a, b) => a + b, 0) / state.speedBuffer.length;
-                        if (avgSpeed < 1) avgSpeed = 0; // Threshold
+                        // Conflict Check Inside Loop
+                        if (isFirstFix) {
+                            let conflict = false;
+                            const buses = Object.values(state.activeBuses);
+                            for (let bus of buses) {
+                                if (bus.id === state.driverId) continue;
+                                if (now - bus.ts > 60000) continue;
+                                if (bus.route === state.driverRoute) {
+                                    const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+                                    if (dist < 20) { 
+                                        conflict = true; break;
+                                    }
+                                }
+                            }
+                            if (conflict) {
+                                alert("⚠️ Another Captain is active nearby! Stopping.");
+                                app.stopBroadcast();
+                                return;
+                            }
+                            isFirstFix = false;
+                        }
 
-                        const displaySpeed = Math.round(avgSpeed);
+                        // SMOOTH SPEED (EMA Filter)
+                        let rawSpeedKmh = (speed || 0) * 3.6;
+                        if (rawSpeedKmh < 3.0) rawSpeedKmh = 0; // Filter drift
+                        
+                        // EMA: New = (Old * 0.8) + (Raw * 0.2)
+                        state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
+                        
+                        const displaySpeed = Math.round(state.currentSmoothedSpeed);
                         document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
 
@@ -973,8 +965,6 @@
                         state.lastLat = latitude;
                         state.lastLng = longitude;
 
-                        // MQTT Publish Rate Limit (200ms)
-                        const now = Date.now();
                         if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
 
@@ -986,15 +976,13 @@
                                 lat: latitude,
                                 lng: longitude,
                                 acc: accuracy,
-                                speed: displaySpeed, // Sent smoothed speed
+                                speed: displaySpeed, 
                                 ts: now
                             });
                             state.client.publish(CONFIG.topics.location, payload, { retain: true });
                         }
                     },
-                    (error) => {
-                        console.error("GPS Error", error);
-                    },
+                    (error) => { console.error("GPS Error", error); },
                     options
                 );
             },
@@ -1003,12 +991,17 @@
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
+                
+                // FORCE KILL GHOSTS
+                if (state.driverId && state.activeBuses[state.driverId]) {
+                    delete state.activeBuses[state.driverId];
+                }
+                
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
                 }
 
-                // Stop Timer
                 if (state.uptimeInterval) {
                     clearInterval(state.uptimeInterval);
                     state.uptimeInterval = null;
@@ -1032,7 +1025,6 @@
                 modal.style.opacity = '1';
                 modal.style.pointerEvents = 'auto';
 
-                // Confetti
                 if (window.confetti) {
                     confetti({
                         particleCount: 150,
@@ -1043,8 +1035,9 @@
             },
 
             closeSummary: () => {
-                document.getElementById('trip-summary-modal').classList.add('opacity-0', 'pointer-events-none');
-                document.getElementById('trip-summary-modal').style.opacity = '0';
+                const modal = document.getElementById('trip-summary-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none');
+                modal.style.opacity = '0';
                 app.goHome(); 
             },
 
@@ -1066,9 +1059,10 @@
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    btn.classList.replace('bg-red-500', 'bg-brand-500');
-                    btn.classList.replace('hover:bg-red-600', 'hover:bg-brand-600');
-                    btn.classList.remove('animate-pulse');
+                    // Safer removal of classes
+                    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
+                    btn.classList.add('bg-brand-500', 'hover:bg-brand-600');
+                    
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
                     icon.classList.add('text-slate-300', 'dark:text-slate-600');
@@ -1083,7 +1077,6 @@
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         
-                        // Jump to UIU Button
                         const jumpBtn = L.control({position: 'bottomright'});
                         jumpBtn.onAdd = function(map) {
                             const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
@@ -1105,7 +1098,6 @@
             },
 
             createBusIcon: (id, colorClass) => {
-                 // UPDATED MARKER DESIGN: Pin shape with ID inside, no Avatar
                  return L.divIcon({
                     className: 'custom-bus-pin', 
                     html: `
@@ -1137,16 +1129,15 @@
 
                 let colorClass = BUS_STYLES.default;
                 
-                // Specific Color Logic
-                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; // Kuril Blue
-                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; // Notun Bazar Green
-                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; // Aftab Nagar Purple
+                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; 
+                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; 
+                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; 
                 else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
                 else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
 
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-                    const icon = app.createBusIcon(id, colorClass); // Only pass ID and Color
+                    const icon = app.createBusIcon(id, colorClass); 
                     state.markers[id].setIcon(icon);
                 } else {
                     const icon = app.createBusIcon(id, colorClass);
@@ -1216,7 +1207,6 @@
                         item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
                         item.onclick = () => app.focusBus(bus.id);
                         
-                        // Icon Color for List
                         let bgClass = "bg-orange-500";
                         if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
                         if (bus.id.startsWith('N')) bgClass = "bg-green-500";
