@@ -459,7 +459,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Trip Reset & Speed Fix (Final)");
+                console.log("App Version: Final Fix - Instant Start");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -920,54 +920,18 @@
                     return;
                 }
                 
-                // CRITICAL: Kill any old watch before starting new one
+                // CRITICAL: UI Feedback immediately
+                app.updateBroadcastUI(true); 
+                state.isBroadcasting = true;
+                
+                // Clear old stuff
                 if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-
-                const checkConflictAndStart = (pos) => {
-                     const myLat = pos.coords.latitude;
-                    const myLng = pos.coords.longitude;
-                    
-                    let conflict = false;
-                    const buses = Object.values(state.activeBuses);
-                    
-                    for (let bus of buses) {
-                        // FIX: Ignore conflicts with self or stale buses
-                        if (bus.id === state.driverId) continue;
-
-                        if (bus.route === state.driverRoute) {
-                            const dist = app.calculateDistance(myLat, myLng, bus.lat, bus.lng);
-                            if (dist < 20) { // 20 Meters
-                                conflict = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (conflict) {
-                        alert("⚠️ Another Captain is tracking this bus nearby! Help preserve battery.");
-                        return;
-                    }
-
-                    app.executeStartBroadcast();
-                };
-
-                // FIX: Add Timeout to prevent hanging
-                navigator.geolocation.getCurrentPosition(checkConflictAndStart, (err) => {
-                    alert("Please enable GPS");
-                }, { enableHighAccuracy: true, timeout: 5000 });
-            },
-
-            executeStartBroadcast: () => {
+                state.speedBuffer = [];
                 state.sessionPoints = 0;
-                state.sessionDistance = 0;
-                state.lastLat = null;
-                state.lastLng = null;
-                state.speedBuffer = []; // Reset buffer on start
-
+                
                 // Start Timer
                 state.tripStartTime = Date.now();
                 if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                
                 state.uptimeInterval = setInterval(() => {
                     const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
                     const m = Math.floor(diff / 60).toString().padStart(2, '0');
@@ -976,8 +940,6 @@
                     if(el) el.innerText = `${m}:${s}`;
                 }, 1000);
 
-                state.isBroadcasting = true;
-                app.updateBroadcastUI(true);
                 app.requestWakeLock();
 
                 const options = {
@@ -986,31 +948,64 @@
                     maximumAge: 0
                 };
 
+                let isFirstFix = true; // Flag to check conflict only on first GPS point
+
                 state.watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        let { latitude, longitude, accuracy, speed } = position.coords;
+                        // Safety check: if user stopped while waiting for GPS
+                        if (!state.isBroadcasting) return;
 
-                        // FIX: Weighted Average Speed Smoothing
+                        const { latitude, longitude, accuracy, speed } = position.coords;
+                        const now = Date.now();
+
+                        // --- CONFLICT CHECK (First Fix Only) ---
+                        if (isFirstFix) {
+                            let conflict = false;
+                            const buses = Object.values(state.activeBuses);
+                            
+                            for (let bus of buses) {
+                                // Ignore self
+                                if (bus.id === state.driverId) continue;
+                                
+                                // Ignore stale data (> 1 minute old)
+                                if (now - bus.ts > 60000) continue;
+
+                                if (bus.route === state.driverRoute) {
+                                    const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+                                    if (dist < 20) { // 20 Meters
+                                        conflict = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (conflict) {
+                                alert("⚠️ Another Captain is active nearby! Stopping to save battery.");
+                                app.stopBroadcast(); // Auto-stop
+                                return;
+                            }
+                            isFirstFix = false;
+                        }
+                        // ---------------------------------------
+
+                        // Speed Smoothing
                         const rawSpeedKmh = (speed || 0) * 3.6;
-                        
-                        // Only add valid speeds to buffer
                         if (rawSpeedKmh >= 0) {
                             state.speedBuffer.push(rawSpeedKmh);
-                            if (state.speedBuffer.length > 5) state.speedBuffer.shift(); // Keep last 5
+                            if (state.speedBuffer.length > 5) state.speedBuffer.shift(); 
                         }
 
-                        // Calculate weighted average (recent values matter more)
                         let weightedSum = 0;
                         let weightTotal = 0;
                         state.speedBuffer.forEach((val, idx) => {
-                            const weight = idx + 1; // 1, 2, 3, 4, 5
+                            const weight = idx + 1; 
                             weightedSum += val * weight;
                             weightTotal += weight;
                         });
                         
                         let avgSpeed = 0;
                         if (weightTotal > 0) avgSpeed = weightedSum / weightTotal;
-                        if (avgSpeed < 1) avgSpeed = 0; // Cutoff for drift
+                        if (avgSpeed < 1) avgSpeed = 0; 
 
                         const displaySpeed = Math.round(avgSpeed);
                         document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
@@ -1024,7 +1019,6 @@
                         state.lastLat = latitude;
                         state.lastLng = longitude;
 
-                        const now = Date.now();
                         if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
 
@@ -1036,7 +1030,7 @@
                                 lat: latitude,
                                 lng: longitude,
                                 acc: accuracy,
-                                speed: displaySpeed, // Send smoothed speed
+                                speed: displaySpeed, 
                                 ts: now
                             });
                             state.client.publish(CONFIG.topics.location, payload, { retain: true });
