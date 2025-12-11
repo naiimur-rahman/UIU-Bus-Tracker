@@ -459,7 +459,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Trip Reset & Speed Fix");
+                console.log("App Version: Trip Reset & Speed Fix (Final)");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -580,12 +580,17 @@
                     state.role = null;
                     state.isBroadcasting = false;
                     state.speedBuffer = []; 
+                    state.activeBuses = {}; // FULL RESET of cached buses
 
                     // FIX: Remove Map Instance to prevent "Map already initialized" error
                     if (state.driverMap) {
-                        state.driverMap.remove();
+                        state.driverMap.off(); // Remove listeners
+                        state.driverMap.remove(); // Destroy
                         state.driverMap = null;
                     }
+                    
+                    // Reset Markers
+                    state.driverMarker = null;
 
                     localStorage.removeItem('active_driver_id');
                     localStorage.removeItem('active_driver_route');
@@ -785,6 +790,14 @@
                     if (state.isConnected || attempts > 30) {
                         clearInterval(syncInterval);
                         
+                        // FIX: Clean up old buses to prevent ghost conflicts
+                        const now = Date.now();
+                        for (const id in state.activeBuses) {
+                            if (now - state.activeBuses[id].ts > 30000) { 
+                                delete state.activeBuses[id];
+                            }
+                        }
+
                         const assignedId = app.assignNextId(prefix);
                         
                         state.driverRoute = fullRouteName;
@@ -840,6 +853,7 @@
             // --- Driver Map & Routing ---
             initDriverMap: () => {
                 if (state.driverMap) {
+                    state.driverMap.off();
                     state.driverMap.remove();
                     state.driverMap = null;
                 }
@@ -917,7 +931,10 @@
                     const buses = Object.values(state.activeBuses);
                     
                     for (let bus of buses) {
-                        if (bus.route === state.driverRoute && bus.id !== state.driverId) {
+                        // FIX: Ignore conflicts with self or stale buses
+                        if (bus.id === state.driverId) continue;
+
+                        if (bus.route === state.driverRoute) {
                             const dist = app.calculateDistance(myLat, myLng, bus.lat, bus.lng);
                             if (dist < 20) { // 20 Meters
                                 conflict = true;
@@ -934,9 +951,10 @@
                     app.executeStartBroadcast();
                 };
 
+                // FIX: Add Timeout to prevent hanging
                 navigator.geolocation.getCurrentPosition(checkConflictAndStart, (err) => {
                     alert("Please enable GPS");
-                }, { enableHighAccuracy: true });
+                }, { enableHighAccuracy: true, timeout: 5000 });
             },
 
             executeStartBroadcast: () => {
