@@ -418,7 +418,7 @@
             lastLng: null,
             tripStartTime: null,
             uptimeInterval: null,
-            currentSmoothedSpeed: 0 // New variable for speed smoothing
+            currentSmoothedSpeed: 0
         };
 
         /** APP CONTROLLER */
@@ -426,7 +426,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Instant Start & Smooth Speed");
+                console.log("App Version: Instant Start & Smooth Speed Fixed");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -548,10 +548,12 @@
                     state.currentSmoothedSpeed = 0;
                     state.activeBuses = {}; // Full reset
 
-                    // FIX: Remove Map Instance
+                    // FIX: Safer Map Removal
                     if (state.driverMap) {
-                        state.driverMap.off();
-                        state.driverMap.remove();
+                        try {
+                            state.driverMap.off();
+                            state.driverMap.remove();
+                        } catch (e) { console.log("Map cleanup warning", e); }
                         state.driverMap = null;
                     }
                     
@@ -751,7 +753,6 @@
                     if (state.isConnected || attempts > 30) {
                         clearInterval(syncInterval);
                         
-                        // FIX: Clean up old buses to prevent ghost conflicts
                         const now = Date.now();
                         for (const id in state.activeBuses) {
                             if (now - state.activeBuses[id].ts > 30000) { 
@@ -774,7 +775,10 @@
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                         if (loader) loader.classList.add('hidden');
                         
+                        // FIX: Ensure button state is fresh
+                        state.isBroadcasting = false;
                         app.updateBroadcastUI(false);
+                        
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
                     }
@@ -810,13 +814,15 @@
             // --- Driver Map & Routing ---
             initDriverMap: () => {
                 if (state.driverMap) {
-                    state.driverMap.off();
-                    state.driverMap.remove();
+                    try {
+                        state.driverMap.off();
+                        state.driverMap.remove();
+                    } catch(e) {}
                     state.driverMap = null;
                 }
 
                 const COORDS = {
-                    'UIU': CONFIG.uiuCoords, // 23.79790, 90.44970
+                    'UIU': CONFIG.uiuCoords, 
                     'Kuril': [23.822339, 90.420163],
                     'Notun Bazar': [23.797881, 90.424652],
                     'Aftab Nagar': [23.767860, 90.425833],
@@ -878,8 +884,8 @@
                 }
                 
                 // INSTANT UI UPDATE - NO WAITING
-                app.updateBroadcastUI(true);
                 state.isBroadcasting = true;
+                app.updateBroadcastUI(true);
                 
                 if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
                 state.currentSmoothedSpeed = 0;
@@ -1046,9 +1052,10 @@
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    btn.classList.replace('bg-red-500', 'bg-brand-500');
-                    btn.classList.replace('hover:bg-red-600', 'hover:bg-brand-600');
-                    btn.classList.remove('animate-pulse');
+                    // Safer removal of classes
+                    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
+                    btn.classList.add('bg-brand-500', 'hover:bg-brand-600');
+                    
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
                     icon.classList.add('text-slate-300', 'dark:text-slate-600');
