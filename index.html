@@ -1222,20 +1222,20 @@
                 const uptimeEl = document.getElementById('val-uptime');
                 if(uptimeEl) uptimeEl.innerText = "00:00";
 
-                // Fixed Code
-if (state.client && state.isConnected) {
-      state.client.publish(CONFIG.topics.location, JSON.stringify({
-        id: state.driverId,
-        status: 'offline'
-      }), { retain: true }); // <--- FIX: Added retain: true
-}
+                // --- FIX: Add retain: true here ---
+                if (state.client && state.isConnected) {
+                      state.client.publish(CONFIG.topics.location, JSON.stringify({
+                        id: state.driverId,
+                        status: 'offline'
+                      }), { retain: true }); // <--- CRITICAL: Clears the ID from server memory
+                }
+                // ----------------------------------
 
                 const finalPoints = Math.floor(state.sessionPoints);
                 if (finalPoints > 0) {
                     await app.showSummary(finalPoints);
                 } 
             },
-
             showSummary: async (points) => {
                 const modal = document.getElementById('trip-summary-modal');
                 const id = CONFIG.mqtt.clientId;
