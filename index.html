@@ -121,8 +121,8 @@
             100% { transform: scale(2); opacity: 0; }
         }
         
-        /* Custom Marker CSS */
-        .custom-bus-marker {
+        /* Custom Marker CSS - Reset */
+        .leaflet-div-icon {
             background: transparent;
             border: none;
         }
@@ -154,11 +154,7 @@
             <i class="fas fa-sun hidden dark:block"></i>
         </button>
 
-        <button onclick="app.openProfile()" class="fixed top-4 left-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
-            <i class="fas fa-user"></i>
-        </button>
-
-        <button onclick="app.openCaptainsDeck()" class="fixed top-20 right-4 w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform animate-float cursor-pointer pointer-events-auto">
+        <button onclick="app.openCaptainsDeck()" class="fixed top-4 left-4 w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg hover:scale-110 transition-transform animate-float cursor-pointer pointer-events-auto">
             <i class="fas fa-trophy"></i>
         </button>
     </div>
@@ -260,7 +256,7 @@
             <div class="w-full mb-6">
                 <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wide mb-3 pl-2">All Tiers</h3>
                 <div class="flex justify-between items-center text-[10px] text-slate-400 px-2 bg-white dark:bg-slate-800 rounded-xl p-3 shadow-sm overflow-x-auto gap-4">
-                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-300 mb-1"></i><span>Rookie</span></div>
+                    <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-orange-500 mb-1"></i><span>Bronze</span></div>
                     <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-400 mb-1"></i><span>Silver</span></div>
                     <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-yellow-400 mb-1"></i><span>Gold</span></div>
                     <div class="flex flex-col items-center min-w-[50px]"><i class="fas fa-circle text-slate-500 mb-1"></i><span>Plat</span></div>
@@ -278,52 +274,8 @@
         </div>
     </div>
 
-    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative !bg-gray-50 !dark:bg-slate-900">
-        <div class="w-full flex justify-between items-center mb-8 mt-4 shrink-0">
-            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors pointer-events-auto">
-                <i class="fas fa-arrow-left"></i>
-            </button>
-            <h2 class="text-2xl font-bold">Your Profile</h2>
-            <div class="w-10"></div>
+    <div id="view-profile" class="view-section flex flex-col items-center p-6 h-full z-10 relative !bg-gray-50 !dark:bg-slate-900 hidden">
         </div>
-
-        <div class="w-full max-w-sm flex-grow flex flex-col items-center justify-center">
-            <div class="glass w-full rounded-3xl p-8 shadow-xl flex flex-col items-center border border-white/20">
-                <div class="relative mb-6 group cursor-pointer" onclick="document.getElementById('profile-upload').click()">
-                    <div class="w-28 h-28 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-4 border-white dark:border-slate-600 shadow-xl relative">
-                        <img id="profile-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="w-full h-full object-cover">
-                    </div>
-                    <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fas fa-camera text-white text-2xl"></i>
-                    </div>
-                    <div class="absolute bottom-0 right-0 bg-brand-500 w-8 h-8 rounded-full flex items-center justify-center border-2 border-white text-white shadow-md">
-                         <i class="fas fa-pen text-xs"></i>
-                    </div>
-                    <input type="file" id="profile-upload" class="hidden" accept="image/*" onchange="app.handleImagePreview(event)">
-                </div>
-
-                <div class="w-full space-y-5">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2 pl-1">Display Name</label>
-                        <input type="text" id="profile-name" class="w-full bg-white dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-700 rounded-xl p-4 font-bold focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none transition-all placeholder:text-slate-400" placeholder="e.g. Naimur">
-                    </div>
-
-                    <div class="flex gap-3 pt-2">
-                         <button onclick="app.removeProfilePhoto()" type="button" class="flex-1 bg-red-50 dark:bg-red-900/20 text-red-500 font-bold py-4 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors flex flex-col items-center justify-center gap-1">
-                            <i class="fas fa-trash-alt"></i>
-                            <span class="text-[10px]">Remove Pic</span>
-                        </button>
-                        <button onclick="app.saveProfile()" id="btn-save-profile" class="flex-[2] bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 flex items-center justify-center gap-2">
-                            <span>Save Changes</span>
-                            <i class="fas fa-check"></i>
-                        </button>
-                    </div>
-                    <p id="profile-error" class="text-red-500 text-xs text-center hidden"></p>
-                    <p class="text-[10px] text-center text-slate-400">Leave name/photo blank to use Anonymous Avatar.</p>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6 bg-slate-50 dark:bg-slate-900">
         <div class="flex items-center mb-8 mt-4 shrink-0">
@@ -557,10 +509,11 @@
             minAccuracy: 50
         };
 
+        // COLORS updated for new requirements
         const BUS_STYLES = {
-            'K': 'bg-blue-500',
-            'N': 'bg-green-500',
-            'A': 'bg-purple-500',
+            'K': 'bg-blue-500',   // Kuril - Blue
+            'N': 'bg-green-500',  // Notun Bazar - Green
+            'A': 'bg-purple-500', // Aftab Nagar - Purple
             'default': 'bg-orange-500',
             'to_uiu': 'bg-green-600',
             'from_uiu': 'bg-red-600'
@@ -842,9 +795,9 @@
                 }
                 app.updateUserCount();
 
-                // 2. Cleanup Buses
+                // 2. Cleanup Buses - UPDATED TO 10 SECONDS
                 for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 60000) {
+                    if (now - state.activeBuses[id].ts > 10000) { // Changed to 10 seconds
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
                     }
@@ -945,16 +898,16 @@
                     if (docSnap.exists()) {
                         points = docSnap.data().totalPoints || 0;
                     } else {
-                        document.getElementById('deck-rank').innerText = "ROOKIE";
+                        document.getElementById('deck-rank').innerText = "BRONZE"; // CHANGED ROOKIE TO BRONZE
                         document.getElementById('deck-rank').className = "text-xl font-bold text-slate-400";
                     }
 
                     document.getElementById('deck-points').innerHTML = `${points} <span class="text-sm font-normal text-slate-500">pts</span>`;
 
-                    let rank = "ROOKIE";
+                    let rank = "BRONZE"; // CHANGED ROOKIE TO BRONZE
                     let progress = 0;
                     let nextTier = 100;
-                    let color = "from-slate-400 to-slate-500"; 
+                    let color = "from-brand-300 to-brand-500"; 
 
                     if (points >= 5000) {
                         rank = "TITANIUM";
@@ -982,10 +935,10 @@
                         nextTier = 500;
                         color = "from-slate-300 to-slate-500";
                     } else {
-                        rank = "ROOKIE";
+                        rank = "BRONZE"; // CHANGED ROOKIE TO BRONZE
                         progress = (points / 100) * 100;
                         nextTier = 100;
-                        color = "from-brand-300 to-brand-500";
+                        color = "from-orange-300 to-orange-500";
                     }
                     
                     const rankEl = document.getElementById('deck-rank');
@@ -1353,53 +1306,19 @@
                 }, 100);
             },
 
-            fetchUserProfile: async (uid) => {
-                if (state.userCache && state.userCache[uid]) return state.userCache[uid];
-
-                let userData = {
-                    username: null,
-                    photoUrl: null
-                };
-
-                if (!db) return userData;
-
-                try {
-                    const docRef = doc(db, "users", uid);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        userData.username = data.username;
-                        userData.photoUrl = data.photoUrl;
-                    }
-                } catch (e) { console.error(e); }
-
-                if (!state.userCache) state.userCache = {};
-                state.userCache[uid] = userData;
-                return userData;
-            },
-
-            createBusIcon: (name, photo, colorClass) => {
-                 const isDefaultPhoto = !photo || photo.includes('flaticon') || photo.includes('dicebear');
-                 const imgHtml = isDefaultPhoto
-                    ? `<div class="w-full h-full bg-slate-200 flex items-center justify-center text-xs text-slate-500"><i class="fas fa-user"></i></div>`
-                    : `<img src="${photo}" class="w-full h-full object-cover">`;
-
+            createBusIcon: (id, colorClass) => {
+                 // UPDATED MARKER DESIGN: Pin shape with ID inside, no Avatar
                  return L.divIcon({
-                    className: 'custom-bus-marker',
+                    className: 'custom-bus-pin', 
                     html: `
-                        <div class="flex flex-col items-center">
-                            <div class="mb-1 bg-white/90 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold shadow-sm whitespace-nowrap text-slate-700">
-                                ${app.escapeHtml(name)}
-                            </div>
-                            <div class="${colorClass} w-10 h-10 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative transform transition-transform duration-300 overflow-hidden">
-                                ${imgHtml}
-                            </div>
-                            <div class="w-0 h-0 border-l-[6px] border-l-transparent border-t-[8px] border-t-${colorClass.replace('bg-', '')} border-r-[6px] border-r-transparent -mt-1"></div>
+                        <div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">
+                            ${id}
+                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div>
                         </div>
                     `,
-                    iconSize: [60, 60],
-                    iconAnchor: [30, 50],
-                    popupAnchor: [0, -50]
+                    iconSize: [40, 48], 
+                    iconAnchor: [20, 48], 
+                    popupAnchor: [0, -48]
                 });
             },
 
@@ -1415,54 +1334,31 @@
                 }).addTo(state.map);
             },
 
-            updateBusMarkerIcon: (id, profile, colorClass) => {
-                if (!state.markers[id]) return;
-                const displayName = profile.username || id;
-                const displayPhoto = profile.photoUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-                const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
-                state.markers[id].setIcon(icon);
-            },
-
             updateBusMarker: async (data) => {
-                const { id, lat, lng, acc, uid } = data;
+                const { id, lat, lng, acc } = data;
 
                 let colorClass = BUS_STYLES.default;
-                if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
+                
+                // Specific Color Logic
+                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; // Kuril Blue
+                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; // Notun Bazar Green
+                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; // Aftab Nagar Purple
+                else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
                 else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
-                else if (id.startsWith('K')) colorClass = BUS_STYLES['K'];
-                else if (id.startsWith('N')) colorClass = BUS_STYLES['N'];
-                else if (id.startsWith('A')) colorClass = BUS_STYLES['A'];
-
-                let profile = { username: null, photoUrl: null };
-                if (uid) {
-                    if (state.userCache && state.userCache[uid]) {
-                        profile = state.userCache[uid];
-                    } else {
-                         app.fetchUserProfile(uid).then(p => {
-                             app.updateBusMarkerIcon(id, p, colorClass);
-                         });
-                    }
-                }
-
-                const displayName = profile.username || id;
-                const displayPhoto = profile.photoUrl || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
 
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-                    
-                    const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
+                    const icon = app.createBusIcon(id, colorClass); // Only pass ID and Color
                     state.markers[id].setIcon(icon);
-
                 } else {
-                    const icon = app.createBusIcon(displayName, displayPhoto, colorClass);
+                    const icon = app.createBusIcon(id, colorClass);
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
                     
                     const popupContent = document.createElement('div');
                     popupContent.innerHTML = `
                         <div class="text-center p-2">
-                            <b class="text-brand-500 block mb-1">${app.escapeHtml(displayName)}</b>
+                            <b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b>
                             <p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>
-                            <p class="text-[10px] font-bold text-slate-700 mt-1">Bus ${app.escapeHtml(id)}</p>
                         </div>
                     `;
                     marker.bindPopup(popupContent);
@@ -1521,10 +1417,17 @@
                         item.id = `bus-${bus.id}`;
                         item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
                         item.onclick = () => app.focusBus(bus.id);
+                        
+                        // Icon Color for List
+                        let bgClass = "bg-orange-500";
+                        if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
+                        if (bus.id.startsWith('N')) bgClass = "bg-green-500";
+                        if (bus.id.startsWith('A')) bgClass = "bg-purple-500";
+
                         item.innerHTML = `
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                    <span class="font-bold text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.id)}</span>
+                                <div class="w-10 h-10 rounded-full ${bgClass} text-white flex items-center justify-center font-bold">
+                                    ${app.escapeHtml(bus.id)}
                                 </div>
                                 <div>
                                     <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
@@ -1562,129 +1465,6 @@
                     sheet.classList.add('translate-y-0');
                 }
             },
-
-            // --- Profile Logic ---
-            openProfile: () => {
-                app.switchView('view-profile');
-                app.loadProfile();
-            },
-
-            handleImagePreview: (event) => {
-                const file = event.target.files[0];
-                const errorEl = document.getElementById('profile-error');
-                
-                if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                        errorEl.innerText = "Image too large (Max 5MB)";
-                        errorEl.classList.remove('hidden');
-                        event.target.value = '';
-                        return;
-                    } else {
-                        errorEl.classList.add('hidden');
-                    }
-
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        document.getElementById('profile-preview').src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            },
-
-            uploadToCloudinary: async (file) => {
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                formData.append('cloud_name', CLOUDINARY_CLOUD_NAME);
-
-                try {
-                    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    const data = await res.json();
-                    if(data.error) throw data.error;
-                    return data.secure_url;
-                } catch (err) {
-                    console.error("Cloudinary Error:", err);
-                    alert("Image upload failed: " + (err.message || "Unknown Error"));
-                    return null;
-                }
-            },
-
-            loadProfile: async () => {
-                const id = CONFIG.mqtt.clientId;
-                if (!db) return;
-                try {
-                    const docRef = doc(db, "users", id);
-                    const docSnap = await getDoc(docRef);
-
-                    const defaultAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`;
-
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        document.getElementById('profile-name').value = data.username || '';
-                        document.getElementById('profile-preview').src = data.photoUrl || defaultAvatar;
-                    } else {
-                        // New user logic
-                        document.getElementById('profile-name').value = '';
-                        document.getElementById('profile-preview').src = defaultAvatar;
-                    }
-                } catch (e) {
-                    console.error("Profile Load Error:", e);
-                    // Fallback in case of error
-                    const fallbackAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`;
-                    document.getElementById('profile-preview').src = fallbackAvatar;
-                }
-            },
-
-            removeProfilePhoto: async () => {
-                if(!confirm("Remove profile photo?")) return;
-                const id = CONFIG.mqtt.clientId;
-                document.getElementById('profile-preview').src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${id}`;
-                document.getElementById('profile-upload').value = ""; 
-            },
-
-            saveProfile: async () => {
-                const btn = document.getElementById('btn-save-profile');
-                const originalText = btn.innerHTML;
-                btn.innerHTML = '<div class="loader"></div>';
-                btn.disabled = true;
-
-                let name = document.getElementById('profile-name').value.trim();
-                const fileInput = document.getElementById('profile-upload');
-                let photoUrl = document.getElementById('profile-preview').src;
-                
-                // Check if it's the default icon (DiceBear or old Flaticon)
-                if (photoUrl.includes('api.dicebear.com') || photoUrl.includes('cdn-icons-png.flaticon.com')) {
-                    photoUrl = "";
-                }
-
-                // Upload New Photo if selected
-                if (fileInput.files.length > 0) {
-                    const uploadedUrl = await app.uploadToCloudinary(fileInput.files[0]);
-                    if (uploadedUrl) photoUrl = uploadedUrl;
-                }
-
-                const id = CONFIG.mqtt.clientId;
-                if (db) {
-                    try {
-                        const updateData = {
-                            username: name,
-                            photoUrl: photoUrl
-                        };
-                        
-                        await setDoc(doc(db, "users", id), updateData, { merge: true });
-                        alert("Profile Saved!");
-                        app.goHome();
-                    } catch (e) {
-                        console.error("Error saving profile:", e);
-                        alert("Error saving profile");
-                    }
-                }
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
         };
 
         window.app = app;
