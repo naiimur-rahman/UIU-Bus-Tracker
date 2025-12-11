@@ -451,7 +451,7 @@
             lastLng: null,
             tripStartTime: null,
             uptimeInterval: null,
-            speedBuffer: []
+            speedBuffer: [] // For speed smoothing
         };
 
         /** APP CONTROLLER */
@@ -459,7 +459,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Trip Reset Fixed");
+                console.log("App Version: Trip Reset & Speed Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -559,7 +559,6 @@
             },
 
             goHome: async () => {
-                // CLEANUP EVERYTHING ON HOME NAV
                 try {
                     if (state.isBroadcasting) {
                         const confirmExit = confirm("Stop broadcasting and exit?");
@@ -567,20 +566,22 @@
                         await app.stopBroadcast();
                     }
 
-                    // Force Clear Watch
+                    // CRITICAL: Stop GPS immediately
                     if (state.watchId) {
                         navigator.geolocation.clearWatch(state.watchId);
                         state.watchId = null;
                     }
 
+                    // Reset all variables
                     state.driverId = null;
                     state.driverRoute = null;
                     state.driverDestination = null;
                     state.driverDirection = null;
                     state.role = null;
                     state.isBroadcasting = false;
+                    state.speedBuffer = []; 
 
-                    // Remove Map Instance
+                    // FIX: Remove Map Instance to prevent "Map already initialized" error
                     if (state.driverMap) {
                         state.driverMap.remove();
                         state.driverMap = null;
@@ -771,6 +772,12 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
+                // Clear any old watchers before starting new logic
+                if (state.watchId) {
+                    navigator.geolocation.clearWatch(state.watchId);
+                    state.watchId = null;
+                }
+
                 let attempts = 0;
                 const syncInterval = setInterval(() => {
                     attempts++;
@@ -793,7 +800,7 @@
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                         if (loader) loader.classList.add('hidden');
                         
-                        // FIX: Ensure UI is reset for new trip
+                        // FIX: Reset UI buttons
                         app.updateBroadcastUI(false);
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
@@ -855,7 +862,7 @@
                 }
 
                 setTimeout(() => {
-                    if (!document.getElementById('driver-map')) return; // Safety check
+                    if (!document.getElementById('driver-map')) return; 
                     
                     state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
                     const isDark = document.documentElement.classList.contains('dark');
@@ -899,7 +906,7 @@
                     return;
                 }
                 
-                // Clear any previous watch
+                // CRITICAL: Kill any old watch before starting new one
                 if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
 
                 const checkConflictAndStart = (pos) => {
@@ -937,7 +944,7 @@
                 state.sessionDistance = 0;
                 state.lastLat = null;
                 state.lastLng = null;
-                state.speedBuffer = [];
+                state.speedBuffer = []; // Reset buffer on start
 
                 // Start Timer
                 state.tripStartTime = Date.now();
@@ -965,12 +972,27 @@
                     (position) => {
                         let { latitude, longitude, accuracy, speed } = position.coords;
 
+                        // FIX: Weighted Average Speed Smoothing
                         const rawSpeedKmh = (speed || 0) * 3.6;
-                        state.speedBuffer.push(rawSpeedKmh);
-                        if (state.speedBuffer.length > 5) state.speedBuffer.shift();
+                        
+                        // Only add valid speeds to buffer
+                        if (rawSpeedKmh >= 0) {
+                            state.speedBuffer.push(rawSpeedKmh);
+                            if (state.speedBuffer.length > 5) state.speedBuffer.shift(); // Keep last 5
+                        }
 
-                        let avgSpeed = state.speedBuffer.reduce((a, b) => a + b, 0) / state.speedBuffer.length;
-                        if (avgSpeed < 1) avgSpeed = 0; 
+                        // Calculate weighted average (recent values matter more)
+                        let weightedSum = 0;
+                        let weightTotal = 0;
+                        state.speedBuffer.forEach((val, idx) => {
+                            const weight = idx + 1; // 1, 2, 3, 4, 5
+                            weightedSum += val * weight;
+                            weightTotal += weight;
+                        });
+                        
+                        let avgSpeed = 0;
+                        if (weightTotal > 0) avgSpeed = weightedSum / weightTotal;
+                        if (avgSpeed < 1) avgSpeed = 0; // Cutoff for drift
 
                         const displaySpeed = Math.round(avgSpeed);
                         document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
@@ -984,7 +1006,6 @@
                         state.lastLat = latitude;
                         state.lastLng = longitude;
 
-                        // MQTT Publish Rate Limit (200ms)
                         const now = Date.now();
                         if (now - state.lastSentTime < 200) return;
                         state.lastSentTime = now;
@@ -997,7 +1018,7 @@
                                 lat: latitude,
                                 lng: longitude,
                                 acc: accuracy,
-                                speed: displaySpeed,
+                                speed: displaySpeed, // Send smoothed speed
                                 ts: now
                             });
                             state.client.publish(CONFIG.topics.location, payload, { retain: true });
@@ -1015,11 +1036,12 @@
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
                 
-                // FIX: Immediate Local Cleanup (Prevent conflict with self)
-                delete state.activeBuses[state.driverId];
-                app.removeBusMarker(state.driverId);
-
-                // FIX: Aggressive Watch Cleanup
+                // CRITICAL FIX: Kill "Ghost Bus" in local memory immediately
+                if (state.driverId && state.activeBuses[state.driverId]) {
+                    delete state.activeBuses[state.driverId];
+                }
+                
+                // Force Kill GPS Watcher
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
