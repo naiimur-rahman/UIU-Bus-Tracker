@@ -428,7 +428,7 @@
         const state = {
             client: null,
             isConnected: false,
-            connectionDebounce: null, // FIX: Prevent flickering offline status
+            connectionDebounce: null, 
             role: null,
             driverId: null,
             driverRoute: null,
@@ -459,7 +459,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Final Stable (Fixed)");
+                console.log("App Version: Trip Reset Fixed");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -515,7 +515,6 @@
             },
 
             switchView: (viewId) => {
-                // FIX: Hide loaders when switching views to prevent stuck UI
                 document.getElementById('selection-loader').classList.add('hidden');
                 document.getElementById('route-sub-select').classList.add('hidden');
 
@@ -560,7 +559,7 @@
             },
 
             goHome: async () => {
-                // FIX: CLEANUP EVERYTHING ON HOME NAV
+                // CLEANUP EVERYTHING ON HOME NAV
                 try {
                     if (state.isBroadcasting) {
                         const confirmExit = confirm("Stop broadcasting and exit?");
@@ -581,7 +580,7 @@
                     state.role = null;
                     state.isBroadcasting = false;
 
-                    // FIX: Remove Map Instance to prevent "Map already initialized" error
+                    // Remove Map Instance
                     if (state.driverMap) {
                         state.driverMap.remove();
                         state.driverMap = null;
@@ -637,7 +636,6 @@
 
                 state.client.on('connect', () => {
                     console.log("MQTT Connected");
-                    // FIX: Clear debounce timer if we reconnect
                     if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     
                     state.isConnected = true;
@@ -663,7 +661,6 @@
 
                 state.client.on('error', (err) => {
                     console.error("MQTT Error", err);
-                    // FIX: Add delay before showing error to prevent flickering
                     if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     state.connectionDebounce = setTimeout(() => {
                         state.isConnected = false;
@@ -672,7 +669,6 @@
                 });
                 
                 state.client.on('close', () => {
-                    // FIX: Add delay before showing offline
                     if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     state.connectionDebounce = setTimeout(() => {
                         state.isConnected = false;
@@ -719,13 +715,11 @@
 
             cleanupStaleUsers: () => {
                 const now = Date.now();
-                // 1. Cleanup Viewers
                 for (const [id, ts] of state.activeUsers) {
                     if (now - ts > 45000) state.activeUsers.delete(id);
                 }
                 app.updateUserCount();
 
-                // 2. Cleanup Buses - FIX: Increased to 45 seconds to prevent map flicker
                 for (const id in state.activeBuses) {
                     if (now - state.activeBuses[id].ts > 45000) { 
                         delete state.activeBuses[id];
@@ -752,7 +746,7 @@
                 if (state.isBroadcasting && data.id === state.driverId) return;
 
                 const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return; // Ignore very old data
+                if (timeDiff > 120000) return; 
                 
                 state.activeBuses[data.id] = data;
 
@@ -777,7 +771,6 @@
                 const loader = document.getElementById('selection-loader');
                 if (loader) loader.classList.remove('hidden');
 
-                // FIX: Faster sync logic, don't wait arbitrarily long
                 let attempts = 0;
                 const syncInterval = setInterval(() => {
                     attempts++;
@@ -800,6 +793,8 @@
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                         if (loader) loader.classList.add('hidden');
                         
+                        // FIX: Ensure UI is reset for new trip
+                        app.updateBroadcastUI(false);
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
                     }
@@ -837,7 +832,6 @@
 
             // --- Driver Map & Routing ---
             initDriverMap: () => {
-                // FIX: Ensure container is clean
                 if (state.driverMap) {
                     state.driverMap.remove();
                     state.driverMap = null;
@@ -971,7 +965,6 @@
                     (position) => {
                         let { latitude, longitude, accuracy, speed } = position.coords;
 
-                        // FIX: Speed Smoothing (prevent NaN or instant 0)
                         const rawSpeedKmh = (speed || 0) * 3.6;
                         state.speedBuffer.push(rawSpeedKmh);
                         if (state.speedBuffer.length > 5) state.speedBuffer.shift();
@@ -1022,6 +1015,10 @@
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
                 
+                // FIX: Immediate Local Cleanup (Prevent conflict with self)
+                delete state.activeBuses[state.driverId];
+                app.removeBusMarker(state.driverId);
+
                 // FIX: Aggressive Watch Cleanup
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
