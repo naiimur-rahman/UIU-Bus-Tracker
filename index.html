@@ -324,13 +324,13 @@
 
             <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
                  <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
-                     <i class="fas fa-check text-6xl text-white"></i>
+                      <i class="fas fa-check text-6xl text-white"></i>
                  </div>
                  <h2 class="text-4xl font-black text-white mb-2">Trip Ended</h2>
                  <p class="text-slate-400 mb-8 text-center px-4">Thank you for contributing!</p>
 
                  <button onclick="app.closeSummary()" class="mt-4 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform">
-                     Go Home
+                      Go Home
                  </button>
             </div>
         </div>
@@ -450,7 +450,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Simplified No-DB");
+                console.log("App Version: Phantom Bus Fix Applied");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -546,23 +546,32 @@
 
             goHome: async () => {
                 try {
+                    // Ensure broadcast is stopped properly first
                     if (state.isBroadcasting) {
                         const confirmExit = confirm("Stop broadcasting and exit?");
                         if (!confirmExit) return;
                         await app.stopBroadcast();
                     }
 
+                    // Remove Map Instance
+                    if (state.driverMap) {
+                        state.driverMap.remove();
+                        state.driverMap = null;
+                    }
+
+                    // Double check: Clear ID from memory again to be safe
+                    if (state.driverId && state.activeBuses[state.driverId]) {
+                        delete state.activeBuses[state.driverId];
+                    }
+
+                    // Reset State Variables
                     state.driverId = null;
                     state.driverRoute = null;
                     state.driverDestination = null;
                     state.driverDirection = null;
                     state.role = null;
 
-                    if (state.driverMap) {
-                        state.driverMap.remove();
-                        state.driverMap = null;
-                    }
-
+                    // Clear Storage
                     localStorage.removeItem('active_driver_id');
                     localStorage.removeItem('active_driver_route');
                     localStorage.removeItem('active_driver_dest');
@@ -571,6 +580,8 @@
                 } catch (error) {
                     console.error("Error during exit:", error);
                 }
+                
+                // Switch View
                 app.switchView('view-landing');
             },
 
@@ -966,14 +977,18 @@
             },
 
             stopBroadcast: async () => {
+                // 1. Reset Flags
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
+
+                // 2. Stop GPS Watch
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
                 }
 
+                // 3. Stop Timer
                 if (state.uptimeInterval) {
                     clearInterval(state.uptimeInterval);
                     state.uptimeInterval = null;
@@ -981,11 +996,21 @@
                 const uptimeEl = document.getElementById('val-uptime');
                 if(uptimeEl) uptimeEl.innerText = "00:00";
 
+                // 4. Send Offline Message to MQTT
                 if (state.client && state.isConnected) {
                       state.client.publish(CONFIG.topics.location, JSON.stringify({
                         id: state.driverId,
                         status: 'offline'
                       }), { retain: true }); 
+                }
+
+                // 5. CRITICAL FIX: Clean Local Memory Immediately
+                // We manually delete our own bus from the list so the app
+                // doesn't think there is a "Ghost Bus" blocking us next time.
+                if (state.driverId && state.activeBuses[state.driverId]) {
+                    delete state.activeBuses[state.driverId];
+                    app.removeBusMarker(state.driverId);
+                    app.updateBusList(); 
                 }
 
                 app.showSummary();
