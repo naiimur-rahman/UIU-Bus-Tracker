@@ -996,15 +996,11 @@
                             let rawSpeedKmh = (speed || 0) * 3.6;
 
                             // Improved Stationary Logic
-                            if (rawSpeedKmh < 4.8) {
-                                rawSpeedKmh = 0;
-                                state.currentSmoothedSpeed = 0; // Force stop to prevent decay
-                            } else {
-                                // EMA: New = (Old * 0.8) + (Raw * 0.2)
-                                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
-                            }
+                            // EMA: Apply smoothing to ALL speeds (no cutoff)
+                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
 
-                            const displaySpeed = Math.round(state.currentSmoothedSpeed);
+                            // Display 1 decimal place (e.g. 0.1, 1.5)
+                            const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
                             document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
                             document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
 
@@ -1285,7 +1281,7 @@
                                     <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
                                     <div class="flex items-center gap-2">
                                         <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
-                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Math.round(bus.speed || 0)}</span> km/h</p>
+                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed || 0).toFixed(1)}</span> km/h</p>
                                     </div>
                                 </div>
                             </div>
@@ -1298,7 +1294,7 @@
                     } else {
                         const speedEl = document.getElementById(`speed-${bus.id}`);
                         if (speedEl) {
-                            speedEl.innerText = Math.round(bus.speed || 0);
+                            speedEl.innerText = Number(bus.speed || 0).toFixed(1);
                         }
                     }
                 });
