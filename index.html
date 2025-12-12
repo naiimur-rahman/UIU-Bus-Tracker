@@ -11,6 +11,9 @@
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
                     colors: {
                         brand: {
                             50: '#fff7ed',
@@ -39,19 +42,25 @@
         }
     </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
         }
         .dark .glass {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         }
         .dark-map-tiles {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
@@ -100,9 +109,44 @@
         body { overscroll-behavior: none; }
         #view-profile { background-color: rgb(248 250 252) !important; }
         .dark #view-profile { background-color: rgb(15 23 42) !important; }
+        .dot-pattern {
+            background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px);
+            background-size: 24px 24px;
+        }
+        .dark .dot-pattern {
+            background-image: radial-gradient(#1e293b 1.5px, transparent 1.5px);
+        }
+
+        /* Custom Leaflet Controls */
+        .leaflet-bar { border: none !important; box-shadow: none !important; }
+        .leaflet-bar a {
+            border-radius: 50% !important;
+            width: 40px !important;
+            height: 40px !important;
+            line-height: 40px !important;
+            background-color: white !important;
+            color: #64748b !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            margin-bottom: 8px !important;
+            border-bottom: none !important;
+            transition: all 0.2s ease;
+        }
+        .dark .leaflet-bar a {
+            background-color: #1e293b !important;
+            color: #cbd5e1 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        }
+        .leaflet-bar a:hover {
+            background-color: #f8fafc !important;
+            transform: scale(1.05);
+            color: #f97316 !important;
+        }
+        .dark .leaflet-bar a:hover {
+            background-color: #334155 !important;
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
 
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
@@ -285,23 +329,26 @@
                     </div>
                 </div>
 
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4 relative z-50">
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-bold py-5 rounded-2xl shadow-[0_10px_20px_-5px_rgba(249,115,22,0.4),0_4px_6px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2)] active:translate-y-[2px] transition-all duration-150 mb-4 relative z-50 uppercase tracking-widest text-sm border-b-4 border-brand-900/20 active:border-b-0">
                     START TRIP
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 w-full max-w-sm mt-6 px-4"> 
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
-                    <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
+            <div class="grid grid-cols-3 gap-3 w-full max-w-sm mt-6 px-2">
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Speed</p>
+                    <p id="val-speed" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">0<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span></p>
                 </div>
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
-                    <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
+                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">GPS</p>
+                    <p id="val-accuracy" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">--</p>
                 </div>
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
-                    <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
+                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Time</p>
+                    <p id="val-uptime" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">00:00</p>
                 </div>
             </div>
         </div>
@@ -345,8 +392,8 @@
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 relative transition-transform duration-300 transform translate-y-0" id="bottom-sheet">
-            <div class="w-full flex justify-center pt-3 pb-1 cursor-pointer" onclick="app.toggleBottomSheet()">
-                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+            <div class="w-full flex justify-center pt-4 pb-2 cursor-pointer" onclick="app.toggleBottomSheet()">
+                <div class="w-16 h-1.5 bg-slate-300/50 dark:bg-slate-600/50 rounded-full backdrop-blur-sm"></div>
             </div>
             <div class="p-4 pb-8 max-h-[40vh] overflow-y-auto">
                 <h3 class="font-bold mb-4 text-sm text-slate-500 uppercase tracking-wide">Active Transport</h3>
@@ -914,7 +961,14 @@
                     const jumpBtn = L.control({position: 'bottomright'});
                     jumpBtn.onAdd = function(map) {
                         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        div.innerHTML = `<button onclick="state.driverMap.setView(CONFIG.uiuCoords, 16)" class="bg-white w-10 h-10 rounded-md flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50"><i class="fas fa-university text-xl"></i></button>`;
+                        const a = L.DomUtil.create('a', '', div);
+                        a.href = '#';
+                        a.title = 'Jump to UIU';
+                        a.innerHTML = '<i class="fas fa-university"></i>';
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            state.driverMap.setView(CONFIG.uiuCoords, 16);
+                        }
                         return div;
                     };
                     jumpBtn.addTo(state.driverMap);
@@ -1018,9 +1072,9 @@
                             // 4. Formatting
                             const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
                             
-                            document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
+                            document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
                             // --- DYNAMIC SPEED LOGIC END ---
-                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
+                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
 
                             if (state.driverMarker) {
                                 state.driverMarker.setLatLng([latitude, longitude]);
@@ -1126,9 +1180,9 @@
 
                 if (isActive) {
                     btn.innerText = "STOP TRIP";
-                    btn.classList.replace('bg-brand-500', 'bg-red-500');
-                    btn.classList.replace('hover:bg-brand-600', 'hover:bg-red-600');
-                    btn.classList.add('animate-pulse');
+                    btn.classList.remove('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
+                    btn.classList.add('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
+
                     glow.style.opacity = '1';
                     glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
                     title.innerText = "Broadcasting";
@@ -1136,9 +1190,9 @@
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    // Safer removal of classes
-                    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
-                    btn.classList.add('bg-brand-500', 'hover:bg-brand-600');
+                    // Restore gradients
+                    btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
+                    btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
                     
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
@@ -1157,7 +1211,15 @@
                         const jumpBtn = L.control({position: 'bottomright'});
                         jumpBtn.onAdd = function(map) {
                             const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                            div.innerHTML = `<button onclick="state.map.setView(CONFIG.uiuCoords, 16)" class="bg-white w-8 h-8 flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50 rounded-sm mb-[2px]"><i class="fas fa-university"></i></button>`;
+                            // Use same structure as default leaflet controls but customized
+                            const a = L.DomUtil.create('a', '', div);
+                            a.href = '#';
+                            a.title = 'Jump to UIU';
+                            a.innerHTML = '<i class="fas fa-university"></i>';
+                            a.onclick = (e) => {
+                                e.preventDefault();
+                                state.map.setView(CONFIG.uiuCoords, 16);
+                            }
                             return div;
                         };
                         jumpBtn.addTo(state.map);
@@ -1282,7 +1344,8 @@
                     if (!item) {
                         item = document.createElement('div');
                         item.id = `bus-${bus.id}`;
-                        item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
+                        // Updated to softer colors/glass effect
+                        item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
                         item.onclick = () => app.focusBus(bus.id);
                         
                         let bgClass = "bg-orange-500";
