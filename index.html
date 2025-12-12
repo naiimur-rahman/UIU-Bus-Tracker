@@ -985,23 +985,41 @@
                                     }
                                 }
                                 if (conflict) {
-                                    alert("⚠️ Another Captain is active nearby! Stopping.");
+                                    alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
                                     app.stopBroadcast();
                                     return;
                                 }
                                 isFirstFix = false;
                             }
 
-                            // SMOOTH SPEED (EMA Filter)
+                            // --- DYNAMIC SPEED LOGIC START ---
                             let rawSpeedKmh = (speed || 0) * 3.6;
 
-                            // Improved Stationary Logic
-                            // EMA: Apply smoothing to ALL speeds (no cutoff)
-                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
+                            // 1. Determine Smoothing Factor (Alpha)
+                            // Default 0.15 = Heavy smoothing (keeps 85% history) -> Good for cruising
+                            let alpha = 0.15; 
+                            
+                            // If we are slowing down (Current > New), react FAST.
+                            // 0.6 = Low smoothing (only keeps 40% history) -> Drops quickly
+                            if (state.currentSmoothedSpeed > rawSpeedKmh) {
+                                alpha = 0.6; 
+                            }
 
-                            // Display 1 decimal place (e.g. 0.1, 1.5)
+                            // 2. Apply Dynamic EMA
+                            // Formula: (Old * (1 - alpha)) + (New * alpha)
+                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
+
+                            // 3. Absolute Stop Snap
+                            // If raw GPS says 0 and we are already slow, just snap to 0 immediately to kill lag
+                            if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
+                                state.currentSmoothedSpeed = 0;
+                            }
+
+                            // 4. Formatting
                             const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
+                            
                             document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
+                            // --- DYNAMIC SPEED LOGIC END ---
                             document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
 
                             if (state.driverMarker) {
