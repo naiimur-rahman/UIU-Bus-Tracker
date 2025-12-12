@@ -914,7 +914,8 @@
                     const jumpBtn = L.control({position: 'bottomright'});
                     jumpBtn.onAdd = function(map) {
                         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        div.innerHTML = `<button onclick="state.driverMap.setView(CONFIG.uiuCoords, 16)" class="bg-white w-10 h-10 rounded-md flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50"><i class="fas fa-university text-xl"></i></button>`;
+                        div.innerHTML = `<button onclick="state.driverMap.setView(CONFIG.uiuCoords, 16)" class="bg-white w-10 h-10 rounded-xl flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50 border-none"><i class="fas fa-university text-xl"></i></button>`;
+                        div.style.border = 'none';
                         return div;
                     };
                     jumpBtn.addTo(state.driverMap);
@@ -1152,20 +1153,23 @@
                 setTimeout(() => {
                     if (!state.map) {
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
-                        L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         
-                        const jumpBtn = L.control({position: 'bottomright'});
-                        jumpBtn.onAdd = function(map) {
-                            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                            div.innerHTML = `<button onclick="state.map.setView(CONFIG.uiuCoords, 16)" class="bg-white w-8 h-8 flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50 rounded-sm mb-[2px]"><i class="fas fa-university"></i></button>`;
-                            return div;
+                        // Custom Zoom Control
+                        const zoomCtrl = L.control({position: 'bottomright'});
+                        zoomCtrl.onAdd = function(map) {
+                            const container = L.DomUtil.create('div', 'flex flex-col gap-2 mb-2 mr-1');
+                            const zoomIn = `<button onclick="state.map.zoomIn()" class="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-brand-500 transition-colors"><i class="fas fa-plus"></i></button>`;
+                            const zoomOut = `<button onclick="state.map.zoomOut()" class="w-10 h-10 bg-white dark:bg-slate-800 rounded-xl shadow-lg flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-brand-500 transition-colors"><i class="fas fa-minus"></i></button>`;
+                            const home = `<button onclick="state.map.setView(CONFIG.uiuCoords, 16)" class="w-10 h-10 bg-brand-500 rounded-xl shadow-lg flex items-center justify-center text-white font-bold transition-transform active:scale-95"><i class="fas fa-university"></i></button>`;
+                            container.innerHTML = zoomIn + zoomOut + home;
+                            return container;
                         };
-                        jumpBtn.addTo(state.map);
+                        zoomCtrl.addTo(state.map);
 
                         const uiuIcon = L.divIcon({
                              className: '',
-                             html: '<div class="text-2xl">🎓</div>',
-                             iconSize: [30, 30]
+                             html: '<div class="text-3xl filter drop-shadow-md">🎓</div>',
+                             iconSize: [40, 40]
                         });
                         L.marker(CONFIG.uiuCoords, {icon: uiuIcon}).addTo(state.map).bindPopup("UIU Campus");
                         app.updateMapStyle();
