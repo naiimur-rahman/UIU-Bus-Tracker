@@ -1018,26 +1018,40 @@
                             const { latitude, longitude, accuracy, speed } = position.coords;
                             const now = Date.now();
 
-                            // Conflict Check Inside Loop
+                            // --- SAME DIRECTION BLOCKING LOGIC START ---
                             if (isFirstFix) {
                                 let conflict = false;
                                 const buses = Object.values(state.activeBuses);
+                                
                                 for (let bus of buses) {
+                                    // 1. Skip checking against yourself
                                     if (bus.id === state.driverId) continue;
+
+                                    // 2. Skip stale buses (older than 60s)
                                     if (now - bus.ts > 60000) continue;
+
+                                    // 3. Check Exact Route & Direction Match
+                                    // defined in confirmRoute: e.g., "Kuril (To UIU)"
                                     if (bus.route === state.driverRoute) {
+                                        
+                                        // 4. Calculate Distance
                                         const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+                                        
+                                        // 5. If closer than 20 meters
                                         if (dist < 20) {
-                                            conflict = true; break;
+                                            conflict = true; 
+                                            break;
                                         }
                                     }
                                 }
+
                                 if (conflict) {
                                     alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
                                     app.stopBroadcast();
-                                    return;
+                                    return; // Stop execution here
                                 }
-                                isFirstFix = false;
+
+                                isFirstFix = false; // Disable check for rest of trip
                             }
 
                             // --- DYNAMIC SPEED LOGIC START ---
