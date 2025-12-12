@@ -196,7 +196,7 @@
             <h2 class="text-2xl font-bold">Select Route</h2>
         </div>
 
-        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-[1000] flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
             <h3 class="text-2xl font-bold mb-6">Which Direction?</h3>
 
             <div class="w-full max-w-xs mb-4 text-left">
@@ -205,14 +205,16 @@
                        class="w-full glass bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl outline-none focus:ring-2 ring-brand-500 transition-all font-bold text-slate-700 dark:text-white placeholder:font-normal">
             </div>
 
-            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left">
-                <div class="font-bold text-lg">Going to Campus</div>
-                <div class="text-xs text-slate-500">From Destination &rarr; UIU</div>
+            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left relative cursor-pointer active:scale-95">
+                <div class="font-bold text-lg pointer-events-none">Going to Campus</div>
+                <div class="text-xs text-slate-500 pointer-events-none">From Destination &rarr; UIU</div>
             </button>
-            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs glass p-6 rounded-xl hover:bg-brand-50 transition-colors border-l-4 border-l-blue-500 text-left">
-                <div class="font-bold text-lg">Leaving Campus</div>
-                <div class="text-xs text-slate-500">UIU &rarr; To Destination</div>
+
+            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs glass p-6 rounded-xl hover:bg-brand-50 transition-colors border-l-4 border-l-blue-500 text-left relative cursor-pointer active:scale-95">
+                <div class="font-bold text-lg pointer-events-none">Leaving Campus</div>
+                <div class="text-xs text-slate-500 pointer-events-none">UIU &rarr; To Destination</div>
             </button>
+            
             <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="mt-8 text-slate-400 hover:text-slate-600">Cancel</button>
         </div>
 
@@ -437,7 +439,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Map Clear Fix & Structure Fix");
+                console.log("App Version: Instant Action Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -751,83 +753,67 @@
                 state.tempRoutePrefix = prefix;
                 const savedName = localStorage.getItem('saved_username');
                 if (savedName) {
-                    document.getElementById('driver-username-input').value = savedName;
+                    const input = document.getElementById('driver-username-input');
+                    if(input) input.value = savedName;
                 }
                 document.getElementById('route-sub-select').classList.remove('hidden');
             },
 
             confirmRoute: (direction) => {
+                // FIXED: Instant Transition logic
+                if (!state.tempRouteName) {
+                    alert("Please select a route first.");
+                    app.switchView('view-driver-select');
+                    return;
+                }
                 const name = state.tempRouteName;
                 const prefix = state.tempRoutePrefix;
                 const fullRouteName = `${name} (${direction})`;
 
-                const usernameInput = document.getElementById('driver-username-input').value.trim();
-                const username = usernameInput || null;
+                const input = document.getElementById('driver-username-input');
+                const username = input ? input.value.trim() : null;
 
                 document.getElementById('route-sub-select').classList.add('hidden');
-                const loader = document.getElementById('selection-loader');
-                if (loader) loader.classList.remove('hidden');
+                
+                // --- INSTANT ACTION (No Waiting for MQTT) ---
+                const now = Date.now();
+                const assignedId = app.assignNextId(prefix);
+                
+                state.driverRoute = fullRouteName;
+                state.driverId = assignedId;
+                state.driverDestination = name;
+                state.driverDirection = direction;
+                state.driverUsername = username;
 
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
+                localStorage.setItem('active_driver_id', assignedId);
+                localStorage.setItem('active_driver_route', fullRouteName);
+                localStorage.setItem('active_driver_dest', name);
+                localStorage.setItem('active_driver_dir', direction);
+
+                if (username) {
+                    localStorage.setItem('active_driver_username', username);
+                    localStorage.setItem('saved_username', username);
+                } else {
+                    localStorage.removeItem('active_driver_username');
                 }
 
-                let attempts = 0;
-                const syncInterval = setInterval(() => {
-                    attempts++;
-                    if (state.isConnected || attempts > 30) {
-                        clearInterval(syncInterval);
-                        
-                        const now = Date.now();
-                        for (const id in state.activeBuses) {
-                            if (now - state.activeBuses[id].ts > 30000) { 
-                                delete state.activeBuses[id];
-                            }
-                        }
+                document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
 
-                        const assignedId = app.assignNextId(prefix);
-                        
-                        state.driverRoute = fullRouteName;
-                        state.driverId = assignedId;
-                        state.driverDestination = name;
-                        state.driverDirection = direction;
-                        state.driverUsername = username;
-
-                        localStorage.setItem('active_driver_id', assignedId);
-                        localStorage.setItem('active_driver_route', fullRouteName);
-                        localStorage.setItem('active_driver_dest', name);
-                        localStorage.setItem('active_driver_dir', direction);
-
-                        if (username) {
-                            localStorage.setItem('active_driver_username', username);
-                            localStorage.setItem('saved_username', username);
-                        } else {
-                            localStorage.removeItem('active_driver_username');
-                        }
-
-                        document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
-
-                        const nameContainer = document.getElementById('driver-display-username-container');
-                        const nameSpan = document.getElementById('driver-display-username');
-                        if (username) {
-                            nameContainer.classList.remove('hidden');
-                            nameSpan.innerText = username;
-                        } else {
-                            nameContainer.classList.add('hidden');
-                            nameSpan.innerText = '';
-                        }
-
-                        if (loader) loader.classList.add('hidden');
-                        
-                        // FIX: Ensure button state is fresh
-                        state.isBroadcasting = false;
-                        app.updateBroadcastUI(false);
-                        
-                        app.switchView('view-driver-dashboard');
-                        app.initDriverMap();
-                    }
-                }, 100);
+                const nameContainer = document.getElementById('driver-display-username-container');
+                const nameSpan = document.getElementById('driver-display-username');
+                if (username) {
+                    nameContainer.classList.remove('hidden');
+                    nameSpan.innerText = username;
+                } else {
+                    nameContainer.classList.add('hidden');
+                    nameSpan.innerText = '';
+                }
+                
+                state.isBroadcasting = false;
+                app.updateBroadcastUI(false);
+                
+                app.switchView('view-driver-dashboard');
+                app.initDriverMap();
             },
 
             assignNextId: (prefix) => {
