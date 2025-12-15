@@ -470,7 +470,9 @@
             lastLng: null,
             tripStartTime: null,
             uptimeInterval: null,
-            currentSmoothedSpeed: 0
+            currentSmoothedSpeed: 0,
+            autoStopTimer: null,
+            isFirstFix: true
         };
 
         /** APP CONTROLLER */
@@ -478,7 +480,17 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Map Clear Fix & Structure Fix");
+                console.log("App Version: Auto-Stop & Native Bridge");
+
+                // Native Android Interface
+                window.updateLocationFromAndroid = (lat, lng, accuracy, speed) => {
+                    app.processLocationUpdate({
+                        latitude: parseFloat(lat),
+                        longitude: parseFloat(lng),
+                        accuracy: parseFloat(accuracy),
+                        speed: parseFloat(speed)
+                    });
+                };
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -977,6 +989,100 @@
                 else app.startBroadcast();
             },
 
+            processLocationUpdate: (coords) => {
+                if (!state.isBroadcasting) return;
+
+                const { latitude, longitude, accuracy, speed } = coords;
+                const now = Date.now();
+
+                // --- SAME DIRECTION BLOCKING LOGIC START ---
+                if (state.isFirstFix) {
+                    let conflict = false;
+                    const buses = Object.values(state.activeBuses);
+
+                    for (let bus of buses) {
+                        // 1. Skip checking against yourself
+                        if (bus.id === state.driverId) continue;
+
+                        // 2. Skip stale buses (older than 60s)
+                        if (now - bus.ts > 60000) continue;
+
+                        // 3. Check Exact Route & Direction Match
+                        if (bus.route === state.driverRoute) {
+
+                            // 4. Calculate Distance
+                            const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+
+                            // 5. If closer than 20 meters
+                            if (dist < 20) {
+                                conflict = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (conflict) {
+                        alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
+                        app.stopBroadcast();
+                        return; // Stop execution here
+                    }
+
+                    state.isFirstFix = false; // Disable check for rest of trip
+                }
+
+                // --- DYNAMIC SPEED LOGIC START ---
+                let rawSpeedKmh = (speed || 0) * 3.6;
+
+                // 1. Determine Smoothing Factor (Alpha)
+                let alpha = 0.15;
+
+                // If we are slowing down (Current > New), react FAST.
+                if (state.currentSmoothedSpeed > rawSpeedKmh) {
+                    alpha = 0.6;
+                }
+
+                // 2. Apply Dynamic EMA
+                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
+
+                // 3. Absolute Stop Snap
+                if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
+                    state.currentSmoothedSpeed = 0;
+                }
+
+                // 4. Formatting
+                const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
+
+                document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+                // --- DYNAMIC SPEED LOGIC END ---
+                document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
+
+                if (state.driverMarker) {
+                    state.driverMarker.setLatLng([latitude, longitude]);
+                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                }
+
+                state.lastLat = latitude;
+                state.lastLng = longitude;
+
+                if (now - state.lastSentTime < 200) return;
+                state.lastSentTime = now;
+
+                if (state.client && state.isConnected) {
+                    const payload = JSON.stringify({
+                        id: state.driverId,
+                        uid: CONFIG.mqtt.clientId,
+                        route: state.driverRoute,
+                        username: state.driverUsername,
+                        lat: latitude,
+                        lng: longitude,
+                        acc: accuracy,
+                        speed: displaySpeed,
+                        ts: now
+                    });
+                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
+                }
+            },
+
             startBroadcast: () => {
                 if (!navigator.geolocation) {
                     alert("Geolocation not supported");
@@ -984,9 +1090,17 @@
                 }
                 
                 try {
-                    // INSTANT UI UPDATE - NO WAITING
+                    // INSTANT UI UPDATE
                     state.isBroadcasting = true;
+                    state.isFirstFix = true;
                     app.updateBroadcastUI(true);
+
+                    // 30-Minute Auto-Stop
+                    if (state.autoStopTimer) clearTimeout(state.autoStopTimer);
+                    state.autoStopTimer = setTimeout(() => {
+                        app.stopBroadcast();
+                        alert("Trip ended automatically after 30 minutes.");
+                    }, 30 * 60 * 1000);
 
                     if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
                     state.currentSmoothedSpeed = 0;
@@ -1009,106 +1123,9 @@
                         maximumAge: 0
                     };
 
-                    let isFirstFix = true;
-
                     state.watchId = navigator.geolocation.watchPosition(
                         (position) => {
-                            if (!state.isBroadcasting) return;
-
-                            const { latitude, longitude, accuracy, speed } = position.coords;
-                            const now = Date.now();
-
-                            // --- SAME DIRECTION BLOCKING LOGIC START ---
-                            if (isFirstFix) {
-                                let conflict = false;
-                                const buses = Object.values(state.activeBuses);
-                                
-                                for (let bus of buses) {
-                                    // 1. Skip checking against yourself
-                                    if (bus.id === state.driverId) continue;
-
-                                    // 2. Skip stale buses (older than 60s)
-                                    if (now - bus.ts > 60000) continue;
-
-                                    // 3. Check Exact Route & Direction Match
-                                    // defined in confirmRoute: e.g., "Kuril (To UIU)"
-                                    if (bus.route === state.driverRoute) {
-                                        
-                                        // 4. Calculate Distance
-                                        const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
-                                        
-                                        // 5. If closer than 20 meters
-                                        if (dist < 20) {
-                                            conflict = true; 
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (conflict) {
-                                    alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
-                                    app.stopBroadcast();
-                                    return; // Stop execution here
-                                }
-
-                                isFirstFix = false; // Disable check for rest of trip
-                            }
-
-                            // --- DYNAMIC SPEED LOGIC START ---
-                            let rawSpeedKmh = (speed || 0) * 3.6;
-
-                            // 1. Determine Smoothing Factor (Alpha)
-                            // Default 0.15 = Heavy smoothing (keeps 85% history) -> Good for cruising
-                            let alpha = 0.15; 
-                            
-                            // If we are slowing down (Current > New), react FAST.
-                            // 0.6 = Low smoothing (only keeps 40% history) -> Drops quickly
-                            if (state.currentSmoothedSpeed > rawSpeedKmh) {
-                                alpha = 0.6; 
-                            }
-
-                            // 2. Apply Dynamic EMA
-                            // Formula: (Old * (1 - alpha)) + (New * alpha)
-                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
-
-                            // 3. Absolute Stop Snap
-                            // If raw GPS says 0 and we are already slow, just snap to 0 immediately to kill lag
-                            if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
-                                state.currentSmoothedSpeed = 0;
-                            }
-
-                            // 4. Formatting
-                            const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
-                            
-                            document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                            // --- DYNAMIC SPEED LOGIC END ---
-                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
-
-                            if (state.driverMarker) {
-                                state.driverMarker.setLatLng([latitude, longitude]);
-                                if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
-                            }
-
-                            state.lastLat = latitude;
-                            state.lastLng = longitude;
-
-                            if (now - state.lastSentTime < 200) return;
-                            state.lastSentTime = now;
-
-                            if (state.client && state.isConnected) {
-                                const payload = JSON.stringify({
-                                    id: state.driverId,
-                                    uid: CONFIG.mqtt.clientId,
-                                    route: state.driverRoute,
-                                    username: state.driverUsername,
-                                    lat: latitude,
-                                    lng: longitude,
-                                    acc: accuracy,
-                                    speed: displaySpeed,
-                                    ts: now
-                                });
-                                state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                            }
+                            app.processLocationUpdate(position.coords);
                         },
                         (error) => { console.error("GPS Error", error); },
                         options
@@ -1125,6 +1142,12 @@
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
+
+                // Clear Auto-Stop Timer
+                if (state.autoStopTimer) {
+                    clearTimeout(state.autoStopTimer);
+                    state.autoStopTimer = null;
+                }
                 
                 // FORCE KILL GHOSTS
                 if (state.driverId && state.activeBuses[state.driverId]) {
