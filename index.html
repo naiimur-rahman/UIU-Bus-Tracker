@@ -672,21 +672,21 @@ initBackgroundAudio: () => {
     if (!state.backgroundAudio) {
         state.backgroundAudio = new Audio();
         state.backgroundAudio.src = SILENT_AUDIO_B64;
-        state.backgroundAudio.type = 'audio/wav'; // Explicitly tell browser it's a WAV
+        state.backgroundAudio.type = 'audio/wav'; 
         state.backgroundAudio.loop = true;
         
-        // Android Chrome sometimes needs volume > 0 to keep the service alive
+        // "0.01" volume is required for Chrome to count it as "active media"
         state.backgroundAudio.volume = 0.01; 
         
-        // Critical for iOS/Android background execution
+        // Critical for iOS Safari to run in background without taking over screen
         state.backgroundAudio.setAttribute('playsinline', '');
         state.backgroundAudio.setAttribute('webkit-playsinline', '');
+        state.backgroundAudio.setAttribute('x-webkit-airplay', 'deny'); // iOS fix
+        state.backgroundAudio.preload = 'auto';
         
-        // Pre-load the file
         state.backgroundAudio.load();
     }
 },
-
             // --- MQTT Logic ---
             connectMqtt: () => {
                 console.log("Connecting to MQTT...");
@@ -1009,138 +1009,135 @@ initBackgroundAudio: () => {
                 else app.startBroadcast();
             },
 
-            startBroadcast: () => {
-                if (!navigator.geolocation) {
-                    alert("Geolocation not supported");
-                    return;
-                }
+            startBroadcast: async () => {
+    if (!navigator.geolocation) {
+        alert("Geolocation not supported");
+        return;
+    }
+    
+    // 1. Initialize Audio
+    app.initBackgroundAudio();
+    
+    try {
+        // 2. Play Audio First (Must happen on click)
+        await state.backgroundAudio.play();
+        console.log("Silent Audio Playing...");
+
+        // 3. FORCE MEDIA NOTIFICATION (The Missing Piece)
+        if ('mediaSession' in navigator) {
+            // Set metadata so the notification has text/images
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: 'Sharing Location',
+                artist: 'UIU Bus Tracker',
+                album: 'Trip Active',
+                artwork: [
+                    { src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }
+                ]
+            });
+
+            // Add Action Handlers. 
+            // WITHOUT THESE, ANDROID CHROME WILL NOT SHOW THE NOTIFICATION.
+            // We just need empty handlers to trick the browser.
+            navigator.mediaSession.setActionHandler('play', () => { 
+                state.backgroundAudio.play(); 
+                navigator.mediaSession.playbackState = 'playing'; 
+            });
+            navigator.mediaSession.setActionHandler('pause', () => { 
+                state.backgroundAudio.play(); // Don't let them pause it! Force play.
+                navigator.mediaSession.playbackState = 'playing'; 
+            });
+            navigator.mediaSession.setActionHandler('stop', () => { 
+                app.stopBroadcast(); 
+            });
+            navigator.mediaSession.setActionHandler('seekbackward', null);
+            navigator.mediaSession.setActionHandler('seekforward', null);
+            navigator.mediaSession.setActionHandler('previoustrack', null);
+            navigator.mediaSession.setActionHandler('nexttrack', null);
+        }
+
+        // 4. Set 30 Minute Timer
+        if (state.broadcastTimer) clearTimeout(state.broadcastTimer);
+        state.broadcastTimer = setTimeout(() => {
+            alert("30 Minutes Up! Location sharing stopped.");
+            app.stopBroadcast();
+        }, 30 * 60 * 1000); 
+
+        // 5. Update UI & Wake Lock
+        state.isBroadcasting = true;
+        app.updateBroadcastUI(true);
+
+        // Keep Screen On (Works for Android/Desktop, shaky on iOS)
+        app.requestWakeLock();
+
+        // 6. Start GPS Tracking
+        if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+        
+        state.tripStartTime = Date.now();
+        if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+        state.uptimeInterval = setInterval(() => {
+            const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
+            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+            const s = (diff % 60).toString().padStart(2, '0');
+            const el = document.getElementById('val-uptime');
+            if(el) el.innerText = `${m}:${s}`;
+        }, 1000);
+
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        };
+
+        state.watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                if (!state.isBroadcasting) return;
+
+                const { latitude, longitude, accuracy, speed } = position.coords;
+                const now = Date.now();
+
+                // --- UPDATE MAP & UI ---
+                const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
+                const speedEl = document.getElementById('val-speed');
+                if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
                 
-                try {
-                    // 1. Initialize Audio
-                    app.initBackgroundAudio();
-                    
-                    // 2. Play Audio & Force Notification
-                    state.backgroundAudio.play().then(() => {
-                        console.log("Silent Audio Playing...");
-                        
-                        // --- NEW CODE: FORCE NOTIFICATION UI ---
-                        if ('mediaSession' in navigator) {
-                            navigator.mediaSession.metadata = new MediaMetadata({
-                                title: 'Trip Active',
-                                artist: 'UIU Bus Tracker',
-                                album: 'Sharing Location...',
-                                artwork: [
-                                    { src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }
-                                ]
-                            });
-                            navigator.mediaSession.playbackState = 'playing';
-                            
-                            // Prevent the notification from being swiped away easily
-                            navigator.mediaSession.setActionHandler('play', () => { 
-                                state.backgroundAudio.play(); 
-                                navigator.mediaSession.playbackState = 'playing'; 
-                            });
-                            navigator.mediaSession.setActionHandler('pause', () => { 
-                                // Optional: Allow user to actually stop it from the notification
-                                app.stopBroadcast(); 
-                                navigator.mediaSession.playbackState = 'paused'; 
-                            });
-                        }
-                        // ---------------------------------------
+                const accEl = document.getElementById('val-accuracy');
+                if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
+                
+                if (state.driverMarker) {
+                    state.driverMarker.setLatLng([latitude, longitude]);
+                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                }
 
-                    }).catch(e => {
-                        console.warn("Audio Blocked:", e);
-                        alert("Battery Saver Failed: " + e.message);
+                // --- SEND TO MQTT ---
+                if (now - state.lastSentTime < 200) return;
+                state.lastSentTime = now;
+
+                if (state.client && state.isConnected) {
+                    const payload = JSON.stringify({
+                        id: state.driverId,
+                        uid: CONFIG.mqtt.clientId,
+                        route: state.driverRoute,
+                        username: state.driverUsername,
+                        lat: latitude,
+                        lng: longitude,
+                        acc: accuracy,
+                        speed: displaySpeed,
+                        ts: now
                     });
-
-                    // 3. Set 30 Minute Timer
-                    if (state.broadcastTimer) clearTimeout(state.broadcastTimer);
-                    state.broadcastTimer = setTimeout(() => {
-                        alert("30 Minutes Up! Location sharing stopped.");
-                        app.stopBroadcast();
-                    }, 30 * 60 * 1000); 
-
-                    // 4. Update UI & Wake Lock
-                    state.isBroadcasting = true;
-                    app.updateBroadcastUI(true);
-
-                    if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-                    state.currentSmoothedSpeed = 0;
-
-                    state.tripStartTime = Date.now();
-                    if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = setInterval(() => {
-                        const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
-                        const s = (diff % 60).toString().padStart(2, '0');
-                        const el = document.getElementById('val-uptime');
-                        if(el) el.innerText = `${m}:${s}`;
-                    }, 1000);
-
-                    app.requestWakeLock();
-
-                    // 5. Start GPS Tracking
-                    const options = {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    };
-
-                    let isFirstFix = true;
-
-                    state.watchId = navigator.geolocation.watchPosition(
-                        (position) => {
-                            // ... (Your existing GPS logic stays exactly the same) ...
-                            // Just keep your existing GPS code here. I won't repeat it to save space.
-                            // If you need the full GPS block again, let me know.
-                            
-                            // PASTE YOUR EXISTING GPS CODE HERE
-                            if (!state.isBroadcasting) return;
-                            const { latitude, longitude, accuracy, speed } = position.coords;
-                            // ... rest of your code ...
-                            const now = Date.now();
-
-                            // (Repeat your collision logic and MQTT publish logic here)
-                            // ...
-                            
-                             // --- Quick paste of the core MQTT send for safety ---
-                            const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
-                            document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
-                            
-                            state.lastLat = latitude;
-                            state.lastLng = longitude;
-
-                            if (now - state.lastSentTime < 200) return;
-                            state.lastSentTime = now;
-
-                            if (state.client && state.isConnected) {
-                                const payload = JSON.stringify({
-                                    id: state.driverId,
-                                    uid: CONFIG.mqtt.clientId,
-                                    route: state.driverRoute,
-                                    username: state.driverUsername,
-                                    lat: latitude,
-                                    lng: longitude,
-                                    acc: accuracy,
-                                    speed: displaySpeed,
-                                    ts: now
-                                });
-                                state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                            }
-                            // ----------------------------------------------------
-                        },
-                        (error) => { console.error("GPS Error", error); },
-                        options
-                    );
-                } catch (e) {
-                    console.error("Start Broadcast Error:", e);
-                    alert("Error starting trip. Please refresh.");
-                    state.isBroadcasting = false;
-                    app.updateBroadcastUI(false);
+                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
                 }
             },
+            (error) => { console.error("GPS Error", error); },
+            options
+        );
 
+    } catch (e) {
+        console.error("Start Broadcast Error:", e);
+        alert("Error: " + e.message + ". Please interact with the page and try again.");
+        state.isBroadcasting = false;
+        app.updateBroadcastUI(false);
+    }
+},
             stopBroadcast: async () => {
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
