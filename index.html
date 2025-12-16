@@ -1008,7 +1008,7 @@
                 }
 
                 // --- DYNAMIC SPEED LOGIC START ---
-                let rawSpeedKmh = (speed || 0) * 5.5;
+                let rawSpeedKmh = (speed || 0) * 4.5;
                 let alpha = 0.15;
                 if (state.currentSmoothedSpeed > rawSpeedKmh) alpha = 0.6;
                 state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
