@@ -11,32 +11,10 @@
             darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#fff7ed',
-                            100: '#ffedd5',
-                            500: '#f97316', 
-                            600: '#ea580c',
-                            900: '#7c2d12',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
-                        'pulse-glow': {
-                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(34, 197, 94, 0.7)' },
-                            '50%': { opacity: '.5', boxShadow: '0 0 0 15px rgba(34, 197, 94, 0)' },
-                        }
-                    }
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: { brand: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 900: '#7c2d12' } },
+                    animation: { 'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' },
+                    keyframes: { 'pulse-glow': { '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(34, 197, 94, 0.7)' }, '50%': { opacity: '.5', boxShadow: '0 0 0 15px rgba(34, 197, 94, 0)' } } }
                 }
             }
         }
@@ -45,357 +23,142 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        .glass {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        }
-        .dark .glass {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-        }
-        .dark-map-tiles {
-            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-        }
-        .view-section {
-            position: absolute;
-            inset: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.95);
-            visibility: hidden;
-            overflow-y: hidden;
-            z-index: 0;
-            display: flex;
-            flex-direction: column;
-        }
-        .view-active {
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            transform: scale(1) !important;
-            z-index: 100 !important;
-            visibility: visible !important;
-        }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #f97316;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes drive {
-            0% { transform: translateY(0) rotate(3deg); }
-            50% { transform: translateY(-6px) rotate(0deg); }
-            100% { transform: translateY(0) rotate(3deg); }
-        }
-        .animate-drive { animation: drive 1.5s ease-in-out infinite; }
-        .pulse-ring::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; right: 0;
-            border-radius: 50%; border: 2px solid white; animation: ring 1.5s infinite;
-        }
+        .glass { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.4); box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07); }
+        .dark .glass { background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2); }
+        .dark-map-tiles { filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7); }
+        .view-section { position: absolute; inset: 0; opacity: 0; pointer-events: none; visibility: hidden; transition: all 0.3s; z-index: 0; display: flex; flex-direction: column; }
+        .view-active { opacity: 1 !important; pointer-events: auto !important; z-index: 100 !important; visibility: visible !important; }
+        .pulse-ring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid white; animation: ring 1.5s infinite; }
         @keyframes ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
         .leaflet-div-icon { background: transparent; border: none; }
-        body { overscroll-behavior: none; }
-        #view-profile { background-color: rgb(248 250 252) !important; }
-        .dark #view-profile { background-color: rgb(15 23 42) !important; }
-        
-
-        /* Custom Leaflet Controls */
-        .leaflet-bar { border: none !important; box-shadow: none !important; }
-        .leaflet-bar a {
-            border-radius: 50% !important;
-            width: 40px !important;
-            height: 40px !important;
-            line-height: 40px !important;
-            background-color: white !important;
-            color: #64748b !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-            margin-bottom: 8px !important;
-            border-bottom: none !important;
-            transition: all 0.2s ease;
-        }
-        .dark .leaflet-bar a {
-            background-color: #1e293b !important;
-            color: #cbd5e1 !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
-        }
-        .leaflet-bar a:hover {
-            background-color: #f8fafc !important;
-            transform: scale(1.05);
-            color: #f97316 !important;
-        }
-        .dark .leaflet-bar a:hover {
-            background-color: #334155 !important;
-        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative">
 
-    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-        <div class="absolute top-1/2 -right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
-        <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 4s"></div>
-    </div>
-
-    <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
-        <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
-            <i class="fas fa-moon dark:hidden"></i>
-            <i class="fas fa-sun hidden dark:block"></i>
-        </button>
-    </div>
-
-    <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
-        <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
-            <div class="text-center mb-4"> 
-                <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
-                    <i class="fas fa-bus text-4xl text-white"></i>
+    <div id="view-landing" class="view-section view-active p-6 justify-center items-center h-full">
+        <div class="text-center mb-8">
+            <div class="w-20 h-20 bg-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg text-white text-4xl">
+                <i class="fas fa-bus"></i>
+            </div>
+            <h1 class="text-3xl font-bold">UIU <span class="text-brand-500">Tracker</span></h1>
+            <p class="text-xs text-slate-400">Native Android Edition</p>
+        </div>
+        <div class="w-full max-w-sm space-y-4">
+            <button onclick="app.setRole('student')" class="glass w-full p-6 rounded-xl flex items-center justify-between hover:border-brand-500 border-l-4 border-transparent hover:border-l-brand-500 transition-all">
+                <div class="text-left">
+                    <h3 class="font-bold">Student Map</h3>
+                    <p class="text-xs text-slate-500">Track buses live</p>
                 </div>
-                <h1 class="text-4xl font-extrabold tracking-tight mb-1">
-                    <span class="text-slate-800 dark:text-white">UIU</span>
-                    <span class="text-brand-500">Bus Tracker</span>
-                </h1>
-                <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
-            </div>
-
-            <div class="grid gap-3 w-full"> 
-                <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
-                    <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-bold mb-1">Bus Kothay</h3>
-                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Real-time tracking</p>
-                        </div>
-                        <div class="w-10 h-10 bg-blue-50 dark:bg-slate-700 rounded-full flex items-center justify-center text-blue-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                            <i class="fas fa-map-location-dot text-lg"></i>
-                        </div>
-                    </div>
-                </button>
-
-                <button onclick="app.setRole('driver-select')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
-                    <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-bold mb-1">Start a Trip</h3>
-                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Share location with others</p>
-                        </div>
-                        <div class="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
-                            <i class="fas fa-id-card text-lg"></i>
-                        </div>
-                    </div>
-                </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 w-full mt-4"> 
-                <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
-                            <i class="fas fa-comments text-sm"></i>
-                        </div>
-                        <h4 class="font-bold text-xs">Incognito Chat</h4>
-                    </div>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously.</p>
-                </a>
-
-                <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-green-500">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
-                            <i class="fas fa-calculator text-sm"></i>
-                        </div>
-                        <h4 class="font-bold text-xs">CGPA Calculator</h4>
-                    </div>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate CGPA and more.</p>
-                </a>
-            </div>
+                <i class="fas fa-map-marked-alt text-2xl text-blue-500"></i>
+            </button>
+            <button onclick="app.setRole('driver-select')" class="glass w-full p-6 rounded-xl flex items-center justify-between hover:border-brand-500 border-l-4 border-transparent hover:border-l-brand-500 transition-all">
+                <div class="text-left">
+                    <h3 class="font-bold">Captain Login</h3>
+                    <p class="text-xs text-slate-500">Start driving</p>
+                </div>
+                <i class="fas fa-id-badge text-2xl text-brand-500"></i>
+            </button>
         </div>
         
-        <div class="pt-2 pb-4 text-center px-4 w-full shrink-0 z-50">
-            <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
-            </p>
+        <div class="absolute bottom-6 text-center w-full left-0">
+            <p class="text-[10px] text-slate-400">Developed by <span class="text-brand-500 font-bold">Naimur Rahman</span></p>
         </div>
     </div>
 
-    <div id="view-driver-select" class="view-section flex flex-col h-full z-10 p-6 bg-slate-50 dark:bg-slate-900">
-        <div class="flex items-center mb-8 mt-4 shrink-0">
-            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500 transition-colors mr-4">
-                <i class="fas fa-arrow-left"></i>
+    <div id="view-driver-select" class="view-section p-6 bg-slate-50 dark:bg-slate-900">
+        <div class="flex items-center mb-6">
+            <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-500 hover:text-brand-500"><i class="fas fa-arrow-left"></i></button>
+            <h2 class="ml-4 text-xl font-bold">Select Route</h2>
+        </div>
+        
+        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-50 flex flex-col items-center justify-center p-6 backdrop-blur">
+            <h3 class="text-xl font-bold mb-6">Trip Details</h3>
+            <input type="text" id="driver-username-input" placeholder="Your Name (Optional)" class="w-full max-w-xs p-4 rounded-xl glass mb-4 bg-transparent border border-slate-300 dark:border-slate-700 outline-none focus:border-brand-500 transition-colors">
+            
+            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl mb-2 font-bold transition-colors">
+                Going to Campus <span class="block text-[10px] font-normal opacity-80">From City &rarr; UIU</span>
             </button>
-            <h2 class="text-2xl font-bold">Select Route</h2>
+            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl mb-6 font-bold transition-colors">
+                Leaving Campus <span class="block text-[10px] font-normal opacity-80">UIU &rarr; To City</span>
+            </button>
+            <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="text-slate-400">Cancel</button>
         </div>
 
-        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
-            <h3 class="text-2xl font-bold mb-6">Which Direction?</h3>
-
-            <div class="w-full max-w-xs mb-4 text-left">
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Your Name</label>
-                <input type="text" id="driver-username-input" placeholder="Captain (Optional)" maxlength="15"
-                       class="w-full glass bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl outline-none focus:ring-2 ring-brand-500 transition-all font-bold text-slate-700 dark:text-white placeholder:font-normal">
-            </div>
-
-            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left">
-                <div class="font-bold text-lg">Going to Campus</div>
-                <div class="text-xs text-slate-500">From Destination &rarr; UIU</div>
-            </button>
-            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs glass p-6 rounded-xl hover:bg-brand-50 transition-colors border-l-4 border-l-blue-500 text-left">
-                <div class="font-bold text-lg">Leaving Campus</div>
-                <div class="text-xs text-slate-500">UIU &rarr; To Destination</div>
-            </button>
-            <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="mt-8 text-slate-400 hover:text-slate-600">Cancel</button>
+        <div class="grid grid-cols-2 gap-4">
+            <button onclick="app.selectRoute('Kuril', 'K')" class="glass p-6 rounded-xl flex flex-col items-center gap-2 hover:bg-brand-50 transition-colors"><i class="fas fa-road text-blue-500 text-2xl"></i><b>Kuril</b></button>
+            <button onclick="app.selectRoute('Notun Bazar', 'N')" class="glass p-6 rounded-xl flex flex-col items-center gap-2 hover:bg-brand-50 transition-colors"><i class="fas fa-store text-green-500 text-2xl"></i><b>N. Bazar</b></button>
+            <button onclick="app.selectRoute('Aftab Nagar', 'A')" class="glass p-6 rounded-xl flex flex-col items-center gap-2 hover:bg-brand-50 transition-colors"><i class="fas fa-city text-purple-500 text-2xl"></i><b>A. Nagar</b></button>
+            <button onclick="app.selectRoute('Transport', 'R')" class="glass p-6 rounded-xl flex flex-col items-center gap-2 hover:bg-brand-50 transition-colors"><i class="fas fa-bus text-orange-500 text-2xl"></i><b>Regular</b></button>
         </div>
-
-        <div class="grid grid-cols-2 gap-4 overflow-y-auto pb-4">
-            <button onclick="app.selectRoute('Kuril', 'K')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
-                <i class="fas fa-road text-3xl text-blue-500 mb-3"></i>
-                <span class="font-bold">Kuril</span>
-                <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
-            </button>
-            <button onclick="app.selectRoute('Notun Bazar', 'N')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
-                <i class="fas fa-shop text-3xl text-green-500 mb-3"></i>
-                <span class="font-bold">Notun Bazar</span>
-                <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
-            </button>
-            <button onclick="app.selectRoute('Aftab Nagar', 'A')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
-                <i class="fas fa-building text-3xl text-purple-500 mb-3"></i>
-                <span class="font-bold">Aftab Nagar</span>
-                <span class="text-xs text-slate-400 mt-1">Auto Assign</span>
-            </button>
-            <button onclick="app.selectRoute('Transport', 'R')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
-                <i class="fas fa-bus-alt text-3xl text-orange-500 mb-3"></i>
-                <span class="font-bold">Transport</span>
-                <span class="text-xs text-slate-400 mt-1">Routes 1-5...</span>
-            </button>
-        </div>
-
-        <div id="selection-loader" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur z-50 flex flex-col items-center justify-center">
+        
+        <div id="selection-loader" class="hidden absolute inset-0 bg-white/80 dark:bg-slate-900/80 backdrop-blur z-40 flex flex-col items-center justify-center">
             <div class="loader mb-4"></div>
-            <p class="font-bold animate-pulse">Syncing & Assigning ID...</p>
+            <p class="font-bold animate-pulse">Syncing...</p>
         </div>
     </div>
 
-    <div id="view-driver-dashboard" class="view-section flex flex-col h-full bg-slate-50 dark:bg-slate-900 z-10">
-        <div class="absolute top-0 left-0 right-0 p-4 z-30 flex justify-between items-start pointer-events-none">
-            <div class="pointer-events-auto">
-                 <button onclick="app.goHome()" class="w-10 h-10 rounded-full glass bg-slate-900/50 text-white flex items-center justify-center hover:scale-110 transition-transform">
-                    <i class="fas fa-power-off"></i>
-                </button>
-            </div>
-            <div class="glass bg-slate-900/80 text-white px-4 py-2 rounded-xl text-right backdrop-blur-md">
-                 <div class="flex items-center justify-end gap-2 mb-1">
-                    <span id="driver-connection-dot" class="w-2 h-2 rounded-full bg-red-500"></span>
-                    <span id="driver-connection-text" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Offline</span>
-                </div>
-                <div class="text-xs text-slate-400">ID: <span id="driver-assigned-id" class="text-brand-500 font-mono font-bold">...</span></div>
-                <div id="driver-display-username-container" class="hidden text-[10px] text-slate-400 mt-0.5 text-right font-medium">
-                    <span id="driver-display-username" class="text-white"></span>
-                </div>
-                <div id="wakelock-status" class="text-[8px] text-slate-500 mt-0.5">
-                    <i class="fas fa-mobile-alt"></i> Wake Lock: <span id="wakelock-text">Off</span>
-                </div>
-            </div>
+    <div id="view-driver-dashboard" class="view-section flex flex-col h-full bg-slate-50 dark:bg-slate-900">
+        <div class="absolute top-0 left-0 right-0 p-4 z-30 flex justify-between pointer-events-none">
+            <button onclick="app.goHome()" class="pointer-events-auto w-10 h-10 rounded-full glass bg-red-500 text-white flex items-center justify-center shadow-lg"><i class="fas fa-power-off"></i></button>
+            <div class="glass bg-slate-900/90 text-white px-3 py-1 rounded-full text-xs font-mono" id="debug-status">Waiting for GPS...</div>
         </div>
 
-        <div class="h-[60%] w-full relative z-0">
-            <div id="driver-map" class="w-full h-full bg-slate-200 dark:bg-slate-800"></div>
-            <div class="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-slate-50 dark:from-slate-900 to-transparent pointer-events-none z-[400]"></div>
+        <div class="h-[60%] w-full relative z-0 bg-slate-200 dark:bg-slate-800">
+            <div id="driver-map" class="w-full h-full"></div>
         </div>
 
-        <div class="flex-grow flex flex-col items-center justify-start p-6 -mt-12 relative z-20 overflow-y-auto">
-            <div class="glass w-full max-w-sm rounded-3xl p-6 shadow-xl text-center backdrop-blur-xl border border-white/20">
-                <div class="flex items-center justify-between mb-6">
-                      <div class="text-left">
-                        <h2 id="broadcast-status-title" class="text-xl font-bold">Ready to Drive?</h2>
-                        <p id="broadcast-status-desc" class="text-slate-500 text-xs">Start trip to broadcast</p>
-                      </div>
-                      <div id="broadcast-ring" class="w-12 h-12 rounded-full border-2 border-slate-200 dark:border-slate-600 flex items-center justify-center relative">
-                        <div class="absolute inset-0 rounded-full animate-pulse-glow opacity-0 transition-opacity" id="broadcast-glow"></div>
-                        <i id="broadcast-icon" class="fas fa-location-arrow text-slate-300 dark:text-slate-600 transition-colors"></i>
+        <div class="flex-grow flex flex-col items-center p-6 -mt-12 relative z-20">
+            <div class="glass w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="text-left">
+                        <h2 class="text-xl font-bold" id="broadcast-status-title">Ready?</h2>
+                        <p class="text-xs text-slate-500" id="broadcast-status-desc">Tap to start</p>
+                    </div>
+                    <div class="relative w-12 h-12 flex items-center justify-center">
+                        <div id="broadcast-glow" class="absolute inset-0 rounded-full opacity-0 transition-opacity"></div>
+                        <i id="broadcast-icon" class="fas fa-location-arrow text-slate-300 dark:text-slate-600 transition-colors text-xl relative z-10"></i>
                     </div>
                 </div>
-
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-bold py-5 rounded-2xl shadow-[0_10px_20px_-5px_rgba(249,115,22,0.4),0_4px_6px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2)] active:translate-y-[2px] transition-all duration-150 mb-4 relative z-50 uppercase tracking-widest text-sm border-b-4 border-brand-900/20 active:border-b-0">
+                
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-95 uppercase tracking-widest">
                     START TRIP
                 </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 w-full max-w-sm mt-6 px-2">
-                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
-                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Speed</p>
-                    <p id="val-speed" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">0<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span></p>
-                </div>
-                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
-                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">GPS</p>
-                    <p id="val-accuracy" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">--</p>
-                </div>
-                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
-                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Time</p>
-                    <p id="val-uptime" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">00:00</p>
-                </div>
+            <div class="grid grid-cols-3 gap-3 w-full max-w-sm mt-4">
+                <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] uppercase text-slate-400">Speed</p><p id="val-speed" class="font-mono text-lg font-bold">0</p></div>
+                <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] uppercase text-slate-400">GPS</p><p id="val-accuracy" class="font-mono text-lg font-bold">--</p></div>
+                <div class="glass p-3 rounded-xl text-center"><p class="text-[9px] uppercase text-slate-400">Time</p><p id="val-uptime" class="font-mono text-lg font-bold">00:00</p></div>
             </div>
         </div>
-
+        
         <div id="trip-summary-modal" class="absolute inset-0 z-50 bg-slate-900/95 flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-500">
-             <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-[0_0_50px_rgba(249,115,22,0.5)]">
+             <div class="w-32 h-32 bg-gradient-to-tr from-brand-500 to-yellow-500 rounded-full flex items-center justify-center mb-6 animate-bounce shadow-lg">
                  <i class="fas fa-heart text-6xl text-white"></i>
              </div>
-             <h2 class="text-4xl font-black text-white mb-2 text-center">Thank You!</h2>
-             <p class="text-slate-400 mb-8 text-center px-4 max-w-xs">Thanks for your Contribution.<br>It means a lot for us.</p>
-
-             <button onclick="app.closeSummary()" class="mt-4 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform shadow-lg shadow-white/20">
-                 Close
-             </button>
+             <h2 class="text-4xl font-black text-white mb-2 text-center">Trip Ended</h2>
+             <p class="text-slate-400 mb-8 text-center px-4 max-w-xs">Thank you for your service!</p>
+             <button onclick="app.closeSummary()" class="mt-4 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform shadow-lg">Close</button>
         </div>
     </div>
 
-    <div id="view-student" class="view-section flex flex-col h-full z-10">
-        <div class="absolute top-4 left-4 right-16 z-[400]">
-            <div class="glass rounded-full p-2 pl-4 pr-2 flex justify-between items-center shadow-lg">
-                <div class="flex items-center gap-3">
-                    <button onclick="app.goHome()" class="w-8 h-8 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-brand-500 hover:text-white transition-colors">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <div>
-                        <h2 class="font-bold text-sm leading-tight">Live Map</h2>
-                        <div class="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400">
-                            <span class="flex items-center gap-1"><i class="fas fa-users"></i> <span id="count-users">0</span></span>
-                            <span class="flex items-center gap-1"><i class="fas fa-bus"></i> <span id="count-buses">0</span></span>
-                        </div>
-                    </div>
-                </div>
-                <div id="student-status" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-500 flex items-center gap-2">
-                    <div class="w-2 h-2 bg-slate-400 rounded-full"></div> Connect
-                </div>
-            </div>
+    <div id="view-student" class="view-section flex flex-col h-full bg-slate-200">
+        <div class="absolute top-4 left-4 z-30">
+            <button onclick="app.goHome()" class="w-10 h-10 rounded-full bg-white text-slate-800 shadow-lg flex items-center justify-center hover:scale-110 transition-transform"><i class="fas fa-arrow-left"></i></button>
         </div>
-
-        <div class="flex-grow relative bg-slate-200 dark:bg-slate-900 overflow-hidden">
-            <div id="map" class="h-full w-full outline-none z-0"></div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 relative transition-transform duration-300 transform translate-y-0" id="bottom-sheet">
-            <div class="w-full flex justify-center pt-4 pb-2 cursor-pointer" onclick="app.toggleBottomSheet()">
-                <div class="w-16 h-1.5 bg-slate-300/50 dark:bg-slate-600/50 rounded-full backdrop-blur-sm"></div>
+        <div id="map" class="h-full w-full outline-none z-0"></div>
+        <div class="bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 p-4 max-h-[40vh] overflow-y-auto" id="bottom-sheet">
+            <div class="w-full flex justify-center pt-2 pb-4 cursor-pointer" onclick="app.toggleBottomSheet()">
+                <div class="w-16 h-1.5 bg-slate-300 dark:bg-slate-600 rounded-full"></div>
             </div>
-            <div class="p-4 pb-8 max-h-[40vh] overflow-y-auto">
-                <h3 class="font-bold mb-4 text-sm text-slate-500 uppercase tracking-wide">Active Transport</h3>
-                <div id="bus-list" class="space-y-2">
-                    <div class="text-center py-8 text-slate-400 text-sm">
-                        <i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>
-                        Searching for buses...
-                    </div>
+            <div id="bus-list" class="space-y-2">
+                <div class="text-center py-8 text-slate-400 text-sm">
+                    <i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>
+                    Searching for buses...
                 </div>
             </div>
         </div>
@@ -408,125 +171,55 @@
     <script type="module">
         /** APP CONFIG */
         const CONFIG = {
-            mqtt: {
-                protocol: 'wss',
-                host: '09872002dac9410e9af391b1a7066483.s1.eu.hivemq.cloud',
-                port: 8884,
-                path: '/mqtt',
-                username: 'naimur',
-                password: 'Sohan786@',
-                clientId: (() => {
-                    let id = localStorage.getItem('mqtt_client_id');
-                    if (!id) {
-                        id = 'uiu-' + Math.random().toString(16).substr(2, 8);
-                        localStorage.setItem('mqtt_client_id', id);
-                    }
-                    return id;
-                })()
-            },
-            topics: {
-                location: 'uiu/bus/location',
-                presence: 'uiu/presence'
-            },
-            uiuCoords: [23.79790, 90.44970], 
-            presenceInterval: 15000,
-            minAccuracy: 50
+            mqtt: { host: '09872002dac9410e9af391b1a7066483.s1.eu.hivemq.cloud', port: 8884, user: 'naimur', pass: 'Sohan786@' },
+            topics: { location: 'uiu/bus/location', presence: 'uiu/presence' },
+            coords: [23.79790, 90.44970]
         };
 
         const BUS_STYLES = {
-            'K': 'bg-blue-500',   // Kuril - Blue
-            'N': 'bg-green-500',  // Notun Bazar - Green
-            'A': 'bg-purple-500', // Aftab Nagar - Purple
-            'default': 'bg-orange-500',
-            'to_uiu': 'bg-green-600',
-            'from_uiu': 'bg-red-600'
+            'K': 'bg-blue-500', 'N': 'bg-green-500', 'A': 'bg-purple-500', 'default': 'bg-orange-500',
+            'to_uiu': 'bg-green-600', 'from_uiu': 'bg-red-600'
         };
 
-        /** GLOBAL STATE */
         const state = {
-            client: null,
-            isConnected: false,
-            connectionDebounce: null, 
-            role: null,
-            driverId: null,
-            driverRoute: null,
-            driverDestination: null,
-            driverUsername: null,
-            isBroadcasting: false,
-            watchId: null,
-            wakeLock: null,
-            activeBuses: {},
-            activeUsers: new Map(),
-            userCache: {},
-            map: null,
-            driverMap: null,
-            driverMarker: null,
-            markers: {},
-            circles: {}, 
-            lastSentTime: 0,
-            sessionPoints: 0,
-            sessionDistance: 0,
-            lastLat: null,
-            lastLng: null,
-            tripStartTime: null,
-            uptimeInterval: null,
-            currentSmoothedSpeed: 0
+            client: null, isConnected: false, driverId: null, driverRoute: null, driverUsername: null,
+            driverMap: null, driverMarker: null, map: null, markers: {}, circles: {}, activeBuses: {},
+            isBroadcasting: false, startTime: null, uptimeInterval: null, currentSmoothedSpeed: 0,
+            activeUsers: new Map()
         };
 
-        /** APP CONTROLLER */
         const app = {
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Native Android MQTT Mode");
                 
-                // CHECK LOCALSTORAGE
-                const savedDriverId = localStorage.getItem('active_driver_id');
-                const savedRoute = localStorage.getItem('active_driver_route');
-                
-                if (savedDriverId && savedRoute) {
-                    console.log("Restoring previous session...");
-                    state.driverId = savedDriverId;
-                    state.driverRoute = savedRoute;
-                    state.driverDestination = localStorage.getItem('active_driver_dest');
-                    state.driverDirection = localStorage.getItem('active_driver_dir');
+                // Recover Driver Session
+                const savedId = localStorage.getItem('active_driver_id');
+                if (savedId) {
+                    state.driverId = savedId;
+                    state.driverRoute = localStorage.getItem('active_driver_route');
                     state.driverUsername = localStorage.getItem('active_driver_username');
-                    
                     app.setRole('driver-dashboard');
                     document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
-
-                    if (state.driverUsername) {
-                        document.getElementById('driver-display-username-container').classList.remove('hidden');
-                        document.getElementById('driver-display-username').innerText = state.driverUsername;
-                    }
-
-                    app.switchView('view-driver-dashboard');
                     app.initDriverMap();
                 }
-
-                setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
+                
+                // 5 Minute Timeout Cleanup
                 setInterval(app.cleanupStaleUsers, 10000);
             },
 
-            // --- Theme & View ---
+            // --- Theme & View Logic ---
             escapeHtml: (text) => {
                 if (!text) return text;
-                return String(text)
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
+                return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             },
 
             toggleTheme: () => {
                 const html = document.documentElement;
                 if (html.classList.contains('dark')) {
-                    html.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
+                    html.classList.remove('dark'); localStorage.setItem('theme', 'light');
                 } else {
-                    html.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
+                    html.classList.add('dark'); localStorage.setItem('theme', 'dark');
                 }
                 app.updateMapStyle();
             },
@@ -535,238 +228,108 @@
                 const theme = localStorage.getItem('theme');
                 if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
                 }
             },
 
-            switchView: (viewId) => {
+            switchView: (id) => {
                 document.getElementById('selection-loader').classList.add('hidden');
                 document.getElementById('route-sub-select').classList.add('hidden');
-
-                const views = document.querySelectorAll('.view-section');
-                views.forEach(el => {
+                document.querySelectorAll('.view-section').forEach(el => {
                     el.classList.remove('view-active');
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                    el.style.zIndex = '0';
+                    el.style.opacity = '0'; el.style.pointerEvents = 'none'; el.style.zIndex = '0';
                 });
-
-                const target = document.getElementById(viewId);
+                const target = document.getElementById(id);
                 if (target) {
                     target.classList.add('view-active');
                     void target.offsetWidth; 
-                    target.style.opacity = '1';
-                    target.style.pointerEvents = 'auto';
-                    target.style.zIndex = '100';
-                    target.style.visibility = 'visible';
+                    target.style.opacity = '1'; target.style.pointerEvents = 'auto'; target.style.zIndex = '100'; target.style.visibility = 'visible';
                 }
-
                 const globalControls = document.getElementById('global-controls');
                 if (globalControls) {
-                    if (viewId === 'view-landing') {
-                        globalControls.classList.remove('opacity-0', 'pointer-events-none', 'invisible');
-                    } else {
-                        globalControls.classList.add('opacity-0', 'pointer-events-none', 'invisible');
-                    }
+                    if (id === 'view-landing') globalControls.classList.remove('invisible', 'opacity-0');
+                    else globalControls.classList.add('invisible', 'opacity-0');
                 }
             },
 
             setRole: (role) => {
                 state.role = role;
-                if (role === 'student') {
-                    app.switchView('view-student');
-                    app.initMap();
-                } else if (role === 'driver-select') {
-                    app.switchView('view-driver-select');
-                } else if (role === 'driver-dashboard') {
-                    app.switchView('view-driver-dashboard');
-                }
+                if (role === 'student') { app.switchView('view-student'); app.initMap(); }
+                else if (role === 'driver-select') app.switchView('view-driver-select');
+                else if (role === 'driver-dashboard') app.switchView('view-driver-dashboard');
             },
 
             goHome: async () => {
                 try {
                     if (state.isBroadcasting) {
-                        const confirmExit = confirm("Stop broadcasting and exit?");
+                        const confirmExit = confirm("Stop broadcasting?");
                         if (!confirmExit) return;
                         await app.stopBroadcast();
                     }
-
-                    // Force Clear Watch
-                    if (state.watchId) {
-                        navigator.geolocation.clearWatch(state.watchId);
-                        state.watchId = null;
-                    }
-
-                    state.driverId = null;
-                    state.driverRoute = null;
-                    state.driverDestination = null;
-                    state.driverDirection = null;
-                    state.role = null;
-                    state.isBroadcasting = false;
-                    state.currentSmoothedSpeed = 0;
-                    state.activeBuses = {}; // Full reset
-
-                    // FIX: Safer Map Removal
-                    if (state.driverMap) {
-                        try {
-                            state.driverMap.off();
-                            state.driverMap.remove();
-                        } catch (e) { console.log("Map cleanup warning", e); }
-                        state.driverMap = null;
-                    }
-                    
+                    state.driverId = null; state.driverRoute = null; state.isBroadcasting = false;
+                    state.activeBuses = {};
+                    if (state.driverMap) { try { state.driverMap.remove(); } catch(e){} state.driverMap = null; }
                     state.driverMarker = null;
-
                     localStorage.removeItem('active_driver_id');
                     localStorage.removeItem('active_driver_route');
-                    localStorage.removeItem('active_driver_dest');
-                    localStorage.removeItem('active_driver_dir');
-                    localStorage.removeItem('active_driver_username');
-                    
-                } catch (error) {
-                    console.error("Error during exit:", error);
-                }
+                } catch (e) {}
                 app.switchView('view-landing');
-            },
-
-            // --- Wake Lock ---
-            requestWakeLock: async () => {
-                if ('wakeLock' in navigator) {
-                    try {
-                        state.wakeLock = await navigator.wakeLock.request('screen');
-                        document.getElementById('wakelock-text').innerText = "Active";
-                        document.getElementById('wakelock-text').className = "text-green-500 font-bold";
-                        
-                        state.wakeLock.addEventListener('release', () => {
-                            document.getElementById('wakelock-text').innerText = "Inactive";
-                            document.getElementById('wakelock-text').className = "";
-                        });
-                    } catch (err) {
-                        console.error(`${err.name}, ${err.message}`);
-                    }
-                }
-            },
-
-            releaseWakeLock: () => {
-                if (state.wakeLock) {
-                    state.wakeLock.release();
-                    state.wakeLock = null;
-                }
             },
 
             // --- MQTT Logic ---
             connectMqtt: () => {
-                console.log("Connecting to MQTT...");
                 const connectUrl = `wss://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}/mqtt`;
-                
                 state.client = mqtt.connect(connectUrl, {
-                    username: CONFIG.mqtt.username,
-                    password: CONFIG.mqtt.password,
-                    clientId: CONFIG.mqtt.clientId,
-                    clean: true
+                    username: CONFIG.mqtt.username, password: CONFIG.mqtt.password,
+                    clientId: 'web_' + Math.random().toString(16).substr(2, 8), clean: true
                 });
 
                 state.client.on('connect', () => {
-                    console.log("MQTT Connected");
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     state.isConnected = true;
                     app.updateConnectionStatus('connected');
                     state.client.subscribe(CONFIG.topics.location);
-                    state.client.subscribe(CONFIG.topics.presence);
-                    app.sendHeartbeat();
                 });
 
                 state.client.on('message', (topic, message) => {
-                    const msgString = message.toString();
-                    if (!msgString) return;
                     try {
-                        const data = JSON.parse(msgString);
-                        if (topic === CONFIG.topics.location) {
-                            app.handleLocationUpdate(data);
-                        } else if (topic === CONFIG.topics.presence) {
-                            app.handlePresenceUpdate(data);
-                        }
-                    } catch (e) { console.error("Msg Parse Error:", e); }
+                        const data = JSON.parse(message.toString());
+                        if (topic === CONFIG.topics.location) app.handleLocationUpdate(data);
+                    } catch (e) {}
                 });
 
-                state.client.on('error', (err) => {
-                    console.error("MQTT Error", err);
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    state.connectionDebounce = setTimeout(() => {
-                        state.isConnected = false;
-                        app.updateConnectionStatus('error');
-                    }, 2000);
-                });
-                
-                state.client.on('close', () => {
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    state.connectionDebounce = setTimeout(() => {
-                        state.isConnected = false;
-                        app.updateConnectionStatus('offline');
-                    }, 2000);
-                });
+                state.client.on('close', () => { state.isConnected = false; app.updateConnectionStatus('offline'); });
             },
 
             updateConnectionStatus: (status) => {
                 const dot = document.getElementById('driver-connection-dot');
                 const text = document.getElementById('driver-connection-text');
-                const studentStatus = document.getElementById('student-status');
-
+                if (!dot || !text) return;
+                
                 if (status === 'connected') {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]";
-                    if (text) text.innerText = "ONLINE";
-                    if (studentStatus) {
-                        studentStatus.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live';
-                        studentStatus.classList.add('text-green-600', 'bg-green-100');
-                    }
+                    dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-lg";
+                    text.innerText = "ONLINE";
                 } else {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
-                    if (text) text.innerText = "OFFLINE";
-                    if (studentStatus) {
-                        studentStatus.innerHTML = '<div class="w-2 h-2 bg-red-400 rounded-full"></div> Connect';
-                    }
+                    dot.className = "w-2 h-2 rounded-full bg-red-500";
+                    text.innerText = "OFFLINE";
                 }
-            },
-
-            sendHeartbeat: () => {
-                if (state.client && state.isConnected) {
-                    state.client.publish(CONFIG.topics.presence, JSON.stringify({
-                        id: CONFIG.mqtt.clientId,
-                        ts: Date.now(),
-                        role: state.role || 'viewer'
-                    }));
-                }
-            },
-
-            handlePresenceUpdate: (data) => {
-                state.activeUsers.set(data.id, data.ts);
-                app.updateUserCount();
             },
 
             cleanupStaleUsers: () => {
                 const now = Date.now();
-                for (const [id, ts] of state.activeUsers) {
-                    if (now - ts > 45000) state.activeUsers.delete(id);
-                }
-                app.updateUserCount();
-
+                let changed = false;
                 for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 45000) { 
+                    // Keep buses on map for 5 MINUTES (300,000ms)
+                    if (now - state.activeBuses[id].ts > 300000) { 
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
+                        changed = true;
                     }
                 }
-                app.updateBusList();
+                if (changed) app.updateBusList();
             },
 
-            updateUserCount: () => {
-                const el = document.getElementById('count-users');
-                if (el) el.innerText = state.activeUsers.size;
-            },
-
-            // --- Location Logic ---
+            // --- Location Handlers ---
             handleLocationUpdate: (data) => {
+                // If offline status received
                 if (data.status === 'offline') {
                     delete state.activeBuses[data.id];
                     app.removeBusMarker(data.id);
@@ -774,26 +337,24 @@
                     return;
                 }
 
-                if (state.isBroadcasting && data.id === state.driverId) return;
+                // If I am the driver, ignore my own MQTT echo (since Android Native sends it)
+                if (state.driverId && data.id === state.driverId) return;
 
-                const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return; 
-                
-                state.activeBuses[data.id] = data;
+                // Update Local State
+                state.activeBuses[data.id] = { ...data, ts: Date.now() };
 
+                // Update UI if in Student Mode
                 if (state.role === 'student') {
                     app.updateBusMarker(data);
                     app.updateBusList();
                 }
             },
 
+            // --- Driver Setup Logic ---
             selectRoute: (name, prefix) => {
-                state.tempRouteName = name;
-                state.tempRoutePrefix = prefix;
+                state.tempRouteName = name; state.tempRoutePrefix = prefix;
                 const savedName = localStorage.getItem('saved_username');
-                if (savedName) {
-                    document.getElementById('driver-username-input').value = savedName;
-                }
+                if (savedName) document.getElementById('driver-username-input').value = savedName;
                 document.getElementById('route-sub-select').classList.remove('hidden');
             },
 
@@ -801,442 +362,167 @@
                 const name = state.tempRouteName;
                 const prefix = state.tempRoutePrefix;
                 const fullRouteName = `${name} (${direction})`;
-
-                const usernameInput = document.getElementById('driver-username-input').value.trim();
-                const username = usernameInput || null;
+                const username = document.getElementById('driver-username-input').value.trim() || null;
 
                 document.getElementById('route-sub-select').classList.add('hidden');
-                const loader = document.getElementById('selection-loader');
-                if (loader) loader.classList.remove('hidden');
+                document.getElementById('selection-loader').classList.remove('hidden');
 
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
-                }
+                setTimeout(() => {
+                    const assignedId = app.assignNextId(prefix);
+                    state.driverId = assignedId;
+                    state.driverRoute = fullRouteName;
+                    state.driverUsername = username;
 
-                let attempts = 0;
-                const syncInterval = setInterval(() => {
-                    attempts++;
-                    if (state.isConnected || attempts > 30) {
-                        clearInterval(syncInterval);
-                        
-                        const now = Date.now();
-                        for (const id in state.activeBuses) {
-                            if (now - state.activeBuses[id].ts > 30000) { 
-                                delete state.activeBuses[id];
-                            }
-                        }
-
-                        const assignedId = app.assignNextId(prefix);
-                        
-                        state.driverRoute = fullRouteName;
-                        state.driverId = assignedId;
-                        state.driverDestination = name;
-                        state.driverDirection = direction;
-                        state.driverUsername = username;
-
-                        localStorage.setItem('active_driver_id', assignedId);
-                        localStorage.setItem('active_driver_route', fullRouteName);
-                        localStorage.setItem('active_driver_dest', name);
-                        localStorage.setItem('active_driver_dir', direction);
-
-                        if (username) {
-                            localStorage.setItem('active_driver_username', username);
-                            localStorage.setItem('saved_username', username);
-                        } else {
-                            localStorage.removeItem('active_driver_username');
-                        }
-
-                        document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
-
-                        const nameContainer = document.getElementById('driver-display-username-container');
-                        const nameSpan = document.getElementById('driver-display-username');
-                        if (username) {
-                            nameContainer.classList.remove('hidden');
-                            nameSpan.innerText = username;
-                        } else {
-                            nameContainer.classList.add('hidden');
-                            nameSpan.innerText = '';
-                        }
-
-                        if (loader) loader.classList.add('hidden');
-                        
-                        // FIX: Ensure button state is fresh
-                        state.isBroadcasting = false;
-                        app.updateBroadcastUI(false);
-                        
-                        app.switchView('view-driver-dashboard');
-                        app.initDriverMap();
+                    localStorage.setItem('active_driver_id', assignedId);
+                    localStorage.setItem('active_driver_route', fullRouteName);
+                    localStorage.setItem('active_driver_dest', name);
+                    localStorage.setItem('active_driver_dir', direction);
+                    if (username) {
+                        localStorage.setItem('active_driver_username', username);
+                        localStorage.setItem('saved_username', username);
                     }
-                }, 100);
+
+                    document.getElementById('driver-assigned-id').innerText = `${fullRouteName} [${assignedId}]`;
+                    document.getElementById('selection-loader').classList.add('hidden');
+                    
+                    app.switchView('view-driver-dashboard');
+                    app.initDriverMap();
+                }, 500);
             },
 
             assignNextId: (prefix) => {
-                const activeIds = Object.keys(state.activeBuses)
+                const ids = Object.keys(state.activeBuses)
                     .filter(id => id.startsWith(prefix))
                     .map(id => parseInt(id.replace(prefix, '')))
-                    .filter(num => !isNaN(num))
-                    .sort((a, b) => a - b);
-
-                let nextNum = 1;
-                for (const num of activeIds) {
-                    if (num === nextNum) nextNum++;
-                    else if (num > nextNum) break;
-                }
-                return prefix + nextNum;
+                    .filter(n => !isNaN(n)).sort((a,b)=>a-b);
+                let next = 1;
+                for (const n of ids) { if(n === next) next++; else break; }
+                return prefix + next;
             },
 
-            calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; 
-                const φ1 = lat1 * Math.PI/180;
-                const φ2 = lat2 * Math.PI/180;
-                const Δφ = (lat2-lat1) * Math.PI/180;
-                const Δλ = (lon2-lon1) * Math.PI/180;
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
-            },
-
-            // --- Driver Map & Routing ---
+            // --- Driver Map ---
             initDriverMap: () => {
-                if (state.driverMap) {
-                    try {
-                        state.driverMap.off();
-                        state.driverMap.remove();
-                    } catch(e) {}
-                    state.driverMap = null;
-                }
+                const el = document.getElementById('driver-map');
+                if(!el) return;
+                if (state.driverMap) { state.driverMap.remove(); state.driverMap = null; }
 
-                // FIX: CLEAN MAP CONTAINER FORCEFULLY
-                const mapContainer = document.getElementById('driver-map');
-                if (mapContainer) {
-                    mapContainer.innerHTML = '';
-                    mapContainer._leaflet_id = null;
-                }
-
-                const COORDS = {
-                    'UIU': CONFIG.uiuCoords, 
-                    'Kuril': [23.822339, 90.420163],
-                    'Notun Bazar': [23.797881, 90.424652],
-                    'Aftab Nagar': [23.767860, 90.425833],
-                    'Transport': CONFIG.uiuCoords 
-                };
-
-                let start, end;
-                if (state.driverDirection === 'From UIU') {
-                    start = COORDS['UIU'];
-                    end = COORDS[state.driverDestination] || COORDS['Transport'];
-                } else {
-                    start = COORDS[state.driverDestination] || COORDS['Transport'];
-                    end = COORDS['UIU'];
-                }
+                const COORDS = { 'UIU': CONFIG.coords, 'Kuril': [23.822339, 90.420163], 'Notun Bazar': [23.797881, 90.424652], 'Aftab Nagar': [23.767860, 90.425833], 'Transport': CONFIG.coords };
+                const dest = localStorage.getItem('active_driver_dest') || 'Transport';
+                const dir = localStorage.getItem('active_driver_dir');
+                let start = (dir === 'From UIU') ? COORDS['UIU'] : (COORDS[dest] || CONFIG.coords);
 
                 setTimeout(() => {
-                    if (!document.getElementById('driver-map')) return; 
-                    
                     state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
                     const isDark = document.documentElement.classList.contains('dark');
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OSM',
-                        className: isDark ? 'dark-map-tiles' : ''
+                        attribution: 'OSM', className: isDark ? 'dark-map-tiles' : ''
                     }).addTo(state.driverMap);
-
-                    L.marker(start).addTo(state.driverMap).bindPopup("Start");
-                    L.marker(end).addTo(state.driverMap).bindPopup("End");
-
-                    const iconHtml = `
-                        <div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring">
-                            <div class="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                    `;
-                    const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
-                    state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
-
-                    const jumpBtn = L.control({position: 'bottomright'});
-                    jumpBtn.onAdd = function(map) {
+                    
+                    // Simple self-centering button
+                    const btn = L.control({position: 'bottomright'});
+                    btn.onAdd = () => {
                         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        const a = L.DomUtil.create('a', '', div);
-                        a.href = '#';
-                        a.title = 'Jump to UIU';
-                        a.innerHTML = '<i class="fas fa-university"></i>';
-                        a.onclick = (e) => {
-                            e.preventDefault();
-                            state.driverMap.setView(CONFIG.uiuCoords, 16);
-                        }
+                        div.innerHTML = '<a href="#" title="Center" style="background:white; width:40px; height:40px; line-height:40px; text-align:center; display:block;"><i class="fas fa-crosshairs"></i></a>';
+                        div.onclick = (e) => { e.preventDefault(); if(state.lastLat) state.driverMap.setView([state.lastLat, state.lastLng], 16); };
                         return div;
                     };
-                    jumpBtn.addTo(state.driverMap);
-                    
-                    requestAnimationFrame(() => { state.driverMap.invalidateSize(); });
+                    btn.addTo(state.driverMap);
                 }, 200);
             },
 
-            // --- Driver Broadcasting ---
+            // --- Driver Broadcast Logic ---
             toggleBroadcast: () => {
                 if (state.isBroadcasting) app.stopBroadcast();
                 else app.startBroadcast();
             },
 
             startBroadcast: () => {
-                // 1. Android Native Handover
                 if (window.Android) {
                     state.isBroadcasting = true;
                     app.updateBroadcastUI(true);
                     
-                    // We just update the UI timer, but the heavy lifting is done by Android
                     state.tripStartTime = Date.now();
                     state.uptimeInterval = setInterval(() => {
                         const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
                         const m = Math.floor(diff / 60).toString().padStart(2, '0');
                         const s = (diff % 60).toString().padStart(2, '0');
-                        const el = document.getElementById('val-uptime');
-                        if(el) el.innerText = `${m}:${s}`;
+                        document.getElementById('val-uptime').innerText = `${m}:${s}`;
                     }, 1000);
 
-                    // PASS DATA TO NATIVE ANDROID
-                    // Format: startNativeBroadcast(id, route, username)
+                    // Call Android Native Service
                     window.Android.startNativeBroadcast(
                         state.driverId, 
                         state.driverRoute, 
                         state.driverUsername || ""
                     );
-                    return;
-                }
-                
-                if (!navigator.geolocation) {
-                    alert("Geolocation not supported");
-                    return;
-                }
-                
-                try {
-                    // INSTANT UI UPDATE - NO WAITING
-                    state.isBroadcasting = true;
-                    app.updateBroadcastUI(true);
-
-                    if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-                    state.currentSmoothedSpeed = 0;
-
-                    state.tripStartTime = Date.now();
-                    if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = setInterval(() => {
-                        const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
-                        const s = (diff % 60).toString().padStart(2, '0');
-                        const el = document.getElementById('val-uptime');
-                        if(el) el.innerText = `${m}:${s}`;
-                    }, 1000);
-
-                    app.requestWakeLock();
-
-                    const options = {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    };
-
-                    let isFirstFix = true;
-
-                    state.watchId = navigator.geolocation.watchPosition(
-                        (position) => {
-                            if (!state.isBroadcasting) return;
-
-                            const { latitude, longitude, accuracy, speed } = position.coords;
-                            const now = Date.now();
-
-                            // --- SAME DIRECTION BLOCKING LOGIC START ---
-                            if (isFirstFix) {
-                                let conflict = false;
-                                const buses = Object.values(state.activeBuses);
-                                
-                                for (let bus of buses) {
-                                    // 1. Skip checking against yourself
-                                    if (bus.id === state.driverId) continue;
-
-                                    // 2. Skip stale buses (older than 60s)
-                                    if (now - bus.ts > 60000) continue;
-
-                                    // 3. Check Exact Route & Direction Match
-                                    // defined in confirmRoute: e.g., "Kuril (To UIU)"
-                                    if (bus.route === state.driverRoute) {
-                                        
-                                        // 4. Calculate Distance
-                                        const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
-                                        
-                                        // 5. If closer than 20 meters
-                                        if (dist < 20) {
-                                            conflict = true; 
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (conflict) {
-                                    alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
-                                    app.stopBroadcast();
-                                    return; // Stop execution here
-                                }
-
-                                isFirstFix = false; // Disable check for rest of trip
-                            }
-
-                            // --- DYNAMIC SPEED LOGIC START ---
-                            let rawSpeedKmh = (speed || 0) * 3.6;
-
-                            // 1. Determine Smoothing Factor (Alpha)
-                            // Default 0.15 = Heavy smoothing (keeps 85% history) -> Good for cruising
-                            let alpha = 0.15; 
-                            
-                            // If we are slowing down (Current > New), react FAST.
-                            // 0.6 = Low smoothing (only keeps 40% history) -> Drops quickly
-                            if (state.currentSmoothedSpeed > rawSpeedKmh) {
-                                alpha = 0.6; 
-                            }
-
-                            // 2. Apply Dynamic EMA
-                            // Formula: (Old * (1 - alpha)) + (New * alpha)
-                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
-
-                            // 3. Absolute Stop Snap
-                            // If raw GPS says 0 and we are already slow, just snap to 0 immediately to kill lag
-                            if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
-                                state.currentSmoothedSpeed = 0;
-                            }
-
-                            // 4. Formatting
-                            const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
-                            
-                            document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                            // --- DYNAMIC SPEED LOGIC END ---
-                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
-
-                            if (state.driverMarker) {
-                                state.driverMarker.setLatLng([latitude, longitude]);
-                                if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
-                            }
-
-                            state.lastLat = latitude;
-                            state.lastLng = longitude;
-
-                            if (now - state.lastSentTime < 200) return;
-                            state.lastSentTime = now;
-
-                            if (state.client && state.isConnected) {
-                                const payload = JSON.stringify({
-                                    id: state.driverId,
-                                    uid: CONFIG.mqtt.clientId,
-                                    route: state.driverRoute,
-                                    username: state.driverUsername,
-                                    lat: latitude,
-                                    lng: longitude,
-                                    acc: accuracy,
-                                    speed: displaySpeed,
-                                    ts: now
-                                });
-                                state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                            }
-                        },
-                        (error) => { console.error("GPS Error", error); },
-                        options
-                    );
-                } catch (e) {
-                    console.error("Start Broadcast Error:", e);
-                    alert("Error starting trip. Please refresh.");
-                    state.isBroadcasting = false;
-                    app.updateBroadcastUI(false);
+                } else {
+                    alert("⚠️ Please open this in the Android App to broadcast background location!");
                 }
             },
 
-            stopBroadcast: async () => {
-                if (window.Android) {
-                    window.Android.stopNativeBroadcast();
-                }
+            stopBroadcast: () => {
+                if (window.Android) window.Android.stopNativeBroadcast();
                 
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
-                app.releaseWakeLock();
+                if (state.uptimeInterval) clearInterval(state.uptimeInterval);
                 
-                // FORCE KILL GHOSTS
-                if (state.driverId && state.activeBuses[state.driverId]) {
-                    delete state.activeBuses[state.driverId];
-                }
-                
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
-                }
-
-                if (state.uptimeInterval) {
-                    clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = null;
-                }
-                const uptimeEl = document.getElementById('val-uptime');
-                if(uptimeEl) uptimeEl.innerText = "00:00";
-
+                // Send one last offline message (Android handles this too, but redundant is safe)
                 if (state.client && state.isConnected) {
-                      state.client.publish(CONFIG.topics.location, JSON.stringify({
-                        id: state.driverId,
-                        status: 'offline'
-                      }), { retain: true });
+                    state.client.publish(CONFIG.topics.location, JSON.stringify({ id: state.driverId, status: 'offline' }));
                 }
-
                 app.showSummary();
             },
 
-            showSummary: () => {
-                const modal = document.getElementById('trip-summary-modal');
-                modal.classList.remove('opacity-0', 'pointer-events-none', 'z-[-1]');
-                modal.classList.add('z-50');
-                modal.style.opacity = '1';
-                modal.style.pointerEvents = 'auto';
-
-                if (window.confetti) {
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
+            // --- Android Bridge (Called by Java) ---
+            handleAndroidLocation: (lat, lng, acc, speed) => {
+                // If this is called, we know the service is running, so force UI state
+                if (!state.isBroadcasting) {
+                    state.isBroadcasting = true;
+                    app.updateBroadcastUI(true);
                 }
+
+                document.getElementById('debug-status').innerText = "Live: " + new Date().toLocaleTimeString();
+                document.getElementById('val-speed').innerText = (speed * 3.6).toFixed(1) + " km/h";
+                document.getElementById('val-accuracy').innerText = Math.round(acc) + "m";
+
+                if (state.driverMap) {
+                    if (!state.driverMarker) {
+                        const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
+                        const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
+                        state.driverMarker = L.marker([lat, lng], {icon: icon}).addTo(state.driverMap);
+                    } else {
+                        state.driverMarker.setLatLng([lat, lng]);
+                    }
+                    state.driverMap.panTo([lat, lng]);
+                }
+                state.lastLat = lat; state.lastLng = lng;
             },
 
-            closeSummary: () => {
-                if (window.confetti) {
-                    try { window.confetti.reset(); } catch(e) {}
-                }
-                const modal = document.getElementById('trip-summary-modal');
-                modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
-                modal.classList.remove('z-50');
-                modal.style.opacity = '0';
-                app.goHome(); 
-            },
-
-            updateBroadcastUI: (isActive) => {
+            updateBroadcastUI: (active) => {
                 const btn = document.getElementById('broadcast-btn');
                 const glow = document.getElementById('broadcast-glow');
                 const title = document.getElementById('broadcast-status-title');
                 const icon = document.getElementById('broadcast-icon');
+                if(!btn) return;
 
-                // SAFETY: If elements aren't loaded yet (page reload), don't crash
-                if (!btn) return; 
-
-                if (isActive) {
-                    // Force switch to dashboard if not already there
-                    document.getElementById('view-landing').classList.remove('view-active');
-                    document.getElementById('view-driver-dashboard').classList.add('view-active');
-                    
+                if (active) {
+                    // Switch to dashboard if not there
+                    if(!document.getElementById('view-driver-dashboard').classList.contains('view-active')) {
+                        app.switchView('view-driver-dashboard');
+                    }
                     btn.innerText = "STOP TRIP";
-                    btn.classList.remove('bg-brand-500');
-                    btn.classList.add('bg-red-500'); // Tailwind class fix
-
-                    glow.style.opacity = '1';
+                    btn.classList.remove('bg-brand-500', 'hover:bg-brand-600');
+                    btn.classList.add('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
                     glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
+                    glow.style.opacity = '1';
                     title.innerText = "Broadcasting";
                     icon.classList.remove('text-slate-300', 'dark:text-slate-600');
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    btn.classList.remove('bg-red-500');
-                    btn.classList.add('bg-brand-500');
-                    
+                    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
+                    btn.classList.add('bg-brand-500', 'hover:bg-brand-600');
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
                     icon.classList.add('text-slate-300', 'dark:text-slate-600');
@@ -1244,123 +530,81 @@
                 }
             },
 
-            // --- Student Map ---
+            showSummary: () => {
+                const modal = document.getElementById('trip-summary-modal');
+                modal.classList.remove('opacity-0', 'pointer-events-none', 'z-[-1]');
+                modal.classList.add('z-50'); modal.style.opacity = '1'; modal.style.pointerEvents = 'auto';
+                if (window.confetti) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            },
+
+            closeSummary: () => {
+                if (window.confetti) { try { window.confetti.reset(); } catch(e) {} }
+                const modal = document.getElementById('trip-summary-modal');
+                modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
+                modal.classList.remove('z-50'); modal.style.opacity = '0';
+                app.goHome();
+            },
+
+            // --- Student Map Logic ---
             initMap: () => {
                 setTimeout(() => {
                     if (!state.map) {
-                        state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
+                        state.map = L.map('map', { zoomControl: false }).setView(CONFIG.coords, 14);
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
                         
-                        const jumpBtn = L.control({position: 'bottomright'});
-                        jumpBtn.onAdd = function(map) {
-                            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                            const a = L.DomUtil.create('a', '', div);
-                            a.href = '#';
-                            a.title = 'Jump to UIU';
-                            a.innerHTML = '<i class="fas fa-university"></i>';
-                            a.onclick = (e) => {
-                                e.preventDefault();
-                                state.map.setView(CONFIG.uiuCoords, 16);
-                            }
-                            return div;
-                        };
-                        jumpBtn.addTo(state.map);
-
-                        const uiuIcon = L.divIcon({
-                             className: '',
-                             html: '<div class="text-2xl">🎓</div>',
-                             iconSize: [30, 30]
-                        });
-                        L.marker(CONFIG.uiuCoords, {icon: uiuIcon}).addTo(state.map).bindPopup("UIU Campus");
+                        const uiuIcon = L.divIcon({ className: '', html: '<div class="text-2xl">🎓</div>', iconSize: [30, 30] });
+                        L.marker(CONFIG.coords, {icon: uiuIcon}).addTo(state.map).bindPopup("UIU Campus");
                         app.updateMapStyle();
                     }
                     requestAnimationFrame(() => { state.map.invalidateSize(); });
                 }, 100);
             },
 
-            createBusIcon: (id, colorClass) => {
-                 return L.divIcon({
-                    className: 'custom-bus-pin', 
-                    html: `
-                        <div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">
-                            ${id}
-                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div>
-                        </div>
-                    `,
-                    iconSize: [40, 48], 
-                    iconAnchor: [20, 48], 
-                    popupAnchor: [0, -48]
-                });
-            },
-
             updateMapStyle: () => {
                 if (!state.map) return;
-                state.map.eachLayer((layer) => {
-                    if (layer instanceof L.TileLayer) state.map.removeLayer(layer);
-                });
+                state.map.eachLayer(l => { if (l instanceof L.TileLayer) state.map.removeLayer(l); });
                 const isDark = document.documentElement.classList.contains('dark');
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OSM',
-                    className: isDark ? 'dark-map-tiles' : ''
-                }).addTo(state.map);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'OSM', className: isDark ? 'dark-map-tiles' : '' }).addTo(state.map);
             },
 
-            updateBusMarker: async (data) => {
+            createBusIcon: (id, colorClass) => {
+                return L.divIcon({
+                    className: 'custom-bus-pin',
+                    html: `<div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">${id}<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div></div>`,
+                    iconSize: [40, 48], iconAnchor: [20, 48], popupAnchor: [0, -48]
+                });
+            },
+
+            updateBusMarker: (data) => {
                 const { id, lat, lng, acc } = data;
-
-                let colorClass = BUS_STYLES.default;
+                let color = BUS_STYLES.default;
+                if (id.startsWith('K')) color = BUS_STYLES['K'];
+                else if (id.startsWith('N')) color = BUS_STYLES['N'];
+                else if (id.startsWith('A')) color = BUS_STYLES['A'];
                 
-                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; 
-                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; 
-                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; 
-                else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
-                else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
-
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-                    const icon = app.createBusIcon(id, colorClass); 
-                    state.markers[id].setIcon(icon);
+                    state.markers[id].setIcon(app.createBusIcon(id, color));
                 } else {
-                    const icon = app.createBusIcon(id, colorClass);
-                    const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
-                    
-                    const popupContent = document.createElement('div');
-                    popupContent.innerHTML = `
-                        <div class="text-center p-2">
-                            <b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b>
-                            <p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>
-                            ${data.username ? `<p class="text-xs font-bold text-slate-600 dark:text-slate-300 mt-1">👤 ${app.escapeHtml(data.username)}</p>` : ''}
-                        </div>
-                    `;
-                    marker.bindPopup(popupContent);
+                    const marker = L.marker([lat, lng], { icon: app.createBusIcon(id, color) }).addTo(state.map);
+                    const popup = `<div class="text-center p-2"><b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b><p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>${data.username ? `<p class="text-xs font-bold mt-1">👤 ${app.escapeHtml(data.username)}</p>` : ''}</div>`;
+                    marker.bindPopup(popup);
                     state.markers[id] = marker;
                     app.updateBusCount();
                 }
 
-                if (acc && acc > 10) {
-                    if (state.circles[id]) {
-                        state.circles[id].setLatLng([lat, lng]);
-                        state.circles[id].setRadius(acc);
-                    } else {
-                        state.circles[id] = L.circle([lat, lng], {
-                            radius: acc,
-                            color: 'transparent',
-                            fillColor: '#3b82f6',
-                            fillOpacity: 0.2
-                        }).addTo(state.map);
-                    }
+                // Accuracy Circle
+                if (acc > 20) {
+                    if (state.circles[id]) { state.circles[id].setLatLng([lat, lng]); state.circles[id].setRadius(acc); }
+                    else { state.circles[id] = L.circle([lat, lng], { radius: acc, color: 'transparent', fillColor: '#3b82f6', fillOpacity: 0.1 }).addTo(state.map); }
+                } else if (state.circles[id]) {
+                    state.map.removeLayer(state.circles[id]); delete state.circles[id];
                 }
             },
 
             removeBusMarker: (id) => {
-                if (state.markers[id]) {
-                    state.map.removeLayer(state.markers[id]);
-                    delete state.markers[id];
-                }
-                if (state.circles[id]) {
-                    state.map.removeLayer(state.circles[id]);
-                    delete state.circles[id];
-                }
+                if (state.markers[id]) { state.map.removeLayer(state.markers[id]); delete state.markers[id]; }
+                if (state.circles[id]) { state.map.removeLayer(state.circles[id]); delete state.circles[id]; }
                 app.updateBusCount();
             },
 
@@ -1372,12 +616,9 @@
                 const list = document.getElementById('bus-list');
                 const buses = Object.values(state.activeBuses);
                 if (buses.length === 0) {
-                    if (!list.querySelector('.fa-satellite-dish')) {
-                        list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
-                    }
+                    if (!list.querySelector('.fa-satellite-dish')) list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
                     return;
                 }
-                
                 const loader = list.querySelector('.fa-satellite-dish');
                 if (loader) loader.parentElement.remove();
 
@@ -1386,46 +627,37 @@
                     if (!item) {
                         item = document.createElement('div');
                         item.id = `bus-${bus.id}`;
-                        // Updated to softer colors/glass effect
-                        item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
+                        item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm";
                         item.onclick = () => app.focusBus(bus.id);
                         
-                        let bgClass = "bg-orange-500";
-                        if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
-                        if (bus.id.startsWith('N')) bgClass = "bg-green-500";
-                        if (bus.id.startsWith('A')) bgClass = "bg-purple-500";
+                        let color = "bg-orange-500";
+                        if (bus.id.startsWith('K')) color = "bg-blue-500";
+                        else if (bus.id.startsWith('N')) color = "bg-green-500";
+                        else if (bus.id.startsWith('A')) color = "bg-purple-500";
 
                         item.innerHTML = `
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full ${bgClass} text-white flex items-center justify-center font-bold">
-                                    ${app.escapeHtml(bus.id)}
-                                </div>
+                                <div class="w-10 h-10 rounded-full ${color} text-white flex items-center justify-center font-bold">${app.escapeHtml(bus.id)}</div>
                                 <div>
-                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
+                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route)}</p>
                                     <div class="flex items-center gap-2">
-                                        <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
-                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed || 0).toFixed(1)}</span> km/h</p>
+                                        <p class="text-[10px] text-green-500">Active</p>
+                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed||0).toFixed(1)}</span> km/h</p>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 truncate max-w-[80px]">${app.escapeHtml(bus.username || '')}</span>
-                                <i class="fas fa-chevron-right text-slate-300"></i>
-                            </div>
+                            <i class="fas fa-chevron-right text-slate-300"></i>
                         `;
                         list.appendChild(item);
                     } else {
-                        const speedEl = document.getElementById(`speed-${bus.id}`);
-                        if (speedEl) {
-                            speedEl.innerText = Number(bus.speed || 0).toFixed(1);
-                        }
+                        const sEl = document.getElementById(`speed-${bus.id}`);
+                        if(sEl) sEl.innerText = Number(bus.speed||0).toFixed(1);
                     }
                 });
-
+                
+                // Cleanup removed list items
                 Array.from(list.children).forEach(child => {
-                    if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
-                        child.remove();
-                    }
+                    if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) child.remove();
                 });
             },
 
@@ -1440,53 +672,11 @@
             toggleBottomSheet: () => {
                 const sheet = document.getElementById('bottom-sheet');
                 if (sheet.classList.contains('translate-y-0')) {
-                    sheet.classList.remove('translate-y-0');
-                    sheet.classList.add('translate-y-[80%]');
+                    sheet.classList.remove('translate-y-0'); sheet.classList.add('translate-y-[80%]');
                 } else {
-                    sheet.classList.remove('translate-y-[80%]');
-                    sheet.classList.add('translate-y-0');
+                    sheet.classList.remove('translate-y-[80%]'); sheet.classList.add('translate-y-0');
                 }
-            },
-            
-            // --- Android Bridge ---
-            // --- Android Bridge ---
-            handleAndroidLocation: (lat, lng, acc, speed) => {
-                // 1. FORCE STATUS: If we receive data from Android, we ARE broadcasting.
-                if (!state.isBroadcasting) {
-                    state.isBroadcasting = true;
-                    app.updateBroadcastUI(true);
-                }
-
-                // 2. Prepare Data
-                const displaySpeed = (speed * 3.6).toFixed(1); // Convert m/s to km/h
-                
-                // 3. Update Text UI
-                const speedEl = document.getElementById('val-speed');
-                const accEl = document.getElementById('val-accuracy');
-                
-                if (speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                if (accEl) accEl.innerText = Math.round(acc) + 'm';
-
-                // 4. Update Map Marker
-                // Ensure the map and marker exist before trying to move them
-                if (state.driverMap) {
-                    if (state.driverMarker) {
-                        state.driverMarker.setLatLng([lat, lng]);
-                    } else {
-                        // Create marker if it's missing
-                        const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
-                        const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
-                        state.driverMarker = L.marker([lat, lng], {icon: icon}).addTo(state.driverMap);
-                    }
-                    
-                    // Center the map on the driver
-                    state.driverMap.panTo([lat, lng]);
-                }
-
-                // 5. Keep track of last location
-                state.lastLat = lat;
-                state.lastLng = lng;
-            },
+            }
         };
 
         window.app = app;
