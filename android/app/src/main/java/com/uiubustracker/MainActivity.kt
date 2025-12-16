@@ -47,12 +47,7 @@ class MainActivity : ComponentActivity() {
         webView = WebView(this)
         setContentView(webView)
 
-        setupWebView()
-        checkPermissions()
-    }
-
-    override fun onResume() {
-        super.onResume()
+        // Register receiver in onCreate to keep it alive even when paused
         val filter = IntentFilter()
         filter.addAction(LocationService.ACTION_LOCATION_UPDATE)
         filter.addAction(LocationService.ACTION_SERVICE_STOPPED)
@@ -61,10 +56,13 @@ class MainActivity : ComponentActivity() {
         } else {
             registerReceiver(locationReceiver, filter)
         }
+
+        setupWebView()
+        checkPermissions()
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
         unregisterReceiver(locationReceiver)
     }
 

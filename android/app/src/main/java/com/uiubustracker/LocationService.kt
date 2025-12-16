@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
@@ -73,7 +74,11 @@ class LocationService : Service(), LocationListener {
             .setPriority(NotificationCompat.PRIORITY_LOW) // Silent
             .build()
 
-        startForeground(1, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION)
+        } else {
+            startForeground(1, notification)
+        }
 
         // Acquire WakeLock
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
