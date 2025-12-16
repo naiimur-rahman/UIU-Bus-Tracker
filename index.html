@@ -443,7 +443,7 @@
         };
 
         // UPDATED: Tiny silent mp3 for background hack
-        const SILENT_AUDIO_B64 = 'data:audio/mp3;base64,SUQzBAAAAAABAFRYWFQAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhUAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhUAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADbYXZmNTguMjkuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA';
+        const SILENT_AUDIO_B64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
         /** GLOBAL STATE */
         const state = {
             client: null,
@@ -667,18 +667,22 @@
             },
 
             // UPDATED: Initialize Silent Audio with DOM Attachment
-            initBackgroundAudio: () => {
+            // UPDATED: Init Audio with WAV format
+initBackgroundAudio: () => {
     if (!state.backgroundAudio) {
         state.backgroundAudio = new Audio();
         state.backgroundAudio.src = SILENT_AUDIO_B64;
+        state.backgroundAudio.type = 'audio/wav'; // Explicitly tell browser it's a WAV
         state.backgroundAudio.loop = true;
-        state.backgroundAudio.volume = 0.01; // Not 0, just very quiet
         
-        // Critical for iOS Safari to allow background play
+        // Android Chrome sometimes needs volume > 0 to keep the service alive
+        state.backgroundAudio.volume = 0.01; 
+        
+        // Critical for iOS/Android background execution
         state.backgroundAudio.setAttribute('playsinline', '');
         state.backgroundAudio.setAttribute('webkit-playsinline', '');
         
-        // Pre-load it so it is ready for the click event
+        // Pre-load the file
         state.backgroundAudio.load();
     }
 },
