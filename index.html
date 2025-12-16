@@ -335,12 +335,12 @@
                     <p id="val-speed" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">0<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span></p>
                 </div>
                 <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                     <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">GPS</p>
                     <p id="val-accuracy" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">--</p>
                 </div>
                 <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                     <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Time</p>
                     <p id="val-uptime" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">00:00</p>
                 </div>
@@ -442,6 +442,9 @@
             'from_uiu': 'bg-red-600'
         };
 
+        // UPDATED: Tiny silent mp3 for background hack
+        const SILENT_AUDIO_B64 = 'data:audio/mp3;base64,SUQzBAAAAAABAFRYWFQAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhUAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhUAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADbYXZmNTYuMjAuMTAwAAAAAAAAAAAAAAD/4AAQAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIWFhYWNjY2NjY2RkZGRkZGRlZWVlZWVmZmZmZmZnZ2dnZ2doaGhoaGhpampsbGxtbW1tbW1ubm5ubm5vb29vb29wcHBwcHBxcXFx';
+
         /** GLOBAL STATE */
         const state = {
             client: null,
@@ -455,6 +458,8 @@
             isBroadcasting: false,
             watchId: null,
             wakeLock: null,
+            backgroundAudio: null, // UPDATED: Holds audio element
+            broadcastTimer: null,  // UPDATED: Holds 30 min timer
             activeBuses: {},
             activeUsers: new Map(),
             userCache: {},
@@ -478,7 +483,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Map Clear Fix & Structure Fix");
+                console.log("App Version: Background Audio & Lock Screen Support");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -506,6 +511,13 @@
 
                 setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
                 setInterval(app.cleanupStaleUsers, 10000);
+
+                // UPDATED: Re-acquire wake lock on visibility change
+                document.addEventListener('visibilitychange', async () => {
+                    if (state.wakeLock !== null && document.visibilityState === 'visible') {
+                        await app.requestWakeLock();
+                    }
+                });
             },
 
             // --- Theme & View ---
@@ -652,6 +664,15 @@
                 if (state.wakeLock) {
                     state.wakeLock.release();
                     state.wakeLock = null;
+                }
+            },
+
+            // UPDATED: Initialize Silent Audio
+            initBackgroundAudio: () => {
+                if (!state.backgroundAudio) {
+                    state.backgroundAudio = new Audio(SILENT_AUDIO_B64);
+                    state.backgroundAudio.loop = true;
+                    state.backgroundAudio.volume = 0.01;
                 }
             },
 
@@ -984,6 +1005,21 @@
                 }
                 
                 try {
+                    // UPDATED: Start Background Audio Hack & 30 min timer
+                    app.initBackgroundAudio();
+                    // Audio Play MUST happen on User Interaction (click)
+                    state.backgroundAudio.play().catch(e => {
+                        console.warn("Autoplay blocked, user interaction required next time");
+                    });
+
+                    // 30 MINUTE TIMER
+                    if (state.broadcastTimer) clearTimeout(state.broadcastTimer);
+                    state.broadcastTimer = setTimeout(() => {
+                        alert("30 Minutes Up! Location sharing stopped to save battery.");
+                        app.stopBroadcast();
+                    }, 30 * 60 * 1000); 
+
+
                     // INSTANT UI UPDATE - NO WAITING
                     state.isBroadcasting = true;
                     app.updateBroadcastUI(true);
@@ -1124,6 +1160,16 @@
             stopBroadcast: async () => {
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
+                
+                // UPDATED: Stop Audio, Clear Timer, Release Lock
+                if (state.backgroundAudio) {
+                    state.backgroundAudio.pause();
+                    state.backgroundAudio.currentTime = 0;
+                }
+                if (state.broadcastTimer) {
+                    clearTimeout(state.broadcastTimer);
+                    state.broadcastTimer = null;
+                }
                 app.releaseWakeLock();
                 
                 // FORCE KILL GHOSTS
