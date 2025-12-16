@@ -671,16 +671,20 @@
 initBackgroundAudio: () => {
     if (!state.backgroundAudio) {
         state.backgroundAudio = new Audio();
-        state.backgroundAudio.src = SILENT_AUDIO_URL;
+        // Use the remote file which is more reliable
+        state.backgroundAudio.src = 'https://raw.githubusercontent.com/anars/blank-audio/master/5-minutes-of-silence.mp3';
         state.backgroundAudio.loop = true;
-        state.backgroundAudio.volume = 0.01; // Keep volume low but non-zero
+        state.backgroundAudio.volume = 1.0; // CHANGE TO 1.0 (Max Volume)
+        state.backgroundAudio.muted = false; // Ensure not muted
         
-        // iOS Settings to prevent "Operation Aborted"
+        // Settings for mobile
         state.backgroundAudio.setAttribute('playsinline', '');
         state.backgroundAudio.setAttribute('webkit-playsinline', '');
         state.backgroundAudio.preload = 'auto';
         
-        // Don't call load() manually for remote files, let the browser handle it
+        // This is important:
+        // We will "mute" it effectively by using a silent file, 
+        // but the system volume must look "active".
     }
 },
             // --- MQTT Logic ---
@@ -1016,31 +1020,25 @@ initBackgroundAudio: () => {
     
     try {
         // 2. Play Audio (Safely)
-        // We wrap this in a try/catch specifically for the play action
         try {
             await state.backgroundAudio.play();
             console.log("Audio playing started...");
             
-            // 3. Force Notification (Android Only)
+            // 3. Force Notification (Android)
             if ('mediaSession' in navigator) {
                 navigator.mediaSession.metadata = new MediaMetadata({
-                    title: 'Trip Active',
+                    title: 'Sharing Location',
                     artist: 'UIU Bus Tracker',
-                    album: 'Sharing Location...',
+                    album: 'Trip Active',
                     artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }]
                 });
                 navigator.mediaSession.playbackState = 'playing';
+                // Dummy handlers to keep session active
+                navigator.mediaSession.setActionHandler('play', () => {}); 
+                navigator.mediaSession.setActionHandler('pause', () => {}); 
             }
         } catch (audioErr) {
-            // IGNORE "Aborted" errors on iOS - they are harmless interruptions
-            if (audioErr.name !== 'AbortError') {
-                console.warn("Audio Warning:", audioErr);
-                // Only alert if it's a real blocking error
-                if (audioErr.name === 'NotAllowedError') {
-                     alert("Please tap the screen again to allow audio.");
-                     return;
-                }
-            }
+            console.warn("Audio Warning:", audioErr);
         }
 
         // 4. Set 30 Minute Timer
@@ -1058,6 +1056,7 @@ initBackgroundAudio: () => {
         // 6. Start GPS Tracking
         if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
         
+        // Reset Timers
         state.tripStartTime = Date.now();
         if (state.uptimeInterval) clearInterval(state.uptimeInterval);
         state.uptimeInterval = setInterval(() => {
@@ -1068,7 +1067,11 @@ initBackgroundAudio: () => {
             if(el) el.innerText = `${m}:${s}`;
         }, 1000);
 
-        const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+        const options = { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+        };
 
         state.watchId = navigator.geolocation.watchPosition(
             (position) => {
@@ -1077,18 +1080,34 @@ initBackgroundAudio: () => {
                 const { latitude, longitude, accuracy, speed } = position.coords;
                 const now = Date.now();
 
-                // UI Updates
+                // --- A. UPDATE LOCAL DRIVER MAP & UI ---
+                // Calculate Speed (m/s to km/h)
                 const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
+                
                 const speedEl = document.getElementById('val-speed');
                 if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
                 
                 const accEl = document.getElementById('val-accuracy');
                 if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
 
-                // MQTT Sending
-                if (now - state.lastSentTime < 200) return;
+                // Update Local Marker
+                if (state.driverMap) {
+                    if (!state.driverMarker) {
+                         const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
+                         const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
+                         state.driverMarker = L.marker([latitude, longitude], {icon: icon}).addTo(state.driverMap);
+                    } else {
+                        state.driverMarker.setLatLng([latitude, longitude]);
+                    }
+                    // Auto-pan map to follow driver
+                    state.driverMap.panTo([latitude, longitude]);
+                }
+
+                // --- B. MQTT THROTTLE CHECK ---
+                if (now - state.lastSentTime < 1000) return; // Limit to 1 send per second
                 state.lastSentTime = now;
 
+                // --- C. SEND DATA ---
                 if (state.client && state.isConnected) {
                     const payload = JSON.stringify({
                         id: state.driverId,
@@ -1104,13 +1123,15 @@ initBackgroundAudio: () => {
                     state.client.publish(CONFIG.topics.location, payload, { retain: true });
                 }
             },
-            (error) => { console.error("GPS Error", error); },
+            (error) => { 
+                console.error("GPS Error", error);
+                // Optional: visual feedback for GPS loss
+            },
             options
         );
 
     } catch (e) {
         console.error("Start Broadcast Error:", e);
-        // Don't show alert for minor errors anymore, just log them
     }
 },
             stopBroadcast: async () => {
