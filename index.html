@@ -443,8 +443,7 @@
         };
 
         // UPDATED: Tiny silent mp3 for background hack
-        const SILENT_AUDIO_B64 = 'data:audio/mp3;base64,SUQzBAAAAAABAFRYWFQAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhUAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhUAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADbYXZmNTYuMjAuMTAwAAAAAAAAAAAAAAD/4AAQAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIWFhYWNjY2NjY2RkZGRkZGRlZWVlZWVmZmZmZmZnZ2dnZ2doaGhoaGhpampsbGxtbW1tbW1ubm5ubm5vb29vb29wcHBwcHBxcXFx';
-
+        const SILENT_AUDIO_B64 = 'data:audio/mp3;base64,SUQzBAAAAAABAFRYWFQAAAASAAADbWFqb3JfYnJhbmQAbXA0MgBUWFhUAAAAEQAAA21pbm9yX3ZlcnNpb24AMABUWFhUAAAAHAAAA2NvbXBhdGlibGVfYnJhbmRzAGlzb21tcDQyAFRTU0UAAAAOAAADbYXZmNTguMjkuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVLFUCALAMAgAAAAAAAAAABYa5u8SgAAAAAAAAAAAAAAJ88AAAAPAAAAAAA';
         /** GLOBAL STATE */
         const state = {
             client: null,
@@ -669,20 +668,20 @@
 
             // UPDATED: Initialize Silent Audio with DOM Attachment
             initBackgroundAudio: () => {
-                if (!state.backgroundAudio) {
-                    state.backgroundAudio = document.createElement('audio');
-                    state.backgroundAudio.src = SILENT_AUDIO_B64;
-                    state.backgroundAudio.loop = true;
-                    state.backgroundAudio.preload = 'auto';
-                    
-                    // iOS Hack: Do not use display:none; move it off-screen instead
-                    state.backgroundAudio.style.position = 'absolute';
-                    state.backgroundAudio.style.left = '-10000px';
-                    state.backgroundAudio.style.top = '0';
-                    
-                    document.body.appendChild(state.backgroundAudio);
-                }
-            },
+    if (!state.backgroundAudio) {
+        state.backgroundAudio = new Audio();
+        state.backgroundAudio.src = SILENT_AUDIO_B64;
+        state.backgroundAudio.loop = true;
+        state.backgroundAudio.volume = 0.01; // Not 0, just very quiet
+        
+        // Critical for iOS Safari to allow background play
+        state.backgroundAudio.setAttribute('playsinline', '');
+        state.backgroundAudio.setAttribute('webkit-playsinline', '');
+        
+        // Pre-load it so it is ready for the click event
+        state.backgroundAudio.load();
+    }
+},
 
             // --- MQTT Logic ---
             connectMqtt: () => {
