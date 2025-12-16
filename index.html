@@ -1443,30 +1443,43 @@
             },
             
             // --- Android Bridge ---
+            // --- Android Bridge ---
             handleAndroidLocation: (lat, lng, acc, speed) => {
-                if (!state.isBroadcasting) return;
-                
-                // --- NOTE: We do NOT send MQTT here anymore. Java handles it. ---
-                // We only update the Visuals (Speedometer, Map Marker)
-
-                // Example of logic to run (copied from your original code):
-                let rawSpeedKmh = (speed || 0) * 3.6;
-                let alpha = 0.15;
-                if (state.currentSmoothedSpeed > rawSpeedKmh) alpha = 0.6;
-                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
-                if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) state.currentSmoothedSpeed = 0;
-                
-                const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
-                document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
-
-                if (state.driverMarker) {
-                    state.driverMarker.setLatLng([lat, lng]);
-                    if (state.driverMap) state.driverMap.panTo([lat, longitude]); // Note: longitude is undefined here if we don't define it below
+                // 1. FORCE STATUS: If we receive data from Android, we ARE broadcasting.
+                if (!state.isBroadcasting) {
+                    state.isBroadcasting = true;
+                    app.updateBroadcastUI(true);
                 }
+
+                // 2. Prepare Data
+                const displaySpeed = (speed * 3.6).toFixed(1); // Convert m/s to km/h
                 
-                // Fix map pan (using the passed arguments directly)
-                if (state.driverMap) state.driverMap.panTo([lat, lng]);
+                // 3. Update Text UI
+                const speedEl = document.getElementById('val-speed');
+                const accEl = document.getElementById('val-accuracy');
+                
+                if (speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+                if (accEl) accEl.innerText = Math.round(acc) + 'm';
+
+                // 4. Update Map Marker
+                // Ensure the map and marker exist before trying to move them
+                if (state.driverMap) {
+                    if (state.driverMarker) {
+                        state.driverMarker.setLatLng([lat, lng]);
+                    } else {
+                        // Create marker if it's missing
+                        const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
+                        const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
+                        state.driverMarker = L.marker([lat, lng], {icon: icon}).addTo(state.driverMap);
+                    }
+                    
+                    // Center the map on the driver
+                    state.driverMap.panTo([lat, lng]);
+                }
+
+                // 5. Keep track of last location
+                state.lastLat = lat;
+                state.lastLng = lng;
             },
         };
 
