@@ -1215,10 +1215,17 @@
                 const title = document.getElementById('broadcast-status-title');
                 const icon = document.getElementById('broadcast-icon');
 
+                // SAFETY: If elements aren't loaded yet (page reload), don't crash
+                if (!btn) return; 
+
                 if (isActive) {
+                    // Force switch to dashboard if not already there
+                    document.getElementById('view-landing').classList.remove('view-active');
+                    document.getElementById('view-driver-dashboard').classList.add('view-active');
+                    
                     btn.innerText = "STOP TRIP";
-                    btn.classList.remove('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
-                    btn.classList.add('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
+                    btn.classList.remove('bg-brand-500');
+                    btn.classList.add('bg-red-500'); // Tailwind class fix
 
                     glow.style.opacity = '1';
                     glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
@@ -1227,9 +1234,8 @@
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    // Restore gradients
-                    btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
-                    btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
+                    btn.classList.remove('bg-red-500');
+                    btn.classList.add('bg-brand-500');
                     
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
