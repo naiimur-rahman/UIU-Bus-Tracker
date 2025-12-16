@@ -443,7 +443,7 @@
         };
 
         // UPDATED: Tiny silent mp3 for background hack
-        const SILENT_AUDIO_B64 = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
+        const SILENT_AUDIO_URL = 'https://raw.githubusercontent.com/anars/blank-audio/master/5-minutes-of-silence.mp3';
         /** GLOBAL STATE */
         const state = {
             client: null,
@@ -671,20 +671,16 @@
 initBackgroundAudio: () => {
     if (!state.backgroundAudio) {
         state.backgroundAudio = new Audio();
-        state.backgroundAudio.src = SILENT_AUDIO_B64;
-        state.backgroundAudio.type = 'audio/wav'; 
+        state.backgroundAudio.src = SILENT_AUDIO_URL;
         state.backgroundAudio.loop = true;
+        state.backgroundAudio.volume = 0.01; // Keep volume low but non-zero
         
-        // "0.01" volume is required for Chrome to count it as "active media"
-        state.backgroundAudio.volume = 0.01; 
-        
-        // Critical for iOS Safari to run in background without taking over screen
+        // iOS Settings to prevent "Operation Aborted"
         state.backgroundAudio.setAttribute('playsinline', '');
         state.backgroundAudio.setAttribute('webkit-playsinline', '');
-        state.backgroundAudio.setAttribute('x-webkit-airplay', 'deny'); // iOS fix
         state.backgroundAudio.preload = 'auto';
         
-        state.backgroundAudio.load();
+        // Don't call load() manually for remote files, let the browser handle it
     }
 },
             // --- MQTT Logic ---
@@ -1019,40 +1015,32 @@ initBackgroundAudio: () => {
     app.initBackgroundAudio();
     
     try {
-        // 2. Play Audio First (Must happen on click)
-        await state.backgroundAudio.play();
-        console.log("Silent Audio Playing...");
-
-        // 3. FORCE MEDIA NOTIFICATION (The Missing Piece)
-        if ('mediaSession' in navigator) {
-            // Set metadata so the notification has text/images
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: 'Sharing Location',
-                artist: 'UIU Bus Tracker',
-                album: 'Trip Active',
-                artwork: [
-                    { src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }
-                ]
-            });
-
-            // Add Action Handlers. 
-            // WITHOUT THESE, ANDROID CHROME WILL NOT SHOW THE NOTIFICATION.
-            // We just need empty handlers to trick the browser.
-            navigator.mediaSession.setActionHandler('play', () => { 
-                state.backgroundAudio.play(); 
-                navigator.mediaSession.playbackState = 'playing'; 
-            });
-            navigator.mediaSession.setActionHandler('pause', () => { 
-                state.backgroundAudio.play(); // Don't let them pause it! Force play.
-                navigator.mediaSession.playbackState = 'playing'; 
-            });
-            navigator.mediaSession.setActionHandler('stop', () => { 
-                app.stopBroadcast(); 
-            });
-            navigator.mediaSession.setActionHandler('seekbackward', null);
-            navigator.mediaSession.setActionHandler('seekforward', null);
-            navigator.mediaSession.setActionHandler('previoustrack', null);
-            navigator.mediaSession.setActionHandler('nexttrack', null);
+        // 2. Play Audio (Safely)
+        // We wrap this in a try/catch specifically for the play action
+        try {
+            await state.backgroundAudio.play();
+            console.log("Audio playing started...");
+            
+            // 3. Force Notification (Android Only)
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: 'Trip Active',
+                    artist: 'UIU Bus Tracker',
+                    album: 'Sharing Location...',
+                    artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }]
+                });
+                navigator.mediaSession.playbackState = 'playing';
+            }
+        } catch (audioErr) {
+            // IGNORE "Aborted" errors on iOS - they are harmless interruptions
+            if (audioErr.name !== 'AbortError') {
+                console.warn("Audio Warning:", audioErr);
+                // Only alert if it's a real blocking error
+                if (audioErr.name === 'NotAllowedError') {
+                     alert("Please tap the screen again to allow audio.");
+                     return;
+                }
+            }
         }
 
         // 4. Set 30 Minute Timer
@@ -1065,8 +1053,6 @@ initBackgroundAudio: () => {
         // 5. Update UI & Wake Lock
         state.isBroadcasting = true;
         app.updateBroadcastUI(true);
-
-        // Keep Screen On (Works for Android/Desktop, shaky on iOS)
         app.requestWakeLock();
 
         // 6. Start GPS Tracking
@@ -1082,11 +1068,7 @@ initBackgroundAudio: () => {
             if(el) el.innerText = `${m}:${s}`;
         }, 1000);
 
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
+        const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
 
         state.watchId = navigator.geolocation.watchPosition(
             (position) => {
@@ -1095,20 +1077,15 @@ initBackgroundAudio: () => {
                 const { latitude, longitude, accuracy, speed } = position.coords;
                 const now = Date.now();
 
-                // --- UPDATE MAP & UI ---
+                // UI Updates
                 const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
                 const speedEl = document.getElementById('val-speed');
                 if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
                 
                 const accEl = document.getElementById('val-accuracy');
                 if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
-                
-                if (state.driverMarker) {
-                    state.driverMarker.setLatLng([latitude, longitude]);
-                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
-                }
 
-                // --- SEND TO MQTT ---
+                // MQTT Sending
                 if (now - state.lastSentTime < 200) return;
                 state.lastSentTime = now;
 
@@ -1133,9 +1110,7 @@ initBackgroundAudio: () => {
 
     } catch (e) {
         console.error("Start Broadcast Error:", e);
-        alert("Error: " + e.message + ". Please interact with the page and try again.");
-        state.isBroadcasting = false;
-        app.updateBroadcastUI(false);
+        // Don't show alert for minor errors anymore, just log them
     }
 },
             stopBroadcast: async () => {
