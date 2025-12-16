@@ -18,7 +18,7 @@
                         brand: {
                             50: '#fff7ed',
                             100: '#ffedd5',
-                            500: '#f97316', 
+                            500: '#f97316',
                             600: '#ea580c',
                             900: '#7c2d12',
                         }
@@ -109,7 +109,7 @@
         body { overscroll-behavior: none; }
         #view-profile { background-color: rgb(248 250 252) !important; }
         .dark #view-profile { background-color: rgb(15 23 42) !important; }
-        
+
 
         /* Custom Leaflet Controls */
         .leaflet-bar { border: none !important; box-shadow: none !important; }
@@ -157,7 +157,7 @@
 
     <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
         <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
-            <div class="text-center mb-4"> 
+            <div class="text-center mb-4">
                 <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
                     <i class="fas fa-bus text-4xl text-white"></i>
                 </div>
@@ -168,7 +168,7 @@
                 <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
             </div>
 
-            <div class="grid gap-3 w-full"> 
+            <div class="grid gap-3 w-full">
                 <button onclick="app.setRole('student')" class="glass group relative overflow-hidden p-5 rounded-2xl text-left hover:border-brand-500 transition-all duration-300">
                     <div class="absolute right-0 top-0 h-full w-1 bg-brand-500 transform scale-y-0 group-hover:scale-y-100 transition-transform origin-top"></div>
                     <div class="flex items-center justify-between">
@@ -196,7 +196,7 @@
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 w-full mt-4"> 
+            <div class="grid grid-cols-2 gap-3 w-full mt-4">
                 <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
                     <div class="flex items-center gap-2 mb-2">
                         <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
@@ -218,7 +218,7 @@
                 </a>
             </div>
         </div>
-        
+
         <div class="pt-2 pb-4 text-center px-4 w-full shrink-0 z-50">
             <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">
                 Developed by <a href="https://www.facebook.com/naiimurr/" target="_blank" class="text-brand-500 hover:underline">Naimur Rahman</a> (CSE 242) for UIU❤️
@@ -428,7 +428,7 @@
                 location: 'uiu/bus/location',
                 presence: 'uiu/presence'
             },
-            uiuCoords: [23.79790, 90.44970], 
+            uiuCoords: [23.79790, 90.44970],
             presenceInterval: 15000,
             minAccuracy: 50
         };
@@ -446,7 +446,7 @@
         const state = {
             client: null,
             isConnected: false,
-            connectionDebounce: null, 
+            connectionDebounce: null,
             role: null,
             driverId: null,
             driverRoute: null,
@@ -462,7 +462,7 @@
             driverMap: null,
             driverMarker: null,
             markers: {},
-            circles: {}, 
+            circles: {},
             lastSentTime: 0,
             sessionPoints: 0,
             sessionDistance: 0,
@@ -480,11 +480,11 @@
                 app.loadTheme();
                 app.connectMqtt();
                 console.log("App Version: Map Clear Fix & Structure Fix");
-                
+
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
                 const savedRoute = localStorage.getItem('active_driver_route');
-                
+
                 if (savedDriverId && savedRoute) {
                     console.log("Restoring previous session...");
                     state.driverId = savedDriverId;
@@ -492,7 +492,7 @@
                     state.driverDestination = localStorage.getItem('active_driver_dest');
                     state.driverDirection = localStorage.getItem('active_driver_dir');
                     state.driverUsername = localStorage.getItem('active_driver_username');
-                    
+
                     app.setRole('driver-dashboard');
                     document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
 
@@ -556,7 +556,7 @@
                 const target = document.getElementById(viewId);
                 if (target) {
                     target.classList.add('view-active');
-                    void target.offsetWidth; 
+                    void target.offsetWidth;
                     target.style.opacity = '1';
                     target.style.pointerEvents = 'auto';
                     target.style.zIndex = '100';
@@ -616,7 +616,7 @@
                         } catch (e) { console.log("Map cleanup warning", e); }
                         state.driverMap = null;
                     }
-                    
+
                     state.driverMarker = null;
 
                     localStorage.removeItem('active_driver_id');
@@ -624,7 +624,7 @@
                     localStorage.removeItem('active_driver_dest');
                     localStorage.removeItem('active_driver_dir');
                     localStorage.removeItem('active_driver_username');
-                    
+
                 } catch (error) {
                     console.error("Error during exit:", error);
                 }
@@ -638,7 +638,7 @@
                         state.wakeLock = await navigator.wakeLock.request('screen');
                         document.getElementById('wakelock-text').innerText = "Active";
                         document.getElementById('wakelock-text').className = "text-green-500 font-bold";
-                        
+
                         state.wakeLock.addEventListener('release', () => {
                             document.getElementById('wakelock-text').innerText = "Inactive";
                             document.getElementById('wakelock-text').className = "";
@@ -660,7 +660,7 @@
             connectMqtt: () => {
                 console.log("Connecting to MQTT...");
                 const connectUrl = `wss://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}/mqtt`;
-                
+
                 state.client = mqtt.connect(connectUrl, {
                     username: CONFIG.mqtt.username,
                     password: CONFIG.mqtt.password,
@@ -699,7 +699,7 @@
                         app.updateConnectionStatus('error');
                     }, 2000);
                 });
-                
+
                 state.client.on('close', () => {
                     if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
                     state.connectionDebounce = setTimeout(() => {
@@ -753,7 +753,7 @@
                 app.updateUserCount();
 
                 for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 45000) { 
+                    if (now - state.activeBuses[id].ts > 45000) {
                         delete state.activeBuses[id];
                         app.removeBusMarker(id);
                     }
@@ -778,8 +778,8 @@
                 if (state.isBroadcasting && data.id === state.driverId) return;
 
                 const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return; 
-                
+                if (timeDiff > 120000) return;
+
                 state.activeBuses[data.id] = data;
 
                 if (state.role === 'student') {
@@ -820,16 +820,16 @@
                     attempts++;
                     if (state.isConnected || attempts > 30) {
                         clearInterval(syncInterval);
-                        
+
                         const now = Date.now();
                         for (const id in state.activeBuses) {
-                            if (now - state.activeBuses[id].ts > 30000) { 
+                            if (now - state.activeBuses[id].ts > 30000) {
                                 delete state.activeBuses[id];
                             }
                         }
 
                         const assignedId = app.assignNextId(prefix);
-                        
+
                         state.driverRoute = fullRouteName;
                         state.driverId = assignedId;
                         state.driverDestination = name;
@@ -861,11 +861,11 @@
                         }
 
                         if (loader) loader.classList.add('hidden');
-                        
+
                         // FIX: Ensure button state is fresh
                         state.isBroadcasting = false;
                         app.updateBroadcastUI(false);
-                        
+
                         app.switchView('view-driver-dashboard');
                         app.initDriverMap();
                     }
@@ -888,7 +888,7 @@
             },
 
             calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; 
+                const R = 6371e3;
                 const φ1 = lat1 * Math.PI/180;
                 const φ2 = lat2 * Math.PI/180;
                 const Δφ = (lat2-lat1) * Math.PI/180;
@@ -916,11 +916,11 @@
                 }
 
                 const COORDS = {
-                    'UIU': CONFIG.uiuCoords, 
+                    'UIU': CONFIG.uiuCoords,
                     'Kuril': [23.822339, 90.420163],
                     'Notun Bazar': [23.797881, 90.424652],
                     'Aftab Nagar': [23.767860, 90.425833],
-                    'Transport': CONFIG.uiuCoords 
+                    'Transport': CONFIG.uiuCoords
                 };
 
                 let start, end;
@@ -933,8 +933,8 @@
                 }
 
                 setTimeout(() => {
-                    if (!document.getElementById('driver-map')) return; 
-                    
+                    if (!document.getElementById('driver-map')) return;
+
                     state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
                     const isDark = document.documentElement.classList.contains('dark');
                     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -967,7 +967,7 @@
                         return div;
                     };
                     jumpBtn.addTo(state.driverMap);
-                    
+
                     requestAnimationFrame(() => { state.driverMap.invalidateSize(); });
                 }, 200);
             },
@@ -1072,7 +1072,7 @@
                     alert("Geolocation not supported");
                     return;
                 }
-                
+
                 try {
                     state.isBroadcasting = true;
                     app.updateBroadcastUI(true);
@@ -1119,7 +1119,7 @@
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
-                
+
                 if (window.Android && !fromAndroid) {
                     window.Android.stopService();
                 }
@@ -1128,7 +1128,7 @@
                 if (state.driverId && state.activeBuses[state.driverId]) {
                     delete state.activeBuses[state.driverId];
                 }
-                
+
                 if (state.watchId) {
                     navigator.geolocation.clearWatch(state.watchId);
                     state.watchId = null;
@@ -1175,7 +1175,7 @@
                 modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
                 modal.classList.remove('z-50');
                 modal.style.opacity = '0';
-                app.goHome(); 
+                app.goHome();
             },
 
             updateBroadcastUI: (isActive) => {
@@ -1199,7 +1199,7 @@
                     // Restore gradients
                     btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
                     btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
-                    
+
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
                     icon.classList.add('text-slate-300', 'dark:text-slate-600');
@@ -1213,7 +1213,7 @@
                     if (!state.map) {
                         state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
                         L.control.zoom({ position: 'bottomright' }).addTo(state.map);
-                        
+
                         const jumpBtn = L.control({position: 'bottomright'});
                         jumpBtn.onAdd = function(map) {
                             const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
@@ -1244,15 +1244,15 @@
 
             createBusIcon: (id, colorClass) => {
                  return L.divIcon({
-                    className: 'custom-bus-pin', 
+                    className: 'custom-bus-pin',
                     html: `
                         <div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">
                             ${id}
                             <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div>
                         </div>
                     `,
-                    iconSize: [40, 48], 
-                    iconAnchor: [20, 48], 
+                    iconSize: [40, 48],
+                    iconAnchor: [20, 48],
                     popupAnchor: [0, -48]
                 });
             },
@@ -1273,21 +1273,21 @@
                 const { id, lat, lng, acc } = data;
 
                 let colorClass = BUS_STYLES.default;
-                
-                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; 
-                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; 
-                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; 
+
+                if (id.startsWith('K')) colorClass = BUS_STYLES['K'];
+                else if (id.startsWith('N')) colorClass = BUS_STYLES['N'];
+                else if (id.startsWith('A')) colorClass = BUS_STYLES['A'];
                 else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
                 else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
 
                 if (state.markers[id]) {
                     state.markers[id].setLatLng([lat, lng]);
-                    const icon = app.createBusIcon(id, colorClass); 
+                    const icon = app.createBusIcon(id, colorClass);
                     state.markers[id].setIcon(icon);
                 } else {
                     const icon = app.createBusIcon(id, colorClass);
                     const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
-                    
+
                     const popupContent = document.createElement('div');
                     popupContent.innerHTML = `
                         <div class="text-center p-2">
@@ -1341,7 +1341,7 @@
                     }
                     return;
                 }
-                
+
                 const loader = list.querySelector('.fa-satellite-dish');
                 if (loader) loader.parentElement.remove();
 
@@ -1353,7 +1353,7 @@
                         // Updated to softer colors/glass effect
                         item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
                         item.onclick = () => app.focusBus(bus.id);
-                        
+
                         let bgClass = "bg-orange-500";
                         if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
                         if (bus.id.startsWith('N')) bgClass = "bg-green-500";
