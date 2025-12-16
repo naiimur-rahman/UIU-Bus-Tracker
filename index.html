@@ -483,7 +483,7 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Background Audio & Lock Screen Support");
+                console.log("App Version: DOM-Attached Audio Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -667,12 +667,20 @@
                 }
             },
 
-            // UPDATED: Initialize Silent Audio
+            // UPDATED: Initialize Silent Audio with DOM Attachment
             initBackgroundAudio: () => {
                 if (!state.backgroundAudio) {
-                    state.backgroundAudio = new Audio(SILENT_AUDIO_B64);
+                    state.backgroundAudio = document.createElement('audio');
+                    state.backgroundAudio.src = SILENT_AUDIO_B64;
                     state.backgroundAudio.loop = true;
-                    state.backgroundAudio.volume = 0.01;
+                    state.backgroundAudio.preload = 'auto';
+                    
+                    // iOS Hack: Do not use display:none; move it off-screen instead
+                    state.backgroundAudio.style.position = 'absolute';
+                    state.backgroundAudio.style.left = '-10000px';
+                    state.backgroundAudio.style.top = '0';
+                    
+                    document.body.appendChild(state.backgroundAudio);
                 }
             },
 
@@ -1007,9 +1015,13 @@
                 try {
                     // UPDATED: Start Background Audio Hack & 30 min timer
                     app.initBackgroundAudio();
-                    // Audio Play MUST happen on User Interaction (click)
-                    state.backgroundAudio.play().catch(e => {
-                        console.warn("Autoplay blocked, user interaction required next time");
+                    
+                    // Play and catch errors immediately
+                    state.backgroundAudio.play().then(() => {
+                        console.log("Silent Audio Playing...");
+                    }).catch(e => {
+                        console.warn("Audio Blocked:", e);
+                        alert("Battery Saver Failed: Browser blocked audio. " + e.message);
                     });
 
                     // 30 MINUTE TIMER
