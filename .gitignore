@@ -1,4 +1,5 @@
 node_modules/
 dist/
-android/
 www/
+# Allow android folder so we commit the manifest changes
+!android/
