@@ -406,8 +406,6 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <script type="module">
-        import { startBackgroundTracking, stopBackgroundTracking, isNativeApp } from './src/background.js';
-
         /** APP CONFIG */
         const CONFIG = {
             mqtt: {
@@ -800,56 +798,6 @@ initBackgroundAudio: () => {
             },
 
             // --- Location Logic ---
-            processLocationUpdate: (position) => {
-                if (!state.isBroadcasting) return;
-
-                const { latitude, longitude, accuracy, speed } = position.coords;
-                const now = Date.now();
-
-                // --- A. UPDATE LOCAL DRIVER MAP & UI ---
-                // Calculate Speed (m/s to km/h)
-                const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
-
-                const speedEl = document.getElementById('val-speed');
-                if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-
-                const accEl = document.getElementById('val-accuracy');
-                if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
-
-                // Update Local Marker
-                if (state.driverMap) {
-                    if (!state.driverMarker) {
-                         const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
-                         const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
-                         state.driverMarker = L.marker([latitude, longitude], {icon: icon}).addTo(state.driverMap);
-                    } else {
-                        state.driverMarker.setLatLng([latitude, longitude]);
-                    }
-                    // Auto-pan map to follow driver
-                    state.driverMap.panTo([latitude, longitude]);
-                }
-
-                // --- B. MQTT THROTTLE CHECK ---
-                if (now - state.lastSentTime < 1000) return; // Limit to 1 send per second
-                state.lastSentTime = now;
-
-                // --- C. SEND DATA ---
-                if (state.client && state.isConnected) {
-                    const payload = JSON.stringify({
-                        id: state.driverId,
-                        uid: CONFIG.mqtt.clientId,
-                        route: state.driverRoute,
-                        username: state.driverUsername,
-                        lat: latitude,
-                        lng: longitude,
-                        acc: accuracy,
-                        speed: displaySpeed,
-                        ts: now
-                    });
-                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                }
-            },
-
             handleLocationUpdate: (data) => {
                 if (data.status === 'offline') {
                     delete state.activeBuses[data.id];
@@ -1119,27 +1067,68 @@ initBackgroundAudio: () => {
             if(el) el.innerText = `${m}:${s}`;
         }, 1000);
 
-        // --- CHECK IF NATIVE APP ---
-        if (isNativeApp()) {
-            console.log("Starting NATIVE background tracking...");
-            await startBackgroundTracking(app.processLocationUpdate);
-            // We don't use navigator.geolocation.watchPosition here
-        } else {
-            console.log("Starting WEB tracking...");
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
+        const options = { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 
+        };
 
-            state.watchId = navigator.geolocation.watchPosition(
-                app.processLocationUpdate,
-                (error) => {
-                    console.error("GPS Error", error);
-                },
-                options
-            );
-        }
+        state.watchId = navigator.geolocation.watchPosition(
+            (position) => {
+                if (!state.isBroadcasting) return;
+
+                const { latitude, longitude, accuracy, speed } = position.coords;
+                const now = Date.now();
+
+                // --- A. UPDATE LOCAL DRIVER MAP & UI ---
+                // Calculate Speed (m/s to km/h)
+                const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
+                
+                const speedEl = document.getElementById('val-speed');
+                if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+                
+                const accEl = document.getElementById('val-accuracy');
+                if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
+
+                // Update Local Marker
+                if (state.driverMap) {
+                    if (!state.driverMarker) {
+                         const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
+                         const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
+                         state.driverMarker = L.marker([latitude, longitude], {icon: icon}).addTo(state.driverMap);
+                    } else {
+                        state.driverMarker.setLatLng([latitude, longitude]);
+                    }
+                    // Auto-pan map to follow driver
+                    state.driverMap.panTo([latitude, longitude]);
+                }
+
+                // --- B. MQTT THROTTLE CHECK ---
+                if (now - state.lastSentTime < 1000) return; // Limit to 1 send per second
+                state.lastSentTime = now;
+
+                // --- C. SEND DATA ---
+                if (state.client && state.isConnected) {
+                    const payload = JSON.stringify({
+                        id: state.driverId,
+                        uid: CONFIG.mqtt.clientId,
+                        route: state.driverRoute,
+                        username: state.driverUsername,
+                        lat: latitude,
+                        lng: longitude,
+                        acc: accuracy,
+                        speed: displaySpeed,
+                        ts: now
+                    });
+                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
+                }
+            },
+            (error) => { 
+                console.error("GPS Error", error);
+                // Optional: visual feedback for GPS loss
+            },
+            options
+        );
 
     } catch (e) {
         console.error("Start Broadcast Error:", e);
@@ -1148,10 +1137,6 @@ initBackgroundAudio: () => {
             stopBroadcast: async () => {
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
-
-                if (isNativeApp()) {
-                    await stopBackgroundTracking();
-                }
                 
                 // UPDATED: Stop Audio, Clear Timer, Release Lock
                 if (state.backgroundAudio) {
