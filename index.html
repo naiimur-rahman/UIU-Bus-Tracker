@@ -730,6 +730,30 @@ Do you want to continue?`;
                     alert("Error starting trip: " + error.message);
                     app.stopBroadcast();
                 }
+                // Request persistent storage (Chrome 85+)
+if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist().then(granted => {
+        if (granted) console.log("Storage will not be cleared automatically");
+    });
+}
+
+// Use Web Workers for background processing
+const backgroundWorker = new Worker(URL.createObjectURL(
+    new Blob([`
+        self.onmessage = function(e) {
+            if (e.data === 'ping') {
+                setInterval(() => {
+                    self.postMessage('alive');
+                }, 10000);
+            }
+        }
+    `], {type: 'application/javascript'})
+));
+
+backgroundWorker.postMessage('ping');
+backgroundWorker.onmessage = () => {
+    // Keep background worker alive
+};
             },
 
             startLocationTracking: () => {
