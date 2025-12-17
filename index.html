@@ -3,359 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>UIU Bus Tracker</title>
+    <title>UIU Bus Tracker (Pro)</title>
     
-    <!-- PWA Manifest -->
     <link rel="manifest" id="app-manifest">
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                    },
-                    colors: {
-                        brand: {
-                            50: '#fff7ed',
-                            100: '#ffedd5',
-                            500: '#f97316', 
-                            600: '#ea580c',
-                            900: '#7c2d12',
-                        }
-                    },
-                    animation: {
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'countdown-pulse': 'countdown-pulse 1s ease-in-out infinite',
-                        'shake': 'shake 0.5s ease-in-out',
-                        'audio-wave': 'audio-wave 1.5s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
-                        'pulse-glow': {
-                            '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(34, 197, 94, 0.7)' },
-                            '50%': { opacity: '.5', boxShadow: '0 0 0 15px rgba(34, 197, 94, 0)' },
-                        },
-                        'countdown-pulse': {
-                            '0%, 100%': { opacity: '1', transform: 'scale(1)' },
-                            '50%': { opacity: '0.7', transform: 'scale(1.05)' },
-                        },
-                        'shake': {
-                            '0%, 100%': { transform: 'translateX(0)' },
-                            '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-2px)' },
-                            '20%, 40%, 60%, 80%': { transform: 'translateX(2px)' },
-                        },
-                        'audio-wave': {
-                            '0%, 100%': { height: '10px' },
-                            '50%': { height: '20px' },
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        .glass {
-            background: rgba(255, 255, 255, 0.65);
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        }
-        .dark .glass {
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-        }
-        .dark-map-tiles {
-            filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
-        }
-        .view-section {
-            position: absolute;
-            inset: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 0;
-            pointer-events: none;
-            transform: scale(0.95);
-            visibility: hidden;
-            overflow-y: hidden;
-            z-index: 0;
-            display: flex;
-            flex-direction: column;
-        }
-        .view-active {
-            opacity: 1 !important;
-            pointer-events: auto !important;
-            transform: scale(1) !important;
-            z-index: 100 !important;
-            visibility: visible !important;
-        }
-        .loader {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #f97316;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes drive {
-            0% { transform: translateY(0) rotate(3deg); }
-            50% { transform: translateY(-6px) rotate(0deg); }
-            100% { transform: translateY(0) rotate(3deg); }
-        }
-        .animate-drive { animation: drive 1.5s ease-in-out infinite; }
-        .pulse-ring::before {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; right: 0;
-            border-radius: 50%; border: 2px solid white; animation: ring 1.5s infinite;
-        }
-        @keyframes ring { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2); opacity: 0; } }
-        .leaflet-div-icon { background: transparent; border: none; }
-        body { overscroll-behavior: none; }
-        #view-profile { background-color: rgb(248 250 252) !important; }
-        .dark #view-profile { background-color: rgb(15 23 42) !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .dark .glass { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255,255,255,0.05); }
+        .view-section { display: none; opacity: 0; transition: opacity 0.3s ease; position: fixed; inset: 0; overflow-y: auto; }
+        .view-active { display: flex; opacity: 1; z-index: 10; }
         
-
-        /* Custom Leaflet Controls */
-        .leaflet-bar { border: none !important; box-shadow: none !important; }
-        .leaflet-bar a {
-            border-radius: 50% !important;
-            width: 40px !important;
-            height: 40px !important;
-            line-height: 40px !important;
-            background-color: white !important;
-            color: #64748b !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-            margin-bottom: 8px !important;
-            border-bottom: none !important;
-            transition: all 0.2s ease;
+        /* Animation for the recording indicator */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
-        .dark .leaflet-bar a {
-            background-color: #1e293b !important;
-            color: #cbd5e1 !important;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
-        }
-        .leaflet-bar a:hover {
-            background-color: #f8fafc !important;
-            transform: scale(1.05);
-            color: #f97316 !important;
-        }
-        .dark .leaflet-bar a:hover {
-            background-color: #334155 !important;
-        }
-        
-        /* Countdown timer */
-        .countdown-timer {
-            font-family: 'Courier New', monospace;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        
-        /* Background audio indicator */
-        .audio-indicator {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            backdrop-filter: blur(10px);
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        .audio-visualizer {
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 20px;
-        }
-        
-        .audio-bar {
-            width: 3px;
-            background: #10b981;
-            border-radius: 2px;
-        }
-        
-        .audio-bar:nth-child(1) { animation: audio-wave 1.5s ease-in-out infinite; }
-        .audio-bar:nth-child(2) { animation: audio-wave 1.5s ease-in-out infinite 0.1s; }
-        .audio-bar:nth-child(3) { animation: audio-wave 1.5s ease-in-out infinite 0.2s; }
-        .audio-bar:nth-child(4) { animation: audio-wave 1.5s ease-in-out infinite 0.3s; }
-        .audio-bar:nth-child(5) { animation: audio-wave 1.5s ease-in-out infinite 0.4s; }
-        
-        @keyframes slideIn {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        /* Fullscreen warning */
-        .fullscreen-warning {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(90deg, #f97316, #ea580c);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 9999;
-            animation: shake 0.5s ease-in-out;
-        }
-        
-        /* Install prompt */
-        .install-prompt {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 16px;
-            border-radius: 16px;
-            z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: slideUp 0.3s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(100px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        /* Keep awake indicator */
-        .keep-awake {
-            position: fixed;
-            top: 60px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            z-index: 999;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-        
-        /* Battery warning */
-        .battery-warning {
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: rgba(220, 38, 38, 0.9);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px;
-            font-size: 12px;
-            z-index: 999;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .recording-pulse { animation: pulse-red 2s infinite; }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 h-[100dvh] w-screen overflow-hidden">
 
-    <!-- Silent Audio Player (Hidden) -->
-    <audio id="silent-audio" loop crossorigin="anonymous">
-        <!-- We'll generate silent audio programmatically -->
-    </audio>
-
-    <!-- Background Audio Indicator -->
-    <div id="audio-indicator" class="audio-indicator hidden">
-        <div class="audio-visualizer">
-            <div class="audio-bar"></div>
-            <div class="audio-bar"></div>
-            <div class="audio-bar"></div>
-            <div class="audio-bar"></div>
-            <div class="audio-bar"></div>
+    <div id="audio-indicator" class="fixed top-4 right-4 z-50 hidden bg-black/80 text-white px-3 py-1 rounded-full text-xs backdrop-blur-md flex items-center gap-2">
+        <div class="flex items-end gap-[2px] h-3">
+            <div class="w-[2px] bg-green-400 h-full animate-[bounce_1s_infinite]"></div>
+            <div class="w-[2px] bg-green-400 h-2/3 animate-[bounce_1.2s_infinite]"></div>
+            <div class="w-[2px] bg-green-400 h-full animate-[bounce_0.8s_infinite]"></div>
         </div>
-        <span>Background audio active</span>
-        <button onclick="app.toggleAudioIndicator()" class="ml-2 text-gray-300 hover:text-white">
-            <i class="fas fa-times"></i>
-        </button>
+        <span>Active</span>
     </div>
 
-    <!-- Keep Awake Indicator -->
-    <div id="keep-awake-indicator" class="keep-awake hidden">
-        <i class="fas fa-eye mr-2"></i>Keeping Awake
-    </div>
-
-    <!-- Battery Warning -->
-    <div id="battery-warning" class="battery-warning hidden">
-        <i class="fas fa-battery-quarter mr-2"></i>
-        <span>Low battery may affect tracking</span>
-    </div>
-
-    <!-- Fullscreen Warning -->
-    <div id="fullscreen-warning" class="fullscreen-warning hidden">
-        <i class="fas fa-expand-alt mr-2"></i>Keep this tab OPEN for continuous tracking
-    </div>
-
-    <!-- Install Prompt -->
-    <div id="install-prompt" class="install-prompt hidden">
-        <div class="flex items-center justify-between">
-            <div>
-                <div class="font-bold">Install as App</div>
-                <div class="text-sm opacity-90">For better background tracking</div>
+    <div id="view-home" class="view-section view-active flex-col items-center justify-center p-6 space-y-8">
+        <div class="text-center space-y-2">
+            <div class="w-20 h-20 bg-orange-500 rounded-2xl mx-auto flex items-center justify-center text-3xl text-white shadow-lg shadow-orange-500/30 mb-4">
+                <i class="fas fa-bus"></i>
             </div>
-            <button onclick="app.installPWA()" class="bg-white text-purple-600 px-4 py-2 rounded-full font-bold hover:bg-gray-100">
-                Install
+            <h1 class="text-2xl font-bold">UIU Bus Tracker</h1>
+            <p class="text-gray-500 dark:text-gray-400">Select your role to continue</p>
+        </div>
+
+        <div class="grid gap-4 w-full max-w-sm">
+            <button onclick="app.setRole('student')" class="glass p-5 rounded-xl flex items-center gap-4 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors text-left group">
+                <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold">I am a Student</h3>
+                    <p class="text-xs text-gray-500">View bus locations</p>
+                </div>
+            </button>
+
+            <button onclick="app.setRole('driver')" class="glass p-5 rounded-xl flex items-center gap-4 hover:bg-orange-50 dark:hover:bg-slate-800 transition-colors text-left group relative overflow-hidden">
+                <div class="absolute right-0 top-0 p-2 text-[10px] font-bold bg-orange-100 text-orange-600 rounded-bl-xl">DRIVER APP</div>
+                <div class="w-12 h-12 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">
+                    <i class="fas fa-steering-wheel"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold">I am a Driver</h3>
+                    <p class="text-xs text-gray-500">Broadcast location</p>
+                </div>
             </button>
         </div>
-        <button onclick="app.hideInstallPrompt()" class="absolute top-2 right-2 text-white">
-            <i class="fas fa-times"></i>
-        </button>
     </div>
 
-    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-        <div class="absolute top-1/2 -right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
-        <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 4s"></div>
+    <div id="view-driver-setup" class="view-section flex-col p-6 bg-white dark:bg-slate-900">
+        <div class="w-full max-w-md mx-auto space-y-6 mt-10">
+            <h2 class="text-2xl font-bold">Trip Details</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-500 ml-1">Select Route</label>
+                    <select id="driver-route" class="w-full p-4 rounded-xl bg-gray-100 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="Dhanmondi">Dhanmondi</option>
+                        <option value="Uttara">Uttara</option>
+                        <option value="Mirpur">Mirpur</option>
+                        <option value="Notun Bazar">Notun Bazar</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="text-sm font-medium text-gray-500 ml-1">Bus Number / ID</label>
+                    <input type="text" id="driver-id-input" placeholder="e.g. Bus-101" class="w-full p-4 rounded-xl bg-gray-100 dark:bg-slate-800 border-none outline-none focus:ring-2 focus:ring-orange-500">
+                </div>
+            </div>
+
+            <button onclick="app.prepareBroadcast()" class="w-full bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-600/30 active:scale-95 transition-transform">
+                Start Driving
+            </button>
+            
+            <button onclick="app.goHome()" class="w-full text-gray-400 text-sm py-2">Back</button>
+        </div>
     </div>
 
-    <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
-        <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
-            <i class="fas fa-moon dark:hidden"></i>
-            <i class="fas fa-sun hidden dark:block"></i>
-        </button>
-    </div>
+    <div id="view-driver-dashboard" class="view-section flex-col bg-slate-900 text-white">
+        <div id="driver-map" class="absolute inset-0 z-0 opacity-50"></div>
+        
+        <div class="relative z-10 p-4 pt-12 flex justify-between items-start bg-gradient-to-b from-black/80 to-transparent">
+            <div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-red-500 recording-pulse"></div>
+                    <span class="font-mono text-red-400 font-bold tracking-wider">LIVE</span>
+                </div>
+                <h2 id="dashboard-route" class="text-2xl font-bold mt-1">Route Name</h2>
+                <p id="dashboard-id" class="text-sm text-gray-400">ID: --</p>
+            </div>
+            <div class="text-right">
+                <div id="val-uptime" class="text-2xl font-mono font-bold">00:00</div>
+                <div class="text-xs text-gray-400">UPTIME</div>
+            </div>
+        </div>
 
-    <!-- Rest of your HTML views remain the same -->
-    <!-- ... [Your existing HTML for views] ... -->
+        <div class="relative z-10 flex-1 flex flex-col items-center justify-center pointer-events-none">
+            <div class="text-center">
+                <div class="text-7xl font-bold tracking-tighter" id="val-speed">0.0</div>
+                <div class="text-gray-400 text-sm font-medium uppercase tracking-widest">km/h</div>
+            </div>
+        </div>
+
+        <div class="relative z-10 p-6 pb-10 bg-gradient-to-t from-black via-black/90 to-transparent space-y-6">
+            <div class="flex justify-around text-center">
+                <div>
+                    <div class="text-gray-400 text-xs uppercase">Accuracy</div>
+                    <div class="font-bold text-lg"><span id="val-accuracy">--</span></div>
+                </div>
+                <div>
+                    <div class="text-gray-400 text-xs uppercase">Battery</div>
+                    <div class="font-bold text-lg"><span id="val-battery">--</span>%</div>
+                </div>
+            </div>
+
+            <button onclick="app.stopBroadcast()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-red-900/50 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                <i class="fas fa-stop"></i> End Trip
+            </button>
+            
+            <p class="text-center text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i> Keep screen active or audio playing
+            </p>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
-    <script type="module">
-        /** APP CONFIG */
+    <script>
+        // --- CONFIGURATION ---
         const CONFIG = {
             mqtt: {
                 protocol: 'wss',
@@ -364,709 +160,335 @@
                 path: '/mqtt',
                 username: 'naimur',
                 password: 'Sohan786@',
-                clientId: (() => {
-                    let id = localStorage.getItem('mqtt_client_id');
-                    if (!id) {
-                        id = 'uiu-' + Math.random().toString(16).substr(2, 8);
-                        localStorage.setItem('mqtt_client_id', id);
-                    }
-                    return id;
-                })()
+                clientId: 'uiu-' + Math.random().toString(16).substr(2, 8)
             },
-            topics: {
-                location: 'uiu/bus/location',
-                presence: 'uiu/presence'
-            },
-            uiuCoords: [23.79790, 90.44970], 
-            presenceInterval: 15000,
-            minAccuracy: 50,
-            autoStopMinutes: 30,
-            locationInterval: 3000,
-            wakeLockCheckInterval: 10000,
-            silentAudio: {
-                enabled: true, // Enable silent audio trick
-                volume: 0.001, // Almost silent (0.1% volume)
-                showIndicator: true // Show audio indicator
-            }
+            topics: { location: 'uiu/bus/location' },
+            silentAudio: { enabled: true, volume: 0.001, showIndicator: true }
         };
 
-        /** GLOBAL STATE */
+        // --- STATE MANAGEMENT ---
         const state = {
+            role: null,
             client: null,
             isConnected: false,
-            connectionDebounce: null, 
-            role: null,
             driverId: null,
             driverRoute: null,
-            driverDestination: null,
-            driverUsername: null,
             isBroadcasting: false,
+            
+            // Tracking
             watchId: null,
-            wakeLock: null,
-            activeBuses: {},
-            activeUsers: new Map(),
-            userCache: {},
-            map: null,
-            driverMap: null,
-            driverMarker: null,
-            markers: {},
-            circles: {}, 
-            lastSentTime: 0,
-            sessionPoints: 0,
-            sessionDistance: 0,
-            lastLat: null,
-            lastLng: null,
-            tripStartTime: null,
-            uptimeInterval: null,
-            currentSmoothedSpeed: 0,
-            countdownInterval: null,
-            countdownTime: CONFIG.autoStopMinutes * 60,
             locationInterval: null,
-            isTabVisible: true,
-            deferredInstallPrompt: null,
-            isInstalled: false,
-            fullscreenWarningShown: false,
-            wakeLockRetryCount: 0,
-            silentAudio: null,
+            uptimeInterval: null,
+            tripStartTime: null,
+            lastSentTime: 0,
+            
+            // Audio & Background
             audioContext: null,
+            silentBuffer: null,
+            activeSourceNode: null,
             isAudioPlaying: false,
-            batteryLevel: 1,
-            batteryCheckInterval: null
+            wakeLock: null,
+            backgroundWorker: null,
+            
+            // Maps
+            driverMap: null,
+            driverMarker: null
         };
 
-        /** APP CONTROLLER */
+        // --- APP LOGIC ---
         const app = {
             init: () => {
-                app.loadTheme();
                 app.connectMqtt();
-                app.setupManifest();
-                app.checkPWAInstallation();
-                app.setupVisibilityListeners();
-                app.setupBeforeUnload();
-                app.createSilentAudio();
-                app.setupBatteryMonitoring();
+                app.setupAudio(); // Prepare audio buffer on load
                 
-                console.log("App Version: Silent Audio Background Tracking");
-                
-                // Check for existing session
-                const savedDriverId = localStorage.getItem('active_driver_id');
-                const savedRoute = localStorage.getItem('active_driver_route');
-                
-                if (savedDriverId && savedRoute) {
-                    console.log("Restoring previous session...");
-                    state.driverId = savedDriverId;
-                    state.driverRoute = savedRoute;
-                    state.driverDestination = localStorage.getItem('active_driver_dest');
-                    state.driverDirection = localStorage.getItem('active_driver_dir');
-                    state.driverUsername = localStorage.getItem('active_driver_username');
-                    
-                    app.setRole('driver-dashboard');
-                    document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
-
-                    if (state.driverUsername) {
-                        document.getElementById('driver-display-username-container').classList.remove('hidden');
-                        document.getElementById('driver-display-username').innerText = state.driverUsername;
-                    }
-
-                    app.switchView('view-driver-dashboard');
-                    app.initDriverMap();
+                // Check if returning from a reload
+                const savedId = localStorage.getItem('active_driver_id');
+                if (savedId) {
+                    state.driverId = savedId;
+                    state.driverRoute = localStorage.getItem('active_driver_route');
+                    app.restoreSession();
                 }
-
-                setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
-                setInterval(app.cleanupStaleUsers, 10000);
-                
-                // Show install prompt if not installed
-                setTimeout(() => {
-                    if (!state.isInstalled && state.role === 'driver-dashboard') {
-                        app.showInstallPrompt();
-                    }
-                }, 5000);
             },
 
-            // === SILENT AUDIO IMPLEMENTATION ===
-            createSilentAudio: () => {
+            // --- MQTT CONNECTION ---
+            connectMqtt: () => {
+                console.log("Connecting to MQTT...");
+                state.client = mqtt.connect(`${CONFIG.mqtt.protocol}://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}${CONFIG.mqtt.path}`, {
+                    username: CONFIG.mqtt.username,
+                    password: CONFIG.mqtt.password,
+                    clientId: CONFIG.mqtt.clientId,
+                    clean: true,
+                    reconnectPeriod: 5000
+                });
+
+                state.client.on('connect', () => {
+                    console.log("MQTT Connected");
+                    state.isConnected = true;
+                });
+
+                state.client.on('error', (err) => {
+                    console.error("MQTT Error:", err);
+                    state.isConnected = false;
+                });
+            },
+
+            // --- AUDIO SYSTEM (CRITICAL FIX) ---
+            setupAudio: () => {
                 if (!CONFIG.silentAudio.enabled) return;
-                
                 try {
-                    // Method 1: Create silent audio buffer programmatically
-                    if (window.AudioContext || window.webkitAudioContext) {
-                        const AudioContext = window.AudioContext || window.webkitAudioContext;
-                        state.audioContext = new AudioContext();
-                        
-                        // Create an empty stereo buffer at the sample rate of the AudioContext
-                        const buffer = state.audioContext.createBuffer(2, state.audioContext.sampleRate * 600, state.audioContext.sampleRate);
-                        
-                        // Fill the buffer with silence
-                        for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
-                            const nowBuffering = buffer.getChannelData(channel);
-                            for (let i = 0; i < buffer.length; i++) {
-                                nowBuffering[i] = 0;
-                            }
-                        }
-                        
-                        // Create a source node from the buffer
-                        const source = state.audioContext.createBufferSource();
-                        source.buffer = buffer;
-                        source.loop = true;
-                        
-                        // Create a gain node to control volume
-                        const gainNode = state.audioContext.createGain();
-                        gainNode.gain.value = CONFIG.silentAudio.volume;
-                        
-                        // Connect the graph
-                        source.connect(gainNode);
-                        gainNode.connect(state.audioContext.destination);
-                        
-                        state.silentAudio = {
-                            source: source,
-                            gainNode: gainNode,
-                            context: state.audioContext
-                        };
-                        
-                        console.log("Silent audio created using Web Audio API");
-                    } 
-                    // Method 2: Use HTML5 audio element with silent MP3
-                    else {
-                        const audio = document.getElementById('silent-audio');
-                        
-                        // Create a silent MP3 data URL (1 second of silence)
-                        // Base64 encoded silent MP3
-                        const silentMp3 = 'data:audio/mpeg;base64,//uQxAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAACcQCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA//////////////////////////////////////////////////////////////////8AAABhTEFNRTMuMTAwA8MAAAAAAAAAABQgJAUHQQAB9AAAAnGMHkkIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//sQxAADgnABGiAAQBCqgCRMAAgEAH///////////////7+n/9FTuQsQH//////2NG0jWUGlio5gLQTOtIoeR2WX////X4s9Atb/JRVCbBUpeRUq//////////////////9RUi0f2jn/+xDECgPCjAEQAABN4AAANIAAAAQVTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVQ==';
-                        
-                        audio.src = silentMp3;
-                        audio.loop = true;
-                        audio.volume = CONFIG.silentAudio.volume;
-                        
-                        state.silentAudio = audio;
-                        console.log("Silent audio created using HTML5 Audio");
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    state.audioContext = new AudioContext();
+                    
+                    // 1. Create Buffer ONCE
+                    state.silentBuffer = state.audioContext.createBuffer(2, state.audioContext.sampleRate * 60, state.audioContext.sampleRate);
+                    for (let ch = 0; ch < state.silentBuffer.numberOfChannels; ch++) {
+                        state.silentBuffer.getChannelData(ch).fill(0);
                     }
-                } catch (error) {
-                    console.error("Error creating silent audio:", error);
-                    CONFIG.silentAudio.enabled = false;
+                    console.log("Audio Buffer Prepared");
+                } catch (e) {
+                    console.error("Audio Setup Failed:", e);
                 }
             },
 
             startSilentAudio: () => {
-                if (!CONFIG.silentAudio.enabled || !state.silentAudio) return;
-                
+                if (!state.audioContext) return;
                 try {
-                    if (state.audioContext && state.silentAudio.source) {
-                        // Web Audio API method
-                        if (state.audioContext.state === 'suspended') {
-                            state.audioContext.resume();
-                        }
-                        state.silentAudio.source.start(0);
-                        state.isAudioPlaying = true;
-                    } else if (state.silentAudio instanceof HTMLAudioElement) {
-                        // HTML5 Audio method
-                        state.silentAudio.play().then(() => {
-                            state.isAudioPlaying = true;
-                        }).catch(error => {
-                            console.error("Audio play failed:", error);
-                            // Try to play with user interaction
-                            document.addEventListener('click', app.resumeAudioOnInteraction, { once: true });
-                        });
-                    }
+                    // 2. Resume Context (Must be user action)
+                    if (state.audioContext.state === 'suspended') state.audioContext.resume();
+
+                    // 3. Create NEW Source every time
+                    const source = state.audioContext.createBufferSource();
+                    source.buffer = state.silentBuffer;
+                    source.loop = true;
+
+                    const gain = state.audioContext.createGain();
+                    gain.gain.value = CONFIG.silentAudio.volume;
+
+                    source.connect(gain);
+                    gain.connect(state.audioContext.destination);
+
+                    source.start(0);
+                    state.activeSourceNode = source;
+                    state.isAudioPlaying = true;
                     
-                    // Show audio indicator
-                    if (CONFIG.silentAudio.showIndicator) {
-                        app.showAudioIndicator();
-                    }
-                    
-                    console.log("Silent audio started");
-                } catch (error) {
-                    console.error("Error starting silent audio:", error);
+                    if (CONFIG.silentAudio.showIndicator) document.getElementById('audio-indicator').classList.remove('hidden');
+                    console.log("Audio Loop Started");
+                } catch (e) {
+                    console.error("Audio Start Error:", e);
                 }
             },
 
             stopSilentAudio: () => {
-                if (!CONFIG.silentAudio.enabled || !state.silentAudio) return;
-                
-                try {
-                    if (state.audioContext && state.silentAudio.source) {
-                        state.silentAudio.source.stop();
+                if (state.activeSourceNode) {
+                    try {
+                        state.activeSourceNode.stop();
+                        state.activeSourceNode.disconnect();
+                        state.activeSourceNode = null;
                         state.isAudioPlaying = false;
-                    } else if (state.silentAudio instanceof HTMLAudioElement) {
-                        state.silentAudio.pause();
-                        state.silentAudio.currentTime = 0;
-                        state.isAudioPlaying = false;
+                        document.getElementById('audio-indicator').classList.add('hidden');
+                    } catch (e) {}
+                }
+            },
+
+            // --- WAKE LOCK ---
+            requestWakeLock: async () => {
+                if ('wakeLock' in navigator) {
+                    try {
+                        state.wakeLock = await navigator.wakeLock.request('screen');
+                        console.log("Screen Wake Lock active");
+                    } catch (err) {
+                        console.log("Wake Lock rejected");
                     }
-                    
-                    // Hide audio indicator
-                    app.hideAudioIndicator();
-                    
-                    console.log("Silent audio stopped");
-                } catch (error) {
-                    console.error("Error stopping silent audio:", error);
                 }
             },
 
-            resumeAudioOnInteraction: () => {
-                if (state.isBroadcasting && state.silentAudio && state.silentAudio instanceof HTMLAudioElement) {
-                    state.silentAudio.play().then(() => {
-                        state.isAudioPlaying = true;
-                        console.log("Audio resumed after user interaction");
-                    });
+            releaseWakeLock: () => {
+                if (state.wakeLock) {
+                    state.wakeLock.release().then(() => state.wakeLock = null);
                 }
             },
 
-            showAudioIndicator: () => {
-                const indicator = document.getElementById('audio-indicator');
-                if (indicator) {
-                    indicator.classList.remove('hidden');
-                    // Auto-hide after 10 seconds
-                    setTimeout(() => {
-                        if (state.isAudioPlaying) {
-                            indicator.classList.add('hidden');
-                        }
-                    }, 10000);
-                }
+            // --- DRIVER LOGIC ---
+            prepareBroadcast: () => {
+                const route = document.getElementById('driver-route').value;
+                const id = document.getElementById('driver-id-input').value.trim();
+
+                if (!id) return alert("Please enter a Bus ID");
+
+                state.driverId = id;
+                state.driverRoute = route;
+
+                // UI Update
+                document.getElementById('dashboard-route').innerText = route;
+                document.getElementById('dashboard-id').innerText = id;
+
+                app.startBroadcast();
             },
 
-            hideAudioIndicator: () => {
-                const indicator = document.getElementById('audio-indicator');
-                if (indicator) {
-                    indicator.classList.add('hidden');
-                }
-            },
-
-            toggleAudioIndicator: () => {
-                const indicator = document.getElementById('audio-indicator');
-                if (indicator) {
-                    indicator.classList.add('hidden');
-                }
-            },
-
-            // === BATTERY MONITORING ===
-            setupBatteryMonitoring: () => {
-                if ('getBattery' in navigator) {
-                    navigator.getBattery().then(battery => {
-                        state.batteryLevel = battery.level;
-                        
-                        battery.addEventListener('levelchange', () => {
-                            state.batteryLevel = battery.level;
-                            app.updateBatteryWarning();
-                        });
-                        
-                        battery.addEventListener('chargingchange', () => {
-                            app.updateBatteryWarning();
-                        });
-                        
-                        app.updateBatteryWarning();
-                    });
-                } else if ('battery' in navigator) {
-                    // Legacy battery API
-                    navigator.battery.addEventListener('levelchange', () => {
-                        state.batteryLevel = navigator.battery.level;
-                        app.updateBatteryWarning();
-                    });
-                }
-                
-                // Check battery periodically
-                state.batteryCheckInterval = setInterval(() => {
-                    app.updateBatteryWarning();
-                }, 60000); // Check every minute
-            },
-
-            updateBatteryWarning: () => {
-                const warning = document.getElementById('battery-warning');
-                if (!warning) return;
-                
-                if (state.batteryLevel < 0.2) {
-                    warning.classList.remove('hidden');
-                } else {
-                    warning.classList.add('hidden');
-                }
-            },
-
-            // === MODIFIED START BROADCAST WITH AUDIO ===
             startBroadcast: async () => {
-                if (!navigator.geolocation) {
-                    alert("Geolocation not supported");
-                    return;
-                }
+                // Warning / Permission check
+                if (!confirm("Start tracking? Keeps this tab open!")) return;
+
+                app.switchView('view-driver-dashboard');
                 
-                // Enhanced warning with audio explanation
-                const warningMessage = `
-🚨 IMPORTANT FOR BACKGROUND TRACKING:
-
-1. Keep this tab OPEN (audio will help keep it active)
-2. Click "ALLOW" if browser asks for audio permission
-3. Install as PWA for best results
-4. Keep device charged
-
-Silent audio will play to prevent Chrome from suspending the app.
-
-Do you want to continue?`;
-                
-                if (!confirm(warningMessage)) {
-                    return;
+                // Initialize Map
+                if (!state.driverMap) {
+                    state.driverMap = L.map('driver-map', { zoomControl: false, attributionControl: false }).setView([23.797911, 90.4497], 15);
+                    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(state.driverMap);
+                    state.driverMarker = L.marker([0,0]).addTo(state.driverMap);
                 }
+
+                state.isBroadcasting = true;
+                state.tripStartTime = Date.now();
                 
-                try {
-                    state.isBroadcasting = true;
-                    app.updateBroadcastUI(true);
-                    
-                    // Start silent audio FIRST (this helps with background)
-                    app.startSilentAudio();
-                    
-                    // Request wake lock
-                    await app.requestWakeLock();
-                    
-                    // Start location tracking
-                    app.startLocationTracking();
-                    
-                    // Start timers
-                    app.startCountdown();
-                    app.startUptimeTimer();
-                    
-                    // Show warnings
-                    app.showFullscreenWarning();
-                    
-                    console.log("Broadcast started with silent audio");
-                    
-                } catch (error) {
-                    console.error("Error starting broadcast:", error);
-                    alert("Error starting trip: " + error.message);
-                    app.stopBroadcast();
-                }
-                // Request persistent storage (Chrome 85+)
-if (navigator.storage && navigator.storage.persist) {
-    navigator.storage.persist().then(granted => {
-        if (granted) console.log("Storage will not be cleared automatically");
-    });
-}
+                localStorage.setItem('active_driver_id', state.driverId);
+                localStorage.setItem('active_driver_route', state.driverRoute);
 
-// Use Web Workers for background processing
-const backgroundWorker = new Worker(URL.createObjectURL(
-    new Blob([`
-        self.onmessage = function(e) {
-            if (e.data === 'ping') {
-                setInterval(() => {
-                    self.postMessage('alive');
-                }, 10000);
-            }
-        }
-    `], {type: 'application/javascript'})
-));
-
-backgroundWorker.postMessage('ping');
-backgroundWorker.onmessage = () => {
-    // Keep background worker alive
-};
+                // Start Systems
+                app.startSilentAudio(); // Triggers audio
+                await app.requestWakeLock();
+                app.startWorker();      // Start Background Worker
+                app.startLocationTracking();
+                app.startUptimeTimer();
             },
 
-            startLocationTracking: () => {
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
+            stopBroadcast: () => {
+                if (!confirm("Stop trip?")) return;
+
+                state.isBroadcasting = false;
+                
+                // Cleanup
+                app.stopSilentAudio();
+                app.releaseWakeLock();
+                app.stopWorker();
+                
+                if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+                if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+                
+                // Send Offline
+                if (state.client) {
+                    state.client.publish(CONFIG.topics.location, JSON.stringify({
+                        id: state.driverId, status: 'offline'
+                    }), { retain: true });
                 }
-                
-                state.currentSmoothedSpeed = 0;
-                let isFirstFix = true;
-                let lastPosition = null;
-                
-                const options = {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                };
+
+                localStorage.removeItem('active_driver_id');
+                app.goHome();
+            },
+
+            // --- LOCATION CORE ---
+            startLocationTracking: () => {
+                const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
                 
                 state.watchId = navigator.geolocation.watchPosition(
-                    async (position) => {
+                    (pos) => {
                         if (!state.isBroadcasting) return;
-                        
-                        const { latitude, longitude, accuracy, speed, altitude, heading } = position.coords;
-                        const now = Date.now();
-                        
-                        // Validate position
-                        if (lastPosition) {
-                            const distance = app.calculateDistance(
-                                lastPosition.latitude, lastPosition.longitude,
-                                latitude, longitude
-                            );
-                            const timeDiff = (now - lastPosition.timestamp) / 1000;
-                            
-                            if (timeDiff > 0 && distance / timeDiff > 200) {
-                                console.warn("Unrealistic position jump, skipping");
-                                return;
-                            }
-                        }
-                        
-                        lastPosition = { latitude, longitude, timestamp: now };
-                        
-                        // Same direction blocking
-                        if (isFirstFix) {
-                            let conflict = false;
-                            const buses = Object.values(state.activeBuses);
-                            
-                            for (let bus of buses) {
-                                if (bus.id === state.driverId) continue;
-                                if (now - bus.ts > 60000) continue;
-                                
-                                if (bus.route === state.driverRoute) {
-                                    const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
-                                    if (dist < 20) {
-                                        conflict = true;
-                                        break;
-                                    }
-                                }
-                            }
-                            
-                            if (conflict) {
-                                alert("⚠️ Another driver is active nearby!");
-                                app.stopBroadcast();
-                                return;
-                            }
-                            isFirstFix = false;
-                        }
-                        
-                        // Calculate speed
-                        let rawSpeedKmh = (speed || 0) * 3.6;
-                        let alpha = 0.15;
-                        
-                        if (state.currentSmoothedSpeed > rawSpeedKmh) {
-                            alpha = 0.6;
-                        }
-                        
-                        state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
-                        
-                        if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
-                            state.currentSmoothedSpeed = 0;
-                        }
-                        
-                        const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
-                        
-                        // Update UI
-                        document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+
+                        const { latitude, longitude, speed, accuracy, heading } = pos.coords;
+                        const kph = (speed || 0) * 3.6;
+
+                        // UI Updates
+                        document.getElementById('val-speed').innerText = kph.toFixed(1);
                         document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
                         
-                        // Update map
-                        if (state.driverMarker) {
-                            state.driverMarker.setLatLng([latitude, longitude]);
-                            if (state.driverMap) {
-                                state.driverMap.panTo([latitude, longitude], {
-                                    animate: true,
-                                    duration: 1
-                                });
-                            }
-                        }
-                        
-                        state.lastLat = latitude;
-                        state.lastLng = longitude;
-                        
-                        // Throttle MQTT messages
-                        if (now - state.lastSentTime < CONFIG.locationInterval) return;
-                        state.lastSentTime = now;
-                        
-                        // Send to MQTT
-                        if (state.client && state.isConnected) {
-                            const payload = JSON.stringify({
+                        // Map Update
+                        if (state.driverMarker) state.driverMarker.setLatLng([latitude, longitude]);
+                        state.driverMap.panTo([latitude, longitude]);
+
+                        // MQTT Publish (Throttled to 3s)
+                        const now = Date.now();
+                        if (now - state.lastSentTime > 3000 && state.client && state.isConnected) {
+                            state.lastSentTime = now;
+                            const payload = {
                                 id: state.driverId,
-                                uid: CONFIG.mqtt.clientId,
                                 route: state.driverRoute,
-                                username: state.driverUsername,
                                 lat: latitude,
                                 lng: longitude,
-                                acc: accuracy,
-                                speed: displaySpeed,
-                                alt: altitude || null,
-                                heading: heading || null,
-                                ts: now,
-                                visible: state.isTabVisible,
-                                audio: state.isAudioPlaying,
-                                battery: state.batteryLevel * 100
-                            });
-                            state.client.publish(CONFIG.topics.location, payload, { retain: true });
+                                speed: kph.toFixed(1),
+                                heading: heading,
+                                ts: now
+                            };
+                            state.client.publish(CONFIG.topics.location, JSON.stringify(payload), { retain: true });
                         }
                     },
-                    (error) => {
-                        console.error("GPS Error:", error);
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                alert("Location permission denied!");
-                                app.stopBroadcast();
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                console.log("Position unavailable");
-                                break;
-                            case error.TIMEOUT:
-                                console.log("GPS timeout");
-                                break;
-                        }
-                    },
+                    (err) => console.error("GPS Error", err),
                     options
                 );
-                
-                // Fallback: Periodic position updates
-                state.locationInterval = setInterval(() => {
-                    if (!state.isBroadcasting || !state.isTabVisible) return;
-                    
-                    navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                            // Process position (similar to above)
-                            const { latitude, longitude, accuracy } = position.coords;
-                            const now = Date.now();
-                            
-                            if (state.client && state.isConnected && now - state.lastSentTime > 10000) {
-                                const payload = JSON.stringify({
-                                    id: state.driverId,
-                                    lat: latitude,
-                                    lng: longitude,
-                                    acc: accuracy,
-                                    ts: now,
-                                    fallback: true
-                                });
-                                state.client.publish(CONFIG.topics.location, payload, { retain: true });
+            },
+
+            // --- WORKER (Prevent background freezing) ---
+            startWorker: () => {
+                if (!state.backgroundWorker) {
+                    const blob = new Blob([`
+                        self.onmessage = function(e) {
+                            if (e.data === 'ping') {
+                                setInterval(() => self.postMessage('alive'), 5000);
                             }
-                        },
-                        null,
-                        { enableHighAccuracy: false, timeout: 5000, maximumAge: 30000 }
-                    );
-                }, 30000); // Every 30 seconds as fallback
+                        }
+                    `], {type: 'application/javascript'});
+                    state.backgroundWorker = new Worker(URL.createObjectURL(blob));
+                    state.backgroundWorker.postMessage('ping');
+                    state.backgroundWorker.onmessage = () => { /* Keeps main thread alive */ };
+                }
+            },
+
+            stopWorker: () => {
+                if (state.backgroundWorker) {
+                    state.backgroundWorker.terminate();
+                    state.backgroundWorker = null;
+                }
+            },
+
+            // --- UI HELPERS ---
+            setRole: (role) => {
+                state.role = role;
+                if (role === 'driver') app.switchView('view-driver-setup');
+                else alert("Student view not implemented in this minimal driver version.");
+            },
+
+            goHome: () => {
+                app.switchView('view-home');
+            },
+
+            switchView: (viewId) => {
+                document.querySelectorAll('.view-section').forEach(el => {
+                    el.classList.remove('view-active');
+                    setTimeout(() => { if(!el.classList.contains('view-active')) el.style.display = 'none'; }, 300);
+                });
+                const target = document.getElementById(viewId);
+                target.style.display = 'flex';
+                setTimeout(() => target.classList.add('view-active'), 10);
             },
 
             startUptimeTimer: () => {
                 if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                
                 state.uptimeInterval = setInterval(() => {
-                    if (!state.isBroadcasting) return;
-                    
                     const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
                     const m = Math.floor(diff / 60).toString().padStart(2, '0');
                     const s = (diff % 60).toString().padStart(2, '0');
-                    const el = document.getElementById('val-uptime');
-                    if(el) el.innerText = `${m}:${s}`;
+                    document.getElementById('val-uptime').innerText = `${m}:${s}`;
+                    
+                    // Update Battery
+                    if(navigator.getBattery) {
+                        navigator.getBattery().then(b => {
+                            document.getElementById('val-battery').innerText = Math.round(b.level * 100);
+                        });
+                    }
                 }, 1000);
             },
 
-            // === MODIFIED STOP BROADCAST ===
-            stopBroadcast: async () => {
-                state.isBroadcasting = false;
-                app.updateBroadcastUI(false);
-                
-                // Stop silent audio
-                app.stopSilentAudio();
-                
-                // Release wake lock
-                app.releaseWakeLock();
-                
-                // Stop countdown
-                app.stopCountdown();
-                
-                // Clear all intervals
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
-                }
-                
-                if (state.locationInterval) {
-                    clearInterval(state.locationInterval);
-                    state.locationInterval = null;
-                }
-                
-                if (state.uptimeInterval) {
-                    clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = null;
-                }
-                
-                // Send offline status
-                if (state.client && state.isConnected && state.driverId) {
-                    state.client.publish(CONFIG.topics.location, JSON.stringify({
-                        id: state.driverId,
-                        status: 'offline',
-                        ts: Date.now()
-                    }), { retain: true });
-                }
-                
-                // Clear from active buses
-                if (state.driverId && state.activeBuses[state.driverId]) {
-                    delete state.activeBuses[state.driverId];
-                }
-                
-                // Reset UI
-                document.getElementById('val-uptime').innerText = "00:00";
-                document.getElementById('fullscreen-warning').classList.add('hidden');
-                document.getElementById('battery-warning').classList.add('hidden');
-                
-                state.fullscreenWarningShown = false;
-                
-                app.showSummary();
-            },
-
-            // ... [Keep all your existing functions like goHome, updateBroadcastUI, etc.] ...
-            // ... [Your existing MQTT, map, and other functions remain the same] ...
-
-            // Add this function for testing audio
-            testAudioPermission: () => {
-                if (!CONFIG.silentAudio.enabled) return;
-                
-                const testAudio = new Audio();
-                testAudio.volume = 0.001;
-                testAudio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ';
-                
-                testAudio.play().then(() => {
-                    console.log("Audio permission granted");
-                    testAudio.pause();
-                }).catch(error => {
-                    console.log("Audio permission may be blocked:", error);
-                    alert("Please allow audio permissions for background tracking to work.");
-                });
+            restoreSession: () => {
+                document.getElementById('dashboard-route').innerText = state.driverRoute;
+                document.getElementById('dashboard-id').innerText = state.driverId;
+                app.switchView('view-driver-dashboard');
+                // Re-initialize map and connections logic...
+                // (Simplified for this snippet: User should just hit start again in a real restore scenario or we auto-trigger)
+                // For safety, we ask them to click "Resume" in a real app, but here we just show the dashboard.
+                alert("Session restored. Please click 'End Trip' and restart to ensure audio permissions are active.");
             }
         };
 
-        // Add event listeners for audio
-        document.addEventListener('click', () => {
-            // Try to resume audio context on any click
-            if (state.audioContext && state.audioContext.state === 'suspended') {
-                state.audioContext.resume();
-            }
-        });
-
-        // Listen for audio autoplay issues
-        document.addEventListener('play', (e) => {
-            if (e.target.tagName === 'AUDIO' && state.isBroadcasting) {
-                console.log("Audio started playing");
-            }
-        }, true);
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            state.isTabVisible = !document.hidden;
-            
-            if (state.isBroadcasting) {
-                if (state.isTabVisible) {
-                    console.log("Tab became visible");
-                    // Try to resume audio if it was paused
-                    if (state.silentAudio && !state.isAudioPlaying) {
-                        setTimeout(() => app.startSilentAudio(), 1000);
-                    }
-                } else {
-                    console.log("Tab hidden - silent audio should keep it active");
-                    // Show notification if audio isn't playing
-                    if (!state.isAudioPlaying && CONFIG.silentAudio.enabled) {
-                        console.warn("Silent audio not playing - background may be limited");
-                    }
-                }
-            }
-        });
-
-        // Listen for beforeinstallprompt event
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            state.deferredInstallPrompt = e;
-            console.log("PWA install prompt available");
-        });
-
-        // Listen for appinstalled event
-        window.addEventListener('appinstalled', () => {
-            state.isInstalled = true;
-            console.log('PWA was installed');
-            document.getElementById('install-prompt').classList.add('hidden');
-        });
-
-        window.app = app;
-        window.state = state;
+        // Initialize on load
         window.addEventListener('DOMContentLoaded', app.init);
     </script>
 </body>
