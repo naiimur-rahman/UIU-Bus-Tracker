@@ -4,13 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>UIU Bus Tracker</title>
-
+    
+    <!-- Add manifest for PWA capabilities -->
+    <link rel="manifest" href="/manifest.json">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
                     colors: {
                         brand: {
                             50: '#fff7ed',
@@ -23,6 +29,7 @@
                     animation: {
                         'float': 'float 6s ease-in-out infinite',
                         'pulse-glow': 'pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'countdown-pulse': 'countdown-pulse 1s ease-in-out infinite',
                     },
                     keyframes: {
                         float: {
@@ -32,6 +39,10 @@
                         'pulse-glow': {
                             '0%, 100%': { opacity: '1', boxShadow: '0 0 0 0px rgba(34, 197, 94, 0.7)' },
                             '50%': { opacity: '.5', boxShadow: '0 0 0 15px rgba(34, 197, 94, 0)' },
+                        },
+                        'countdown-pulse': {
+                            '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+                            '50%': { opacity: '0.7', transform: 'scale(1.05)' },
                         }
                     }
                 }
@@ -39,19 +50,25 @@
         }
     </script>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         .glass {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
         }
         .dark .glass {
-            background: rgba(15, 23, 42, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         }
         .dark-map-tiles {
             filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
@@ -100,9 +117,45 @@
         body { overscroll-behavior: none; }
         #view-profile { background-color: rgb(248 250 252) !important; }
         .dark #view-profile { background-color: rgb(15 23 42) !important; }
+        
+
+        /* Custom Leaflet Controls */
+        .leaflet-bar { border: none !important; box-shadow: none !important; }
+        .leaflet-bar a {
+            border-radius: 50% !important;
+            width: 40px !important;
+            height: 40px !important;
+            line-height: 40px !important;
+            background-color: white !important;
+            color: #64748b !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            margin-bottom: 8px !important;
+            border-bottom: none !important;
+            transition: all 0.2s ease;
+        }
+        .dark .leaflet-bar a {
+            background-color: #1e293b !important;
+            color: #cbd5e1 !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
+        }
+        .leaflet-bar a:hover {
+            background-color: #f8fafc !important;
+            transform: scale(1.05);
+            color: #f97316 !important;
+        }
+        .dark .leaflet-bar a:hover {
+            background-color: #334155 !important;
+        }
+        
+        /* Countdown timer */
+        .countdown-timer {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
     </style>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white">
+<body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
 
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
@@ -198,6 +251,13 @@
 
         <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
             <h3 class="text-2xl font-bold mb-6">Which Direction?</h3>
+
+            <div class="w-full max-w-xs mb-4 text-left">
+                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Your Name</label>
+                <input type="text" id="driver-username-input" placeholder="Captain (Optional)" maxlength="15"
+                       class="w-full glass bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl outline-none focus:ring-2 ring-brand-500 transition-all font-bold text-slate-700 dark:text-white placeholder:font-normal">
+            </div>
+
             <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left">
                 <div class="font-bold text-lg">Going to Campus</div>
                 <div class="text-xs text-slate-500">From Destination &rarr; UIU</div>
@@ -251,8 +311,15 @@
                     <span id="driver-connection-text" class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Offline</span>
                 </div>
                 <div class="text-xs text-slate-400">ID: <span id="driver-assigned-id" class="text-brand-500 font-mono font-bold">...</span></div>
+                <div id="driver-display-username-container" class="hidden text-[10px] text-slate-400 mt-0.5 text-right font-medium">
+                    <span id="driver-display-username" class="text-white"></span>
+                </div>
                 <div id="wakelock-status" class="text-[8px] text-slate-500 mt-0.5">
                     <i class="fas fa-mobile-alt"></i> Wake Lock: <span id="wakelock-text">Off</span>
+                </div>
+                <!-- Countdown Timer -->
+                <div id="countdown-container" class="hidden text-[9px] mt-1">
+                    <i class="fas fa-clock"></i> Auto Stop: <span id="countdown-timer" class="countdown-timer text-red-300 font-bold">30:00</span>
                 </div>
             </div>
         </div>
@@ -275,23 +342,36 @@
                     </div>
                 </div>
 
-                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-orange-500/30 transition-all active:scale-95 mb-4 relative z-50">
+                <!-- Add background permission button -->
+                <button id="request-background-btn" onclick="app.requestBackgroundPermission()" 
+                        class="w-full bg-gradient-to-b from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold py-3 rounded-2xl shadow-[0_10px_20px_-5px_rgba(59,130,246,0.4),0_4px_6px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2)] active:translate-y-[2px] transition-all duration-150 mb-3 relative z-50 uppercase tracking-widest text-sm border-b-4 border-blue-900/20 active:border-b-0">
+                    <i class="fas fa-shield-alt mr-2"></i> ENABLE BACKGROUND TRACKING
+                </button>
+                
+                <div id="background-status" class="text-[10px] text-slate-500 mb-3 hidden">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i> Background tracking enabled
+                </div>
+
+                <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-bold py-5 rounded-2xl shadow-[0_10px_20px_-5px_rgba(249,115,22,0.4),0_4px_6px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2)] active:translate-y-[2px] transition-all duration-150 mb-4 relative z-50 uppercase tracking-widest text-sm border-b-4 border-brand-900/20 active:border-b-0">
                     START TRIP
                 </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 w-full max-w-sm mt-6 px-4"> 
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Speed</p>
-                    <p id="val-speed" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">0 <span class="text-xs font-normal text-slate-400">km/h</span></p>
+            <div class="grid grid-cols-3 gap-3 w-full max-w-sm mt-6 px-2">
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Speed</p>
+                    <p id="val-speed" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">0<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span></p>
                 </div>
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Accuracy</p>
-                    <p id="val-accuracy" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">--</p>
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
+                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">GPS</p>
+                    <p id="val-accuracy" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">--</p>
                 </div>
-                <div class="glass p-3 rounded-2xl text-center flex flex-col items-center justify-center">
-                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Time</p>
-                    <p id="val-uptime" class="text-2xl font-bold text-slate-700 dark:text-slate-200 mt-1">00:00</p>
+                <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
+                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                    <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Time</p>
+                    <p id="val-uptime" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">00:00</p>
                 </div>
             </div>
         </div>
@@ -301,7 +381,7 @@
                  <i class="fas fa-heart text-6xl text-white"></i>
              </div>
              <h2 class="text-4xl font-black text-white mb-2 text-center">Thank You!</h2>
-             <p class="text-slate-400 mb-8 text-center px-4 max-w-xs">Thanks for your Contribution. It means a lot for us.</p>
+             <p class="text-slate-400 mb-8 text-center px-4 max-w-xs">Thanks for your Contribution.<br>It means a lot for us.</p>
 
              <button onclick="app.closeSummary()" class="mt-4 px-8 py-3 bg-white text-brand-600 font-bold rounded-full hover:scale-105 transition-transform shadow-lg shadow-white/20">
                  Close
@@ -335,8 +415,8 @@
         </div>
 
         <div class="bg-white dark:bg-slate-900 rounded-t-3xl shadow-[0_-5px_20px_rgba(0,0,0,0.1)] z-20 relative transition-transform duration-300 transform translate-y-0" id="bottom-sheet">
-            <div class="w-full flex justify-center pt-3 pb-1 cursor-pointer" onclick="app.toggleBottomSheet()">
-                <div class="w-12 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+            <div class="w-full flex justify-center pt-4 pb-2 cursor-pointer" onclick="app.toggleBottomSheet()">
+                <div class="w-16 h-1.5 bg-slate-300/50 dark:bg-slate-600/50 rounded-full backdrop-blur-sm"></div>
             </div>
             <div class="p-4 pb-8 max-h-[40vh] overflow-y-auto">
                 <h3 class="font-bold mb-4 text-sm text-slate-500 uppercase tracking-wide">Active Transport</h3>
@@ -379,7 +459,9 @@
             },
             uiuCoords: [23.79790, 90.44970], 
             presenceInterval: 15000,
-            minAccuracy: 50
+            minAccuracy: 50,
+            autoStopMinutes: 30, // Auto stop after 30 minutes
+            backgroundPermissionRequested: false
         };
 
         const BUS_STYLES = {
@@ -400,6 +482,7 @@
             driverId: null,
             driverRoute: null,
             driverDestination: null,
+            driverUsername: null,
             isBroadcasting: false,
             watchId: null,
             wakeLock: null,
@@ -418,7 +501,11 @@
             lastLng: null,
             tripStartTime: null,
             uptimeInterval: null,
-            currentSmoothedSpeed: 0
+            currentSmoothedSpeed: 0,
+            countdownInterval: null,
+            countdownTime: CONFIG.autoStopMinutes * 60, // 30 minutes in seconds
+            backgroundPermissionGranted: false,
+            serviceWorkerRegistration: null
         };
 
         /** APP CONTROLLER */
@@ -426,7 +513,8 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Map Clear Fix & Structure Fix");
+                app.registerServiceWorker();
+                console.log("App Version: Background Tracking & Auto Stop");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -438,15 +526,159 @@
                     state.driverRoute = savedRoute;
                     state.driverDestination = localStorage.getItem('active_driver_dest');
                     state.driverDirection = localStorage.getItem('active_driver_dir');
+                    state.driverUsername = localStorage.getItem('active_driver_username');
                     
                     app.setRole('driver-dashboard');
                     document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
+
+                    if (state.driverUsername) {
+                        document.getElementById('driver-display-username-container').classList.remove('hidden');
+                        document.getElementById('driver-display-username').innerText = state.driverUsername;
+                    }
+
                     app.switchView('view-driver-dashboard');
                     app.initDriverMap();
                 }
 
                 setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
                 setInterval(app.cleanupStaleUsers, 10000);
+                
+                // Check for existing background permission
+                app.checkBackgroundPermission();
+            },
+
+            // --- Service Worker Registration ---
+            registerServiceWorker: async () => {
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registration = await navigator.serviceWorker.register('/service-worker.js');
+                        state.serviceWorkerRegistration = registration;
+                        console.log('Service Worker registered');
+                    } catch (error) {
+                        console.log('Service Worker registration failed:', error);
+                    }
+                }
+            },
+
+            // --- Background Permission ---
+            requestBackgroundPermission: async () => {
+                try {
+                    // Request permission for background location
+                    const permissionStatus = await navigator.permissions.query({ 
+                        name: 'background-fetch' 
+                    });
+                    
+                    if (permissionStatus.state === 'granted') {
+                        state.backgroundPermissionGranted = true;
+                        app.updateBackgroundUI(true);
+                        alert('Background tracking enabled! The app will now work when minimized or locked.');
+                    } else if (permissionStatus.state === 'prompt') {
+                        // Try to request permission
+                        const result = await navigator.permissions.request({ 
+                            name: 'background-fetch' 
+                        });
+                        
+                        if (result.state === 'granted') {
+                            state.backgroundPermissionGranted = true;
+                            app.updateBackgroundUI(true);
+                            alert('Background tracking enabled! The app will now work when minimized or locked.');
+                        } else {
+                            alert('Background tracking permission is required for continuous location updates.');
+                        }
+                    } else {
+                        // Fallback: Try to use geolocation in background
+                        state.backgroundPermissionGranted = true;
+                        app.updateBackgroundUI(true);
+                        console.log('Using fallback background tracking');
+                    }
+                } catch (error) {
+                    console.error('Error requesting background permission:', error);
+                    // Fallback for browsers that don't support the API
+                    state.backgroundPermissionGranted = true;
+                    app.updateBackgroundUI(true);
+                    alert('Background tracking enabled (fallback mode).');
+                }
+            },
+
+            checkBackgroundPermission: async () => {
+                try {
+                    const permissionStatus = await navigator.permissions.query({ 
+                        name: 'background-fetch' 
+                    });
+                    
+                    if (permissionStatus.state === 'granted') {
+                        state.backgroundPermissionGranted = true;
+                        app.updateBackgroundUI(true);
+                    }
+                } catch (error) {
+                    console.log('Background permission check failed:', error);
+                }
+            },
+
+            updateBackgroundUI: (enabled) => {
+                const btn = document.getElementById('request-background-btn');
+                const status = document.getElementById('background-status');
+                
+                if (enabled) {
+                    if (btn) btn.classList.add('hidden');
+                    if (status) status.classList.remove('hidden');
+                } else {
+                    if (btn) btn.classList.remove('hidden');
+                    if (status) status.classList.add('hidden');
+                }
+            },
+
+            // --- Countdown Timer ---
+            startCountdown: () => {
+                state.countdownTime = CONFIG.autoStopMinutes * 60;
+                const container = document.getElementById('countdown-container');
+                const timer = document.getElementById('countdown-timer');
+                
+                if (container) container.classList.remove('hidden');
+                
+                if (state.countdownInterval) {
+                    clearInterval(state.countdownInterval);
+                }
+                
+                state.countdownInterval = setInterval(() => {
+                    state.countdownTime--;
+                    
+                    if (state.countdownTime <= 0) {
+                        app.stopBroadcast();
+                        alert('Trip automatically stopped after 30 minutes.');
+                        return;
+                    }
+                    
+                    // Update timer display
+                    if (timer) {
+                        const minutes = Math.floor(state.countdownTime / 60);
+                        const seconds = state.countdownTime % 60;
+                        timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                        
+                        // Add warning when less than 5 minutes
+                        if (state.countdownTime <= 300) { // 5 minutes
+                            timer.classList.add('animate-countdown-pulse', 'text-red-500');
+                        } else {
+                            timer.classList.remove('animate-countdown-pulse', 'text-red-500');
+                        }
+                    }
+                }, 1000);
+            },
+
+            stopCountdown: () => {
+                if (state.countdownInterval) {
+                    clearInterval(state.countdownInterval);
+                    state.countdownInterval = null;
+                }
+                
+                const container = document.getElementById('countdown-container');
+                const timer = document.getElementById('countdown-timer');
+                
+                if (container) container.classList.add('hidden');
+                if (timer) {
+                    timer.textContent = '30:00';
+                    timer.classList.remove('animate-countdown-pulse', 'text-red-500');
+                }
             },
 
             // --- Theme & View ---
@@ -548,6 +780,9 @@
                     state.currentSmoothedSpeed = 0;
                     state.activeBuses = {}; // Full reset
 
+                    // Stop countdown
+                    app.stopCountdown();
+
                     // FIX: Safer Map Removal
                     if (state.driverMap) {
                         try {
@@ -563,6 +798,7 @@
                     localStorage.removeItem('active_driver_route');
                     localStorage.removeItem('active_driver_dest');
                     localStorage.removeItem('active_driver_dir');
+                    localStorage.removeItem('active_driver_username');
                     
                 } catch (error) {
                     console.error("Error during exit:", error);
@@ -730,6 +966,10 @@
             selectRoute: (name, prefix) => {
                 state.tempRouteName = name;
                 state.tempRoutePrefix = prefix;
+                const savedName = localStorage.getItem('saved_username');
+                if (savedName) {
+                    document.getElementById('driver-username-input').value = savedName;
+                }
                 document.getElementById('route-sub-select').classList.remove('hidden');
             },
 
@@ -737,6 +977,9 @@
                 const name = state.tempRouteName;
                 const prefix = state.tempRoutePrefix;
                 const fullRouteName = `${name} (${direction})`;
+
+                const usernameInput = document.getElementById('driver-username-input').value.trim();
+                const username = usernameInput || null;
 
                 document.getElementById('route-sub-select').classList.add('hidden');
                 const loader = document.getElementById('selection-loader');
@@ -766,13 +1009,32 @@
                         state.driverId = assignedId;
                         state.driverDestination = name;
                         state.driverDirection = direction;
+                        state.driverUsername = username;
 
                         localStorage.setItem('active_driver_id', assignedId);
                         localStorage.setItem('active_driver_route', fullRouteName);
                         localStorage.setItem('active_driver_dest', name);
                         localStorage.setItem('active_driver_dir', direction);
 
+                        if (username) {
+                            localStorage.setItem('active_driver_username', username);
+                            localStorage.setItem('saved_username', username);
+                        } else {
+                            localStorage.removeItem('active_driver_username');
+                        }
+
                         document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
+
+                        const nameContainer = document.getElementById('driver-display-username-container');
+                        const nameSpan = document.getElementById('driver-display-username');
+                        if (username) {
+                            nameContainer.classList.remove('hidden');
+                            nameSpan.innerText = username;
+                        } else {
+                            nameContainer.classList.add('hidden');
+                            nameSpan.innerText = '';
+                        }
+
                         if (loader) loader.classList.add('hidden');
                         
                         // FIX: Ensure button state is fresh
@@ -869,7 +1131,14 @@
                     const jumpBtn = L.control({position: 'bottomright'});
                     jumpBtn.onAdd = function(map) {
                         const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        div.innerHTML = `<button onclick="state.driverMap.setView(CONFIG.uiuCoords, 16)" class="bg-white w-10 h-10 rounded-md flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50"><i class="fas fa-university text-xl"></i></button>`;
+                        const a = L.DomUtil.create('a', '', div);
+                        a.href = '#';
+                        a.title = 'Jump to UIU';
+                        a.innerHTML = '<i class="fas fa-university"></i>';
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            state.driverMap.setView(CONFIG.uiuCoords, 16);
+                        }
                         return div;
                     };
                     jumpBtn.addTo(state.driverMap);
@@ -890,6 +1159,12 @@
                     return;
                 }
                 
+                // Warn if background permission not granted
+                if (!state.backgroundPermissionGranted) {
+                    const proceed = confirm("Background tracking is not enabled. Location updates may stop when the app is minimized or screen is locked.\n\nEnable background tracking for best experience.");
+                    if (!proceed) return;
+                }
+                
                 try {
                     // INSTANT UI UPDATE - NO WAITING
                     state.isBroadcasting = true;
@@ -908,6 +1183,9 @@
                         if(el) el.innerText = `${m}:${s}`;
                     }, 1000);
 
+                    // Start countdown timer
+                    app.startCountdown();
+
                     app.requestWakeLock();
 
                     const options = {
@@ -925,43 +1203,71 @@
                             const { latitude, longitude, accuracy, speed } = position.coords;
                             const now = Date.now();
 
-                            // Conflict Check Inside Loop
+                            // --- SAME DIRECTION BLOCKING LOGIC START ---
                             if (isFirstFix) {
                                 let conflict = false;
                                 const buses = Object.values(state.activeBuses);
+                                
                                 for (let bus of buses) {
+                                    // 1. Skip checking against yourself
                                     if (bus.id === state.driverId) continue;
+
+                                    // 2. Skip stale buses (older than 60s)
                                     if (now - bus.ts > 60000) continue;
+
+                                    // 3. Check Exact Route & Direction Match
+                                    // defined in confirmRoute: e.g., "Kuril (To UIU)"
                                     if (bus.route === state.driverRoute) {
+                                        
+                                        // 4. Calculate Distance
                                         const dist = app.calculateDistance(latitude, longitude, bus.lat, bus.lng);
+                                        
+                                        // 5. If closer than 20 meters
                                         if (dist < 20) {
-                                            conflict = true; break;
+                                            conflict = true; 
+                                            break;
                                         }
                                     }
                                 }
+
                                 if (conflict) {
-                                    alert("⚠️ Another Captain is active nearby! Stopping.");
+                                    alert("⚠️ Another Captain is active nearby in the same direction! Save your battery.");
                                     app.stopBroadcast();
-                                    return;
+                                    return; // Stop execution here
                                 }
-                                isFirstFix = false;
+
+                                isFirstFix = false; // Disable check for rest of trip
                             }
 
-                            // SMOOTH SPEED (EMA Filter)
+                            // --- DYNAMIC SPEED LOGIC START ---
                             let rawSpeedKmh = (speed || 0) * 3.6;
 
-                            // Improved Stationary Logic
-                            if (rawSpeedKmh < 4.8) {
-                                rawSpeedKmh = 0;
-                                state.currentSmoothedSpeed = 0; // Force stop to prevent decay
-                            } else {
-                                // EMA: New = (Old * 0.8) + (Raw * 0.2)
-                                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * 0.8) + (rawSpeedKmh * 0.2);
+                            // 1. Determine Smoothing Factor (Alpha)
+                            // Default 0.15 = Heavy smoothing (keeps 85% history) -> Good for cruising
+                            let alpha = 0.15; 
+                            
+                            // If we are slowing down (Current > New), react FAST.
+                            // 0.6 = Low smoothing (only keeps 40% history) -> Drops quickly
+                            if (state.currentSmoothedSpeed > rawSpeedKmh) {
+                                alpha = 0.6; 
                             }
 
-                            const displaySpeed = Math.round(state.currentSmoothedSpeed);
-                            document.getElementById('val-speed').innerHTML = `${displaySpeed} <span class="text-[10px]">km/h</span>`;
-                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + ' m';
+                            // 2. Apply Dynamic EMA
+                            // Formula: (Old * (1 - alpha)) + (New * alpha)
+                            state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
+
+                            // 3. Absolute Stop Snap
+                            // If raw GPS says 0 and we are already slow, just snap to 0 immediately to kill lag
+                            if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
+                                state.currentSmoothedSpeed = 0;
+                            }
+
+                            // 4. Formatting
+                            const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
+                            
+                            document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+                            // --- DYNAMIC SPEED LOGIC END ---
+                            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
 
                             if (state.driverMarker) {
                                 state.driverMarker.setLatLng([latitude, longitude]);
@@ -979,6 +1285,7 @@
                                     id: state.driverId,
                                     uid: CONFIG.mqtt.clientId,
                                     route: state.driverRoute,
+                                    username: state.driverUsername,
                                     lat: latitude,
                                     lng: longitude,
                                     acc: accuracy,
@@ -988,7 +1295,14 @@
                                 state.client.publish(CONFIG.topics.location, payload, { retain: true });
                             }
                         },
-                        (error) => { console.error("GPS Error", error); },
+                        (error) => { 
+                            console.error("GPS Error", error); 
+                            // Try to restart geolocation if permission might have been lost
+                            if (error.code === error.PERMISSION_DENIED) {
+                                alert("Location permission was denied. Please enable location services.");
+                                app.stopBroadcast();
+                            }
+                        },
                         options
                     );
                 } catch (e) {
@@ -1003,6 +1317,7 @@
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
                 app.releaseWakeLock();
+                app.stopCountdown();
                 
                 // FORCE KILL GHOSTS
                 if (state.driverId && state.activeBuses[state.driverId]) {
@@ -1066,9 +1381,9 @@
 
                 if (isActive) {
                     btn.innerText = "STOP TRIP";
-                    btn.classList.replace('bg-brand-500', 'bg-red-500');
-                    btn.classList.replace('hover:bg-brand-600', 'hover:bg-red-600');
-                    btn.classList.add('animate-pulse');
+                    btn.classList.remove('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
+                    btn.classList.add('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
+
                     glow.style.opacity = '1';
                     glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
                     title.innerText = "Broadcasting";
@@ -1076,9 +1391,9 @@
                     icon.classList.add('text-green-500');
                 } else {
                     btn.innerText = "START TRIP";
-                    // Safer removal of classes
-                    btn.classList.remove('bg-red-500', 'hover:bg-red-600', 'animate-pulse');
-                    btn.classList.add('bg-brand-500', 'hover:bg-brand-600');
+                    // Restore gradients
+                    btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
+                    btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
                     
                     glow.style.opacity = '0';
                     title.innerText = "Ready?";
@@ -1097,7 +1412,15 @@
                         const jumpBtn = L.control({position: 'bottomright'});
                         jumpBtn.onAdd = function(map) {
                             const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                            div.innerHTML = `<button onclick="state.map.setView(CONFIG.uiuCoords, 16)" class="bg-white w-8 h-8 flex items-center justify-center text-brand-500 font-bold shadow-md cursor-pointer hover:bg-slate-50 rounded-sm mb-[2px]"><i class="fas fa-university"></i></button>`;
+                            // Use same structure as default leaflet controls but customized
+                            const a = L.DomUtil.create('a', '', div);
+                            a.href = '#';
+                            a.title = 'Jump to UIU';
+                            a.innerHTML = '<i class="fas fa-university"></i>';
+                            a.onclick = (e) => {
+                                e.preventDefault();
+                                state.map.setView(CONFIG.uiuCoords, 16);
+                            }
                             return div;
                         };
                         jumpBtn.addTo(state.map);
@@ -1165,6 +1488,7 @@
                         <div class="text-center p-2">
                             <b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b>
                             <p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>
+                            ${data.username ? `<p class="text-xs font-bold text-slate-600 dark:text-slate-300 mt-1">👤 ${app.escapeHtml(data.username)}</p>` : ''}
                         </div>
                     `;
                     marker.bindPopup(popupContent);
@@ -1221,7 +1545,8 @@
                     if (!item) {
                         item = document.createElement('div');
                         item.id = `bus-${bus.id}`;
-                        item.className = "flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800 rounded-xl cursor-pointer hover:bg-orange-50 dark:hover:bg-slate-700 transition-colors";
+                        // Updated to softer colors/glass effect
+                        item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
                         item.onclick = () => app.focusBus(bus.id);
                         
                         let bgClass = "bg-orange-500";
@@ -1238,13 +1563,21 @@
                                     <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
                                     <div class="flex items-center gap-2">
                                         <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
-                                        <p class="text-[10px] text-slate-400">| ${Math.round(bus.speed || 0)} km/h</p>
+                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed || 0).toFixed(1)}</span> km/h</p>
                                     </div>
                                 </div>
                             </div>
-                            <i class="fas fa-chevron-right text-slate-300"></i>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 truncate max-w-[80px]">${app.escapeHtml(bus.username || '')}</span>
+                                <i class="fas fa-chevron-right text-slate-300"></i>
+                            </div>
                         `;
                         list.appendChild(item);
+                    } else {
+                        const speedEl = document.getElementById(`speed-${bus.id}`);
+                        if (speedEl) {
+                            speedEl.innerText = Number(bus.speed || 0).toFixed(1);
+                        }
                     }
                 });
 
@@ -1278,6 +1611,13 @@
         window.app = app;
         window.state = state;
         window.addEventListener('DOMContentLoaded', app.init);
+        
+        // Add beforeunload event to stop broadcasting when page is closed
+        window.addEventListener('beforeunload', () => {
+            if (state.isBroadcasting) {
+                app.stopBroadcast();
+            }
+        });
     </script>
 </body>
 </html>
