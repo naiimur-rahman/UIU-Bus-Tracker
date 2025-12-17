@@ -27,7 +27,7 @@ const Layout = ({ children }) => {
   }, []);
 
   return (
-    <div className="dot-pattern min-h-screen w-full overflow-hidden relative selection:bg-brand-500 selection:text-white">
+    <div className="dot-pattern min-h-screen w-full overflow-hidden relative selection:bg-brand-500 selection:text-white" style={{ position: 'relative' }}>
       {/* Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
           <div className="absolute -top-20 -left-20 w-96 h-96 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
