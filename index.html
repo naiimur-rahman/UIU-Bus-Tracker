@@ -487,7 +487,6 @@
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: Map Clear Fix & Structure Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -987,7 +986,7 @@
             },
 
             startBroadcast: () => {
-                // 1. CHECK FOR ANDROID NATIVE INTERFACE
+                // 1. ANDROID NATIVE INTERFACE CHECK
                 if (typeof Android !== 'undefined') {
                     try {
                         Android.startNativeBroadcast(
@@ -996,12 +995,12 @@
                             String(state.driverUsername || '')
                         );
                         
-                        // Update UI immediately
+                        // Update UI
                         state.isBroadcasting = true;
                         app.updateBroadcastUI(true);
                         app.requestWakeLock();
                         
-                        // Start Uptime Timer
+                        // Start uptime counter (even if Android handles GPS)
                         state.tripStartTime = Date.now();
                         if (state.uptimeInterval) clearInterval(state.uptimeInterval);
                         state.uptimeInterval = setInterval(() => {
@@ -1012,14 +1011,14 @@
                             if(el) el.innerText = `${m}:${s}`;
                         }, 1000);
 
-                        console.log("Started via Android Native Service");
-                        return; // EXIT FUNCTION - Don't use Web Geolocation
-                    } catch (e) {
-                        console.error("Android Start Failed, falling back to Web:", e);
+                        console.log('✅ Android native service started');
+                        return; // Exit here - Android handles location
+                    } catch (error) {
+                        console.error('Error starting Android service:', error);
                     }
                 }
 
-                // 2. FALLBACK TO WEB GEOLOCATION (Your existing logic)
+                // 2. WEB BROWSER FALLBACK
                 if (!navigator.geolocation) {
                     alert("Geolocation not supported");
                     return;
@@ -1050,11 +1049,8 @@
                         maximumAge: 0
                     };
 
-                    let isFirstFix = true;
-
                     state.watchId = navigator.geolocation.watchPosition(
                         (position) => {
-                            // Pass position to the handler
                             app.processLocation(position.coords);
                         },
                         (error) => { console.error("GPS Error", error); },
@@ -1068,15 +1064,12 @@
                 }
             },
 
-            // New helper to handle logic for both Web and Android
+            // Unified location processor for both Web and Android sources
             processLocation: (coords) => {
                 if (!state.isBroadcasting) return;
 
                 const { latitude, longitude, accuracy, speed } = coords;
                 const now = Date.now();
-
-                // --- SAME DIRECTION BLOCKING LOGIC ---
-                // (Only check on first fix if needed, but for now we focus on broadcasting)
 
                 // --- DYNAMIC SPEED LOGIC ---
                 let rawSpeedKmh = (speed || 0) * 3.6;
@@ -1095,9 +1088,16 @@
 
                 if (state.driverMarker) {
                     state.driverMarker.setLatLng([latitude, longitude]);
-                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                    if (state.driverMap) state.driverMap.panTo([latitude, longitude], { animate: true });
                 }
 
+                // Distance Calculation
+                if (state.lastLat && state.lastLng) {
+                    const dist = app.calculateDistance(state.lastLat, state.lastLng, latitude, longitude);
+                    if (dist > 0) {
+                        state.sessionDistance += dist;
+                    }
+                }
                 state.lastLat = latitude;
                 state.lastLng = longitude;
 
@@ -1120,9 +1120,10 @@
                 }
             },
 
-            // New Method: Called by the Global Window Function from Android
+            // Called by the Global Window Function from Android
             handleNativeLocationUpdate: (lat, lng, acc, speed) => {
-                // Convert raw numbers to object structure expected by processLocation
+                console.log('📍 Location from Android:', { lat, lng, acc, speed });
+                // Pass raw data to the unified processor
                 app.processLocation({
                     latitude: lat,
                     longitude: lng,
@@ -1132,12 +1133,14 @@
             },
 
             stopBroadcast: async () => {
-                // 1. Stop Android Service
+                // 1. Stop Android Native Service
                 if (typeof Android !== 'undefined') {
                     try {
                         Android.stopNativeBroadcast();
-                        console.log("Stopped Android Native Service");
-                    } catch(e) { console.error(e); }
+                        console.log('✅ Android native service stopped');
+                    } catch (error) {
+                        console.error('Error stopping Android service:', error);
+                    }
                 }
 
                 state.isBroadcasting = false;
