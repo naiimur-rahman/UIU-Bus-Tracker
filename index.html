@@ -476,11 +476,19 @@
         /** ANDROID INTERFACE HANDLER */
         // This function MUST be global (attached to window) so the Java code can call it
         window.handleAndroidLocation = function(lat, lng, accuracy, speed) {
-            // Forward data to the internal app logic
-            if (window.app && window.app.handleNativeLocationUpdate) {
-                window.app.handleNativeLocationUpdate(lat, lng, accuracy, speed);
-            }
-        };
+    console.log('📍 Location from Android:', lat, lng);
+    
+    // Update driver map marker
+    if (window.app && window.app.driverMarker && window.app.driverMap) {
+        window.app.driverMarker.setLatLng([lat, lng]);
+        window.app.driverMap.panTo([lat, lng]);
+    }
+    
+    // Update speed and accuracy displays
+    if (window.app && window.app.updateDriverStats) {
+        window.app.updateDriverStats(speed, accuracy);
+    }
+};
 
         /** APP CONTROLLER */
         const app = {
@@ -1436,6 +1444,9 @@
         window.app = app;
         window.state = state;
         window.addEventListener('DOMContentLoaded', app.init);
+        
+        if (typeof window.app === 'undefined') window.app = {};
+        window.app.handleAndroidLocation = window.handleAndroidLocation;
     </script>
 </body>
 </html>
