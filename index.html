@@ -442,8 +442,6 @@
             'from_uiu': 'bg-red-600'
         };
 
-        // UPDATED: Tiny silent mp3 for background hack
-        const SILENT_AUDIO_URL = 'https://raw.githubusercontent.com/anars/blank-audio/master/5-minutes-of-silence.mp3';
         /** GLOBAL STATE */
         const state = {
             client: null,
@@ -457,8 +455,6 @@
             isBroadcasting: false,
             watchId: null,
             wakeLock: null,
-            backgroundAudio: null, // UPDATED: Holds audio element
-            broadcastTimer: null,  // UPDATED: Holds 30 min timer
             activeBuses: {},
             activeUsers: new Map(),
             userCache: {},
@@ -477,12 +473,21 @@
             currentSmoothedSpeed: 0
         };
 
+        /** ANDROID INTERFACE HANDLER */
+        // This function MUST be global (attached to window) so the Java code can call it
+        window.handleAndroidLocation = function(lat, lng, accuracy, speed) {
+            // Forward data to the internal app logic
+            if (window.app && window.app.handleNativeLocationUpdate) {
+                window.app.handleNativeLocationUpdate(lat, lng, accuracy, speed);
+            }
+        };
+
         /** APP CONTROLLER */
         const app = {
             init: () => {
                 app.loadTheme();
                 app.connectMqtt();
-                console.log("App Version: DOM-Attached Audio Fix");
+                console.log("App Version: Map Clear Fix & Structure Fix");
                 
                 // CHECK LOCALSTORAGE
                 const savedDriverId = localStorage.getItem('active_driver_id');
@@ -510,13 +515,6 @@
 
                 setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
                 setInterval(app.cleanupStaleUsers, 10000);
-
-                // UPDATED: Re-acquire wake lock on visibility change
-                document.addEventListener('visibilitychange', async () => {
-                    if (state.wakeLock !== null && document.visibilityState === 'visible') {
-                        await app.requestWakeLock();
-                    }
-                });
             },
 
             // --- Theme & View ---
@@ -666,27 +664,6 @@
                 }
             },
 
-            // UPDATED: Initialize Silent Audio with DOM Attachment
-            // UPDATED: Init Audio with WAV format
-initBackgroundAudio: () => {
-    if (!state.backgroundAudio) {
-        state.backgroundAudio = new Audio();
-        // Use the remote file which is more reliable
-        state.backgroundAudio.src = 'https://raw.githubusercontent.com/anars/blank-audio/master/5-minutes-of-silence.mp3';
-        state.backgroundAudio.loop = true;
-        state.backgroundAudio.volume = 1.0; // CHANGE TO 1.0 (Max Volume)
-        state.backgroundAudio.muted = false; // Ensure not muted
-        
-        // Settings for mobile
-        state.backgroundAudio.setAttribute('playsinline', '');
-        state.backgroundAudio.setAttribute('webkit-playsinline', '');
-        state.backgroundAudio.preload = 'auto';
-        
-        // This is important:
-        // We will "mute" it effectively by using a silent file, 
-        // but the system volume must look "active".
-    }
-},
             // --- MQTT Logic ---
             connectMqtt: () => {
                 console.log("Connecting to MQTT...");
@@ -1009,105 +986,124 @@ initBackgroundAudio: () => {
                 else app.startBroadcast();
             },
 
-            startBroadcast: async () => {
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported");
-        return;
-    }
-    
-    // 1. Initialize Audio
-    app.initBackgroundAudio();
-    
-    try {
-        // 2. Play Audio (Safely)
-        try {
-            await state.backgroundAudio.play();
-            console.log("Audio playing started...");
-            
-            // 3. Force Notification (Android)
-            if ('mediaSession' in navigator) {
-                navigator.mediaSession.metadata = new MediaMetadata({
-                    title: 'Sharing Location',
-                    artist: 'UIU Bus Tracker',
-                    album: 'Trip Active',
-                    artwork: [{ src: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png', sizes: '512x512', type: 'image/png' }]
-                });
-                navigator.mediaSession.playbackState = 'playing';
-                // Dummy handlers to keep session active
-                navigator.mediaSession.setActionHandler('play', () => {}); 
-                navigator.mediaSession.setActionHandler('pause', () => {}); 
-            }
-        } catch (audioErr) {
-            console.warn("Audio Warning:", audioErr);
-        }
+            startBroadcast: () => {
+                // 1. CHECK FOR ANDROID NATIVE INTERFACE
+                if (typeof Android !== 'undefined') {
+                    try {
+                        Android.startNativeBroadcast(
+                            String(state.driverId || 'Unknown'),
+                            String(state.driverRoute || 'Unknown'),
+                            String(state.driverUsername || '')
+                        );
+                        
+                        // Update UI immediately
+                        state.isBroadcasting = true;
+                        app.updateBroadcastUI(true);
+                        app.requestWakeLock();
+                        
+                        // Start Uptime Timer
+                        state.tripStartTime = Date.now();
+                        if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+                        state.uptimeInterval = setInterval(() => {
+                            const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
+                            const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                            const s = (diff % 60).toString().padStart(2, '0');
+                            const el = document.getElementById('val-uptime');
+                            if(el) el.innerText = `${m}:${s}`;
+                        }, 1000);
 
-        // 4. Set 30 Minute Timer
-        if (state.broadcastTimer) clearTimeout(state.broadcastTimer);
-        state.broadcastTimer = setTimeout(() => {
-            alert("30 Minutes Up! Location sharing stopped.");
-            app.stopBroadcast();
-        }, 30 * 60 * 1000); 
-
-        // 5. Update UI & Wake Lock
-        state.isBroadcasting = true;
-        app.updateBroadcastUI(true);
-        app.requestWakeLock();
-
-        // 6. Start GPS Tracking
-        if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-        
-        // Reset Timers
-        state.tripStartTime = Date.now();
-        if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-        state.uptimeInterval = setInterval(() => {
-            const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-            const m = Math.floor(diff / 60).toString().padStart(2, '0');
-            const s = (diff % 60).toString().padStart(2, '0');
-            const el = document.getElementById('val-uptime');
-            if(el) el.innerText = `${m}:${s}`;
-        }, 1000);
-
-        const options = { 
-            enableHighAccuracy: true, 
-            timeout: 10000, 
-            maximumAge: 0 
-        };
-
-        state.watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                if (!state.isBroadcasting) return;
-
-                const { latitude, longitude, accuracy, speed } = position.coords;
-                const now = Date.now();
-
-                // --- A. UPDATE LOCAL DRIVER MAP & UI ---
-                // Calculate Speed (m/s to km/h)
-                const displaySpeed = ((speed || 0) * 3.6).toFixed(1);
-                
-                const speedEl = document.getElementById('val-speed');
-                if(speedEl) speedEl.innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                
-                const accEl = document.getElementById('val-accuracy');
-                if(accEl) accEl.innerText = Math.round(accuracy) + 'm';
-
-                // Update Local Marker
-                if (state.driverMap) {
-                    if (!state.driverMarker) {
-                         const iconHtml = `<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring"><div class="w-2 h-2 bg-white rounded-full"></div></div>`;
-                         const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
-                         state.driverMarker = L.marker([latitude, longitude], {icon: icon}).addTo(state.driverMap);
-                    } else {
-                        state.driverMarker.setLatLng([latitude, longitude]);
+                        console.log("Started via Android Native Service");
+                        return; // EXIT FUNCTION - Don't use Web Geolocation
+                    } catch (e) {
+                        console.error("Android Start Failed, falling back to Web:", e);
                     }
-                    // Auto-pan map to follow driver
-                    state.driverMap.panTo([latitude, longitude]);
                 }
 
-                // --- B. MQTT THROTTLE CHECK ---
-                if (now - state.lastSentTime < 1000) return; // Limit to 1 send per second
+                // 2. FALLBACK TO WEB GEOLOCATION (Your existing logic)
+                if (!navigator.geolocation) {
+                    alert("Geolocation not supported");
+                    return;
+                }
+                
+                try {
+                    state.isBroadcasting = true;
+                    app.updateBroadcastUI(true);
+
+                    if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+                    state.currentSmoothedSpeed = 0;
+
+                    state.tripStartTime = Date.now();
+                    if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+                    state.uptimeInterval = setInterval(() => {
+                        const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
+                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                        const s = (diff % 60).toString().padStart(2, '0');
+                        const el = document.getElementById('val-uptime');
+                        if(el) el.innerText = `${m}:${s}`;
+                    }, 1000);
+
+                    app.requestWakeLock();
+
+                    const options = {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    };
+
+                    let isFirstFix = true;
+
+                    state.watchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            // Pass position to the handler
+                            app.processLocation(position.coords);
+                        },
+                        (error) => { console.error("GPS Error", error); },
+                        options
+                    );
+                } catch (e) {
+                    console.error("Start Broadcast Error:", e);
+                    alert("Error starting trip. Please refresh.");
+                    state.isBroadcasting = false;
+                    app.updateBroadcastUI(false);
+                }
+            },
+
+            // New helper to handle logic for both Web and Android
+            processLocation: (coords) => {
+                if (!state.isBroadcasting) return;
+
+                const { latitude, longitude, accuracy, speed } = coords;
+                const now = Date.now();
+
+                // --- SAME DIRECTION BLOCKING LOGIC ---
+                // (Only check on first fix if needed, but for now we focus on broadcasting)
+
+                // --- DYNAMIC SPEED LOGIC ---
+                let rawSpeedKmh = (speed || 0) * 3.6;
+                let alpha = 0.15; 
+                if (state.currentSmoothedSpeed > rawSpeedKmh) alpha = 0.6; 
+                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
+
+                if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
+                    state.currentSmoothedSpeed = 0;
+                }
+
+                const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
+                
+                document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+                document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
+
+                if (state.driverMarker) {
+                    state.driverMarker.setLatLng([latitude, longitude]);
+                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                }
+
+                state.lastLat = latitude;
+                state.lastLng = longitude;
+
+                if (now - state.lastSentTime < 200) return;
                 state.lastSentTime = now;
 
-                // --- C. SEND DATA ---
                 if (state.client && state.isConnected) {
                     const payload = JSON.stringify({
                         id: state.driverId,
@@ -1123,30 +1119,29 @@ initBackgroundAudio: () => {
                     state.client.publish(CONFIG.topics.location, payload, { retain: true });
                 }
             },
-            (error) => { 
-                console.error("GPS Error", error);
-                // Optional: visual feedback for GPS loss
-            },
-            options
-        );
 
-    } catch (e) {
-        console.error("Start Broadcast Error:", e);
-    }
-},
+            // New Method: Called by the Global Window Function from Android
+            handleNativeLocationUpdate: (lat, lng, acc, speed) => {
+                // Convert raw numbers to object structure expected by processLocation
+                app.processLocation({
+                    latitude: lat,
+                    longitude: lng,
+                    accuracy: acc,
+                    speed: speed 
+                });
+            },
+
             stopBroadcast: async () => {
+                // 1. Stop Android Service
+                if (typeof Android !== 'undefined') {
+                    try {
+                        Android.stopNativeBroadcast();
+                        console.log("Stopped Android Native Service");
+                    } catch(e) { console.error(e); }
+                }
+
                 state.isBroadcasting = false;
                 app.updateBroadcastUI(false);
-                
-                // UPDATED: Stop Audio, Clear Timer, Release Lock
-                if (state.backgroundAudio) {
-                    state.backgroundAudio.pause();
-                    state.backgroundAudio.currentTime = 0;
-                }
-                if (state.broadcastTimer) {
-                    clearTimeout(state.broadcastTimer);
-                    state.broadcastTimer = null;
-                }
                 app.releaseWakeLock();
                 
                 // FORCE KILL GHOSTS
@@ -1435,7 +1430,7 @@ initBackgroundAudio: () => {
                     sheet.classList.remove('translate-y-[80%]');
                     sheet.classList.add('translate-y-0');
                 }
-            },
+            }
         };
 
         window.app = app;
