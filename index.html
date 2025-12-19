@@ -141,7 +141,58 @@
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
+<div id="welcome-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500">
+    <div class="glass w-full max-w-md rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-float" style="animation-duration: 10s;">
+        
+        <div class="p-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/50 dark:bg-slate-800/50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white">
+                    <i class="fas fa-bullhorn text-sm"></i>
+                </div>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notice Board</h3>
+            </div>
+            <button onclick="closeWelcomeModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-slate-500"></i>
+            </button>
+        </div>
 
+        <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-600 dark:text-slate-300 space-y-4">
+            <p class="font-bold text-brand-600 dark:text-brand-400">Welcome to UIU Bus Tracker v2.0!</p>
+            
+            <p>
+                This application is designed to help UIU students and transport staff coordinate bus locations in real-time.
+            </p>
+
+            <hr class="border-slate-200 dark:border-slate-700">
+
+            <h4 class="font-bold text-slate-800 dark:text-white">✨ New Features:</h4>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Real-time GPS Tracking with high accuracy.</li>
+                <li>Live Speedometer and Distance calculation.</li>
+                <li>Dark Mode support for night trips.</li>
+                <li>"Wake Lock" to keep screen on for drivers.</li>
+            </ul>
+
+            <h4 class="font-bold text-slate-800 dark:text-white mt-4">⚠️ Important Note:</h4>
+            <p>
+                Please ensure you have <strong>Location Services (GPS)</strong> enabled. Do not close the browser tab while driving, or the broadcast will stop.<p>**use Android Application if you are a Driver. <3</p> 
+            </p>
+            
+            <p class="italic text-xs opacity-70 mt-4">
+                "Development is a journey, not a destination.<br>Thank you for being part of our testing phase." <br>
+                - Naimur Rahman
+            </p>
+            
+            <div class="h-10"></div> 
+        </div>
+
+        <div class="p-4 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+            <button onclick="closeWelcomeModal()" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
+                I Understand, Let's Go!
+            </button>
+        </div>
+    </div>
+</div>
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
         <div class="absolute top-1/2 -right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
@@ -406,6 +457,21 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <script type="module">
+      window.closeWelcomeModal = function() {
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {
+                // Add fade out effect
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                
+                // Wait for animation to finish then hide completely
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                    // Optional: Save to local storage so it doesn't show every time
+                    // localStorage.setItem('intro_seen', 'true'); 
+                }, 500);
+            }
+        };
         /** APP CONFIG */
         const CONFIG = {
             mqtt: {
