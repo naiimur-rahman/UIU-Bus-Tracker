@@ -140,6 +140,57 @@
         }
     </style>
 </head>
+<div id="welcome-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500">
+    <div class="bg-orange-50 dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-float" style="animation-duration: 5s;">
+        
+        <div class="p-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/50 dark:bg-slate-800/50">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white">
+                    <i class="fas fa-bullhorn text-sm"></i>
+                </div>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Shuttle Tracker</h3>
+            </div>
+            <button onclick="closeWelcomeModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <i class="fas fa-times text-slate-500"></i>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-600 dark:text-slate-300 space-y-4">
+            <p class="font-bold text-brand-600 dark:text-brand-400">Welcome to UIU Bus Tracker v2.0!</p>
+            
+            <p>
+                This website is designed to help the UIU community find and track buses easily in real-time.❤️
+            </p>
+
+            <hr class="border-slate-200 dark:border-slate-700">
+
+            <h4 class="font-bold text-slate-800 dark:text-white">✨ New Features:</h4>
+            <ul class="list-disc pl-5 space-y-1">
+                <li>Real-time GPS Tracking with high accuracy.</li>
+                <li>Live Speedometer and Dark Mode support.</li>
+                <li>"Wake Lock" to keep screen on for drivers.</li>
+            </ul>
+
+            <h4 class="font-bold text-slate-800 dark:text-white mt-4">⚠️ Important Note:</h4>
+            <p>
+                Do not close the browser tab while driving, or the broadcast will stop. Please ensure you have <strong>Location Services (GPS)</strong> enabled. 
+            </p>
+            
+            <p class="italic text-xs opacity-70 mt-4">
+                "Development is a journey, not a destination.<br> Thank you for being part of our testing phase." <br>
+                - Naimur Rahman
+            </p>
+            
+            <div class="h-10"></div> 
+        </div>
+
+        <div class="p-4 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+            <button onclick="closeWelcomeModal()" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
+                Ok!
+            </button>
+        </div>
+    </div>
+</div>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
 
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -149,6 +200,13 @@
     </div>
 
     <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
+        <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="fixed top-4 left-4 pointer-events-auto glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
+            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white shadow-md shadow-green-500/20">
+                <i class="fas fa-calculator text-[10px]"></i>
+            </div>
+            <span class="text-xs font-bold pr-1 group-hover:text-green-500 transition-colors">CGPA</span>
+        </a>
+
         <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
             <i class="fas fa-moon dark:hidden"></i>
             <i class="fas fa-sun hidden dark:block"></i>
@@ -157,7 +215,7 @@
 
     <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
         <div class="flex-grow flex flex-col items-center justify-center w-full max-w-sm mx-auto">
-            <div class="text-center mb-4"> 
+            <div class="text-center mb-8"> 
                 <div class="w-20 h-20 bg-gradient-to-tr from-brand-500 to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-orange-500/30 transform rotate-3 animate-drive">
                     <i class="fas fa-bus text-4xl text-white"></i>
                 </div>
@@ -187,35 +245,13 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-bold mb-1">Start a Trip</h3>
-                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Share location with others</p>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400">Share location with students</p>
                         </div>
                         <div class="w-10 h-10 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 group-hover:bg-brand-500 group-hover:text-white transition-colors">
                             <i class="fas fa-id-card text-lg"></i>
                         </div>
                     </div>
                 </button>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 w-full mt-4"> 
-                <a href="https://naiimur-rahman.github.io/UIU-Incognito-Chat/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-purple-500">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-500">
-                            <i class="fas fa-comments text-sm"></i>
-                        </div>
-                        <h4 class="font-bold text-xs">Incognito Chat</h4>
-                    </div>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Connect anonymously.</p>
-                </a>
-
-                <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="glass p-4 rounded-2xl hover:scale-[1.02] transition-transform text-left block border-l-4 border-l-green-500">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-500">
-                            <i class="fas fa-calculator text-sm"></i>
-                        </div>
-                        <h4 class="font-bold text-xs">CGPA Calculator</h4>
-                    </div>
-                    <p class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">Calculate CGPA and more.</p>
-                </a>
             </div>
         </div>
         
@@ -335,12 +371,12 @@
                     <p id="val-speed" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">0<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span></p>
                 </div>
                 <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                     <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">GPS</p>
                     <p id="val-accuracy" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">--</p>
                 </div>
                 <div class="glass p-3 rounded-xl text-center flex flex-col items-center justify-center border border-slate-200/50 dark:border-slate-700/50 bg-slate-100/30 dark:bg-slate-800/30 relative overflow-hidden">
-                     <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
+                      <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent pointer-events-none"></div>
                     <p class="text-[9px] text-slate-400 uppercase font-bold tracking-widest mb-1">Time</p>
                     <p id="val-uptime" class="text-xl font-mono font-bold text-slate-700 dark:text-slate-100 tracking-tighter">00:00</p>
                 </div>
@@ -406,6 +442,19 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <script type="module">
+      window.closeWelcomeModal = function() {
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {
+                // Add fade out effect
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                
+                // Wait for animation to finish then hide completely
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 500);
+            }
+        };
         /** APP CONFIG */
         const CONFIG = {
             mqtt: {
