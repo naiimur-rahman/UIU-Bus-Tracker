@@ -457,1057 +457,824 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <script type="module">
-      window.closeWelcomeModal = function() {
-            const modal = document.getElementById('welcome-modal');
-            if (modal) {
-                // Add fade out effect
-                modal.style.opacity = '0';
-                modal.style.pointerEvents = 'none';
+    /** * UIU BUS TRACKER V2.0 - FINAL STABLE BUILD
+     * Features: Android Native Bridge, WakeLock, MQTT Optimization, Dynamic UI
+     */
+
+    // --- Global Helper for Modal ---
+    window.closeWelcomeModal = function() {
+        const modal = document.getElementById('welcome-modal');
+        if (modal) {
+            modal.style.opacity = '0';
+            modal.style.pointerEvents = 'none';
+            setTimeout(() => { modal.style.display = 'none'; }, 500);
+        }
+    };
+
+    // --- Configuration ---
+    const CONFIG = {
+        mqtt: {
+            protocol: 'wss',
+            host: '09872002dac9410e9af391b1a7066483.s1.eu.hivemq.cloud',
+            port: 8884,
+            path: '/mqtt',
+            username: 'naimur',
+            password: 'Sohan786@',
+            clientId: (() => {
+                let id = localStorage.getItem('mqtt_client_id');
+                if (!id) {
+                    id = 'uiu-' + Math.random().toString(16).substr(2, 8);
+                    localStorage.setItem('mqtt_client_id', id);
+                }
+                return id;
+            })()
+        },
+        topics: {
+            location: 'uiu/bus/location',
+            presence: 'uiu/presence'
+        },
+        uiuCoords: [23.79790, 90.44970], 
+        presenceInterval: 15000,
+        minAccuracy: 50
+    };
+
+    const BUS_STYLES = {
+        'K': 'bg-blue-500',   // Kuril
+        'N': 'bg-green-500',  // Notun Bazar
+        'A': 'bg-purple-500', // Aftab Nagar
+        'default': 'bg-orange-500',
+        'to_uiu': 'bg-green-600',
+        'from_uiu': 'bg-red-600'
+    };
+
+    /** GLOBAL STATE */
+    const state = {
+        client: null,
+        isConnected: false,
+        connectionDebounce: null, 
+        role: null,
+        driverId: null,
+        driverRoute: null,
+        driverDestination: null,
+        driverDirection: null,
+        driverUsername: null,
+        isBroadcasting: false,
+        watchId: null,
+        wakeLock: null,
+        activeBuses: {},
+        activeUsers: new Map(),
+        map: null,
+        driverMap: null,
+        driverMarker: null,
+        markers: {},
+        circles: {}, 
+        lastSentTime: 0,
+        sessionDistance: 0,
+        lastLat: null,
+        lastLng: null,
+        tripStartTime: null,
+        uptimeInterval: null,
+        currentSmoothedSpeed: 0
+    };
+
+    /** * ANDROID INTERFACE BRIDGE 
+     * Receives location data from the Java Foreground Service
+     */
+    window.handleAndroidLocation = function(lat, lng, accuracy, speed) {
+        // Ensure types are numbers (Java might send strings)
+        const nLat = parseFloat(lat);
+        const nLng = parseFloat(lng);
+        const nAcc = parseFloat(accuracy);
+        const nSpeed = parseFloat(speed);
+
+        if (window.app && window.app.handleNativeLocationUpdate) {
+            window.app.handleNativeLocationUpdate(nLat, nLng, nAcc, nSpeed);
+        }
+    };
+
+    /** MAIN APP CONTROLLER */
+    const app = {
+        init: () => {
+            app.loadTheme();
+            app.connectMqtt();
+            
+            // Check LocalStorage for active session
+            const savedDriverId = localStorage.getItem('active_driver_id');
+            const savedRoute = localStorage.getItem('active_driver_route');
+            
+            if (savedDriverId && savedRoute) {
+                state.driverId = savedDriverId;
+                state.driverRoute = savedRoute;
+                state.driverDestination = localStorage.getItem('active_driver_dest');
+                state.driverDirection = localStorage.getItem('active_driver_dir');
+                state.driverUsername = localStorage.getItem('active_driver_username');
                 
-                // Wait for animation to finish then hide completely
-                setTimeout(() => {
-                    modal.style.display = 'none';
-                    // Optional: Save to local storage so it doesn't show every time
-                    // localStorage.setItem('intro_seen', 'true'); 
-                }, 500);
+                app.setRole('driver-dashboard');
+                document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
+
+                if (state.driverUsername) {
+                    document.getElementById('driver-display-username-container').classList.remove('hidden');
+                    document.getElementById('driver-display-username').innerText = state.driverUsername;
+                }
+                app.switchView('view-driver-dashboard');
+                app.initDriverMap();
             }
-        };
-        /** APP CONFIG */
-        const CONFIG = {
-            mqtt: {
-                protocol: 'wss',
-                host: '09872002dac9410e9af391b1a7066483.s1.eu.hivemq.cloud',
-                port: 8884,
-                path: '/mqtt',
-                username: 'naimur',
-                password: 'Sohan786@',
-                clientId: (() => {
-                    let id = localStorage.getItem('mqtt_client_id');
-                    if (!id) {
-                        id = 'uiu-' + Math.random().toString(16).substr(2, 8);
-                        localStorage.setItem('mqtt_client_id', id);
-                    }
-                    return id;
-                })()
-            },
-            topics: {
-                location: 'uiu/bus/location',
-                presence: 'uiu/presence'
-            },
-            uiuCoords: [23.79790, 90.44970], 
-            presenceInterval: 15000,
-            minAccuracy: 50
-        };
 
-        const BUS_STYLES = {
-            'K': 'bg-blue-500',   // Kuril - Blue
-            'N': 'bg-green-500',  // Notun Bazar - Green
-            'A': 'bg-purple-500', // Aftab Nagar - Purple
-            'default': 'bg-orange-500',
-            'to_uiu': 'bg-green-600',
-            'from_uiu': 'bg-red-600'
-        };
+            setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
+            setInterval(app.cleanupStaleUsers, 10000);
+        },
 
-        /** GLOBAL STATE */
-        const state = {
-            client: null,
-            isConnected: false,
-            connectionDebounce: null, 
-            role: null,
-            driverId: null,
-            driverRoute: null,
-            driverDestination: null,
-            driverUsername: null,
-            isBroadcasting: false,
-            watchId: null,
-            wakeLock: null,
-            activeBuses: {},
-            activeUsers: new Map(),
-            userCache: {},
-            map: null,
-            driverMap: null,
-            driverMarker: null,
-            markers: {},
-            circles: {}, 
-            lastSentTime: 0,
-            sessionPoints: 0,
-            sessionDistance: 0,
-            lastLat: null,
-            lastLng: null,
-            tripStartTime: null,
-            uptimeInterval: null,
-            currentSmoothedSpeed: 0
-        };
+        // --- Theme & Utils ---
+        escapeHtml: (text) => {
+            if (!text) return text;
+            return String(text)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        },
 
-        /** ANDROID INTERFACE HANDLER */
-        // This function MUST be global (attached to window) so the Java code can call it
-        window.handleAndroidLocation = function(lat, lng, accuracy, speed) {
-            // Forward data to the internal app logic
-            if (window.app && window.app.handleNativeLocationUpdate) {
-                window.app.handleNativeLocationUpdate(lat, lng, accuracy, speed);
+        toggleTheme: () => {
+            const html = document.documentElement;
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
             }
-        };
+            app.updateMapStyle();
+        },
 
-        /** APP CONTROLLER */
-        const app = {
-            init: () => {
-                app.loadTheme();
-                app.connectMqtt();
-                
-                // CHECK LOCALSTORAGE
-                const savedDriverId = localStorage.getItem('active_driver_id');
-                const savedRoute = localStorage.getItem('active_driver_route');
-                
-                if (savedDriverId && savedRoute) {
-                    console.log("Restoring previous session...");
-                    state.driverId = savedDriverId;
-                    state.driverRoute = savedRoute;
-                    state.driverDestination = localStorage.getItem('active_driver_dest');
-                    state.driverDirection = localStorage.getItem('active_driver_dir');
-                    state.driverUsername = localStorage.getItem('active_driver_username');
-                    
-                    app.setRole('driver-dashboard');
-                    document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
+        loadTheme: () => {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        },
 
-                    if (state.driverUsername) {
-                        document.getElementById('driver-display-username-container').classList.remove('hidden');
-                        document.getElementById('driver-display-username').innerText = state.driverUsername;
-                    }
+        switchView: (viewId) => {
+            // Hide Overlays
+            document.getElementById('selection-loader').classList.add('hidden');
+            document.getElementById('route-sub-select').classList.add('hidden');
 
-                    app.switchView('view-driver-dashboard');
-                    app.initDriverMap();
-                }
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(el => {
+                el.classList.remove('view-active');
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+                el.style.zIndex = '0';
+            });
 
-                setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
-                setInterval(app.cleanupStaleUsers, 10000);
-            },
+            const target = document.getElementById(viewId);
+            if (target) {
+                target.classList.add('view-active');
+                target.style.opacity = '1';
+                target.style.pointerEvents = 'auto';
+                target.style.zIndex = '100';
+                target.style.visibility = 'visible';
+            }
 
-            // --- Theme & View ---
-            escapeHtml: (text) => {
-                if (!text) return text;
-                return String(text)
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            },
-
-            toggleTheme: () => {
-                const html = document.documentElement;
-                if (html.classList.contains('dark')) {
-                    html.classList.remove('dark');
-                    localStorage.setItem('theme', 'light');
+            const globalControls = document.getElementById('global-controls');
+            if (globalControls) {
+                if (viewId === 'view-landing') {
+                    globalControls.classList.remove('opacity-0', 'pointer-events-none', 'invisible');
                 } else {
-                    html.classList.add('dark');
-                    localStorage.setItem('theme', 'dark');
+                    globalControls.classList.add('opacity-0', 'pointer-events-none', 'invisible');
                 }
-                app.updateMapStyle();
-            },
+            }
+        },
 
-            loadTheme: () => {
-                const theme = localStorage.getItem('theme');
-                if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                    document.documentElement.classList.add('dark');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                }
-            },
+        setRole: (role) => {
+            state.role = role;
+            if (role === 'student') {
+                app.switchView('view-student');
+                app.initMap();
+            } else if (role === 'driver-select') {
+                app.switchView('view-driver-select');
+            } else if (role === 'driver-dashboard') {
+                app.switchView('view-driver-dashboard');
+            }
+        },
 
-            switchView: (viewId) => {
-                document.getElementById('selection-loader').classList.add('hidden');
-                document.getElementById('route-sub-select').classList.add('hidden');
+        goHome: async () => {
+            if (state.isBroadcasting) {
+                const confirmExit = confirm("Stop broadcasting and exit?");
+                if (!confirmExit) return;
+                await app.stopBroadcast();
+            }
 
-                const views = document.querySelectorAll('.view-section');
-                views.forEach(el => {
-                    el.classList.remove('view-active');
-                    el.style.opacity = '0';
-                    el.style.pointerEvents = 'none';
-                    el.style.zIndex = '0';
-                });
+            if (state.watchId) {
+                navigator.geolocation.clearWatch(state.watchId);
+                state.watchId = null;
+            }
 
-                const target = document.getElementById(viewId);
-                if (target) {
-                    target.classList.add('view-active');
-                    void target.offsetWidth; 
-                    target.style.opacity = '1';
-                    target.style.pointerEvents = 'auto';
-                    target.style.zIndex = '100';
-                    target.style.visibility = 'visible';
-                }
+            state.driverId = null;
+            state.driverRoute = null;
+            state.role = null;
+            state.isBroadcasting = false;
+            state.activeBuses = {};
 
-                const globalControls = document.getElementById('global-controls');
-                if (globalControls) {
-                    if (viewId === 'view-landing') {
-                        globalControls.classList.remove('opacity-0', 'pointer-events-none', 'invisible');
-                    } else {
-                        globalControls.classList.add('opacity-0', 'pointer-events-none', 'invisible');
-                    }
-                }
-            },
+            if (state.driverMap) {
+                try { state.driverMap.remove(); } catch (e) {}
+                state.driverMap = null;
+            }
+            state.driverMarker = null;
 
-            setRole: (role) => {
-                state.role = role;
-                if (role === 'student') {
-                    app.switchView('view-student');
-                    app.initMap();
-                } else if (role === 'driver-select') {
-                    app.switchView('view-driver-select');
-                } else if (role === 'driver-dashboard') {
-                    app.switchView('view-driver-dashboard');
-                }
-            },
+            localStorage.removeItem('active_driver_id');
+            localStorage.removeItem('active_driver_route');
+            localStorage.removeItem('active_driver_dest');
+            localStorage.removeItem('active_driver_dir');
+            localStorage.removeItem('active_driver_username');
+            
+            app.switchView('view-landing');
+        },
 
-            goHome: async () => {
+        // --- Wake Lock ---
+        requestWakeLock: async () => {
+            if ('wakeLock' in navigator) {
                 try {
-                    if (state.isBroadcasting) {
-                        const confirmExit = confirm("Stop broadcasting and exit?");
-                        if (!confirmExit) return;
-                        await app.stopBroadcast();
-                    }
-
-                    // Force Clear Watch
-                    if (state.watchId) {
-                        navigator.geolocation.clearWatch(state.watchId);
-                        state.watchId = null;
-                    }
-
-                    state.driverId = null;
-                    state.driverRoute = null;
-                    state.driverDestination = null;
-                    state.driverDirection = null;
-                    state.role = null;
-                    state.isBroadcasting = false;
-                    state.currentSmoothedSpeed = 0;
-                    state.activeBuses = {}; // Full reset
-
-                    // FIX: Safer Map Removal
-                    if (state.driverMap) {
-                        try {
-                            state.driverMap.off();
-                            state.driverMap.remove();
-                        } catch (e) { console.log("Map cleanup warning", e); }
-                        state.driverMap = null;
+                    state.wakeLock = await navigator.wakeLock.request('screen');
+                    const el = document.getElementById('wakelock-text');
+                    if(el) {
+                        el.innerText = "Active";
+                        el.className = "text-green-500 font-bold";
                     }
                     
-                    state.driverMarker = null;
-
-                    localStorage.removeItem('active_driver_id');
-                    localStorage.removeItem('active_driver_route');
-                    localStorage.removeItem('active_driver_dest');
-                    localStorage.removeItem('active_driver_dir');
-                    localStorage.removeItem('active_driver_username');
-                    
-                } catch (error) {
-                    console.error("Error during exit:", error);
-                }
-                app.switchView('view-landing');
-            },
-
-            // --- Wake Lock ---
-            requestWakeLock: async () => {
-                if ('wakeLock' in navigator) {
-                    try {
-                        state.wakeLock = await navigator.wakeLock.request('screen');
-                        document.getElementById('wakelock-text').innerText = "Active";
-                        document.getElementById('wakelock-text').className = "text-green-500 font-bold";
-                        
-                        state.wakeLock.addEventListener('release', () => {
-                            document.getElementById('wakelock-text').innerText = "Inactive";
-                            document.getElementById('wakelock-text').className = "";
-                        });
-                    } catch (err) {
-                        console.error(`${err.name}, ${err.message}`);
-                    }
-                }
-            },
-
-            releaseWakeLock: () => {
-                if (state.wakeLock) {
-                    state.wakeLock.release();
-                    state.wakeLock = null;
-                }
-            },
-
-            // --- MQTT Logic ---
-            connectMqtt: () => {
-                console.log("Connecting to MQTT...");
-                const connectUrl = `wss://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}/mqtt`;
-                
-                state.client = mqtt.connect(connectUrl, {
-                    username: CONFIG.mqtt.username,
-                    password: CONFIG.mqtt.password,
-                    clientId: CONFIG.mqtt.clientId,
-                    clean: true
-                });
-
-                state.client.on('connect', () => {
-                    console.log("MQTT Connected");
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    state.isConnected = true;
-                    app.updateConnectionStatus('connected');
-                    state.client.subscribe(CONFIG.topics.location);
-                    state.client.subscribe(CONFIG.topics.presence);
-                    app.sendHeartbeat();
-                });
-
-                state.client.on('message', (topic, message) => {
-                    const msgString = message.toString();
-                    if (!msgString) return;
-                    try {
-                        const data = JSON.parse(msgString);
-                        if (topic === CONFIG.topics.location) {
-                            app.handleLocationUpdate(data);
-                        } else if (topic === CONFIG.topics.presence) {
-                            app.handlePresenceUpdate(data);
+                    state.wakeLock.addEventListener('release', () => {
+                        const el = document.getElementById('wakelock-text');
+                        if(el) {
+                            el.innerText = "Inactive";
+                            el.className = "";
                         }
-                    } catch (e) { console.error("Msg Parse Error:", e); }
-                });
+                    });
+                } catch (err) {
+                    console.log("Wake Lock Error: " + err.name);
+                }
+            }
+        },
 
-                state.client.on('error', (err) => {
-                    console.error("MQTT Error", err);
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    state.connectionDebounce = setTimeout(() => {
-                        state.isConnected = false;
-                        app.updateConnectionStatus('error');
-                    }, 2000);
-                });
-                
-                state.client.on('close', () => {
-                    if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
-                    state.connectionDebounce = setTimeout(() => {
-                        state.isConnected = false;
-                        app.updateConnectionStatus('offline');
-                    }, 2000);
-                });
-            },
+        releaseWakeLock: () => {
+            if (state.wakeLock) {
+                state.wakeLock.release();
+                state.wakeLock = null;
+            }
+        },
 
-            updateConnectionStatus: (status) => {
-                const dot = document.getElementById('driver-connection-dot');
-                const text = document.getElementById('driver-connection-text');
-                const studentStatus = document.getElementById('student-status');
+        // --- MQTT Logic ---
+        connectMqtt: () => {
+            const connectUrl = `wss://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}/mqtt`;
+            state.client = mqtt.connect(connectUrl, {
+                username: CONFIG.mqtt.username,
+                password: CONFIG.mqtt.password,
+                clientId: CONFIG.mqtt.clientId,
+                clean: true
+            });
 
-                if (status === 'connected') {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]";
-                    if (text) text.innerText = "ONLINE";
-                    if (studentStatus) {
-                        studentStatus.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live';
-                        studentStatus.classList.add('text-green-600', 'bg-green-100');
+            state.client.on('connect', () => {
+                if (state.connectionDebounce) clearTimeout(state.connectionDebounce);
+                state.isConnected = true;
+                app.updateConnectionStatus('connected');
+                state.client.subscribe(CONFIG.topics.location);
+                state.client.subscribe(CONFIG.topics.presence);
+                app.sendHeartbeat();
+            });
+
+            state.client.on('message', (topic, message) => {
+                const msgString = message.toString();
+                if (!msgString) return;
+                try {
+                    const data = JSON.parse(msgString);
+                    if (topic === CONFIG.topics.location) {
+                        app.handleLocationUpdate(data);
+                    } else if (topic === CONFIG.topics.presence) {
+                        app.handlePresenceUpdate(data);
                     }
-                } else {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
-                    if (text) text.innerText = "OFFLINE";
-                    if (studentStatus) {
-                        studentStatus.innerHTML = '<div class="w-2 h-2 bg-red-400 rounded-full"></div> Connect';
-                    }
-                }
-            },
+                } catch (e) { console.error("Msg Parse Error:", e); }
+            });
 
-            sendHeartbeat: () => {
-                if (state.client && state.isConnected) {
-                    state.client.publish(CONFIG.topics.presence, JSON.stringify({
-                        id: CONFIG.mqtt.clientId,
-                        ts: Date.now(),
-                        role: state.role || 'viewer'
-                    }));
-                }
-            },
+            state.client.on('error', (err) => {
+                console.error("MQTT Error", err);
+                state.isConnected = false;
+                app.updateConnectionStatus('error');
+            });
+            
+            state.client.on('close', () => {
+                state.isConnected = false;
+                app.updateConnectionStatus('offline');
+            });
+        },
 
-            handlePresenceUpdate: (data) => {
-                state.activeUsers.set(data.id, data.ts);
-                app.updateUserCount();
-            },
+        updateConnectionStatus: (status) => {
+            const dot = document.getElementById('driver-connection-dot');
+            const text = document.getElementById('driver-connection-text');
+            const studentStatus = document.getElementById('student-status');
 
-            cleanupStaleUsers: () => {
-                const now = Date.now();
-                for (const [id, ts] of state.activeUsers) {
-                    if (now - ts > 45000) state.activeUsers.delete(id);
+            if (status === 'connected') {
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]";
+                if (text) text.innerText = "ONLINE";
+                if (studentStatus) {
+                    studentStatus.innerHTML = '<div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div> Live';
+                    studentStatus.classList.add('text-green-600', 'bg-green-100');
                 }
-                app.updateUserCount();
+            } else {
+                if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
+                if (text) text.innerText = "OFFLINE";
+                if (studentStatus) {
+                     studentStatus.innerHTML = '<div class="w-2 h-2 bg-slate-400 rounded-full"></div> Connect';
+                }
+            }
+        },
 
-                for (const id in state.activeBuses) {
-                    if (now - state.activeBuses[id].ts > 45000) { 
-                        delete state.activeBuses[id];
-                        app.removeBusMarker(id);
-                    }
+        sendHeartbeat: () => {
+            if (state.client && state.isConnected) {
+                state.client.publish(CONFIG.topics.presence, JSON.stringify({
+                    id: CONFIG.mqtt.clientId,
+                    ts: Date.now(),
+                    role: state.role || 'viewer'
+                }));
+            }
+        },
+
+        handlePresenceUpdate: (data) => {
+            state.activeUsers.set(data.id, data.ts);
+            app.updateUserCount();
+        },
+
+        cleanupStaleUsers: () => {
+            const now = Date.now();
+            // Cleanup Users
+            for (const [id, ts] of state.activeUsers) {
+                if (now - ts > 45000) state.activeUsers.delete(id);
+            }
+            app.updateUserCount();
+            
+            // Cleanup Buses
+            for (const id in state.activeBuses) {
+                if (now - state.activeBuses[id].ts > 60000) { 
+                    delete state.activeBuses[id];
+                    app.removeBusMarker(id);
                 }
+            }
+            app.updateBusList();
+        },
+
+        updateUserCount: () => {
+            const el = document.getElementById('count-users');
+            if (el) el.innerText = state.activeUsers.size;
+        },
+
+        handleLocationUpdate: (data) => {
+            if (data.status === 'offline') {
+                delete state.activeBuses[data.id];
+                app.removeBusMarker(data.id);
                 app.updateBusList();
-            },
+                return;
+            }
+            // Ignore own data to prevent loops
+            if (state.isBroadcasting && data.id === state.driverId) return;
 
-            updateUserCount: () => {
-                const el = document.getElementById('count-users');
-                if (el) el.innerText = state.activeUsers.size;
-            },
+            state.activeBuses[data.id] = data;
+            if (state.role === 'student') {
+                app.updateBusMarker(data);
+                app.updateBusList();
+            }
+        },
 
-            // --- Location Logic ---
-            handleLocationUpdate: (data) => {
-                if (data.status === 'offline') {
-                    delete state.activeBuses[data.id];
-                    app.removeBusMarker(data.id);
-                    app.updateBusList();
-                    return;
-                }
+        // --- Route Selection ---
+        selectRoute: (name, prefix) => {
+            state.tempRouteName = name;
+            state.tempRoutePrefix = prefix;
+            const savedName = localStorage.getItem('saved_username');
+            if (savedName) document.getElementById('driver-username-input').value = savedName;
+            document.getElementById('route-sub-select').classList.remove('hidden');
+        },
 
-                if (state.isBroadcasting && data.id === state.driverId) return;
+        confirmRoute: (direction) => {
+            const name = state.tempRouteName;
+            const prefix = state.tempRoutePrefix;
+            const fullRouteName = `${name} (${direction})`;
+            const username = document.getElementById('driver-username-input').value.trim() || null;
 
-                const timeDiff = Date.now() - data.ts;
-                if (timeDiff > 120000) return; 
+            document.getElementById('route-sub-select').classList.add('hidden');
+            document.getElementById('selection-loader').classList.remove('hidden');
+
+            // Simulate ID assignment delay
+            setTimeout(() => {
+                const assignedId = app.assignNextId(prefix);
                 
-                state.activeBuses[data.id] = data;
+                state.driverRoute = fullRouteName;
+                state.driverId = assignedId;
+                state.driverDestination = name;
+                state.driverDirection = direction;
+                state.driverUsername = username;
 
-                if (state.role === 'student') {
-                    app.updateBusMarker(data);
-                    app.updateBusList();
-                }
-            },
+                // Save session
+                localStorage.setItem('active_driver_id', assignedId);
+                localStorage.setItem('active_driver_route', fullRouteName);
+                localStorage.setItem('active_driver_dest', name);
+                localStorage.setItem('active_driver_dir', direction);
+                if (username) localStorage.setItem('active_driver_username', username);
 
-            selectRoute: (name, prefix) => {
-                state.tempRouteName = name;
-                state.tempRoutePrefix = prefix;
-                const savedName = localStorage.getItem('saved_username');
-                if (savedName) {
-                    document.getElementById('driver-username-input').value = savedName;
-                }
-                document.getElementById('route-sub-select').classList.remove('hidden');
-            },
-
-            confirmRoute: (direction) => {
-                const name = state.tempRouteName;
-                const prefix = state.tempRoutePrefix;
-                const fullRouteName = `${name} (${direction})`;
-
-                const usernameInput = document.getElementById('driver-username-input').value.trim();
-                const username = usernameInput || null;
-
-                document.getElementById('route-sub-select').classList.add('hidden');
-                const loader = document.getElementById('selection-loader');
-                if (loader) loader.classList.remove('hidden');
-
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
-                }
-
-                let attempts = 0;
-                const syncInterval = setInterval(() => {
-                    attempts++;
-                    if (state.isConnected || attempts > 30) {
-                        clearInterval(syncInterval);
-                        
-                        const now = Date.now();
-                        for (const id in state.activeBuses) {
-                            if (now - state.activeBuses[id].ts > 30000) { 
-                                delete state.activeBuses[id];
-                            }
-                        }
-
-                        const assignedId = app.assignNextId(prefix);
-                        
-                        state.driverRoute = fullRouteName;
-                        state.driverId = assignedId;
-                        state.driverDestination = name;
-                        state.driverDirection = direction;
-                        state.driverUsername = username;
-
-                        localStorage.setItem('active_driver_id', assignedId);
-                        localStorage.setItem('active_driver_route', fullRouteName);
-                        localStorage.setItem('active_driver_dest', name);
-                        localStorage.setItem('active_driver_dir', direction);
-
-                        if (username) {
-                            localStorage.setItem('active_driver_username', username);
-                            localStorage.setItem('saved_username', username);
-                        } else {
-                            localStorage.removeItem('active_driver_username');
-                        }
-
-                        document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
-
-                        const nameContainer = document.getElementById('driver-display-username-container');
-                        const nameSpan = document.getElementById('driver-display-username');
-                        if (username) {
-                            nameContainer.classList.remove('hidden');
-                            nameSpan.innerText = username;
-                        } else {
-                            nameContainer.classList.add('hidden');
-                            nameSpan.innerText = '';
-                        }
-
-                        if (loader) loader.classList.add('hidden');
-                        
-                        // FIX: Ensure button state is fresh
-                        state.isBroadcasting = false;
-                        app.updateBroadcastUI(false);
-                        
-                        app.switchView('view-driver-dashboard');
-                        app.initDriverMap();
-                    }
-                }, 100);
-            },
-
-            assignNextId: (prefix) => {
-                const activeIds = Object.keys(state.activeBuses)
-                    .filter(id => id.startsWith(prefix))
-                    .map(id => parseInt(id.replace(prefix, '')))
-                    .filter(num => !isNaN(num))
-                    .sort((a, b) => a - b);
-
-                let nextNum = 1;
-                for (const num of activeIds) {
-                    if (num === nextNum) nextNum++;
-                    else if (num > nextNum) break;
-                }
-                return prefix + nextNum;
-            },
-
-            calculateDistance: (lat1, lon1, lat2, lon2) => {
-                const R = 6371e3; 
-                const φ1 = lat1 * Math.PI/180;
-                const φ2 = lat2 * Math.PI/180;
-                const Δφ = (lat2-lat1) * Math.PI/180;
-                const Δλ = (lon2-lon1) * Math.PI/180;
-                const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                return R * c;
-            },
-
-            // --- Driver Map & Routing ---
-            initDriverMap: () => {
-                if (state.driverMap) {
-                    try {
-                        state.driverMap.off();
-                        state.driverMap.remove();
-                    } catch(e) {}
-                    state.driverMap = null;
-                }
-
-                // FIX: CLEAN MAP CONTAINER FORCEFULLY
-                const mapContainer = document.getElementById('driver-map');
-                if (mapContainer) {
-                    mapContainer.innerHTML = '';
-                    mapContainer._leaflet_id = null;
-                }
-
-                const COORDS = {
-                    'UIU': CONFIG.uiuCoords, 
-                    'Kuril': [23.822339, 90.420163],
-                    'Notun Bazar': [23.797881, 90.424652],
-                    'Aftab Nagar': [23.767860, 90.425833],
-                    'Transport': CONFIG.uiuCoords 
-                };
-
-                let start, end;
-                if (state.driverDirection === 'From UIU') {
-                    start = COORDS['UIU'];
-                    end = COORDS[state.driverDestination] || COORDS['Transport'];
-                } else {
-                    start = COORDS[state.driverDestination] || COORDS['Transport'];
-                    end = COORDS['UIU'];
-                }
-
-                setTimeout(() => {
-                    if (!document.getElementById('driver-map')) return; 
-                    
-                    state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
-                    const isDark = document.documentElement.classList.contains('dark');
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '© OSM',
-                        className: isDark ? 'dark-map-tiles' : ''
-                    }).addTo(state.driverMap);
-
-                    L.marker(start).addTo(state.driverMap).bindPopup("Start");
-                    L.marker(end).addTo(state.driverMap).bindPopup("End");
-
-                    const iconHtml = `
-                        <div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative pulse-ring">
-                            <div class="w-2 h-2 bg-white rounded-full"></div>
-                        </div>
-                    `;
-                    const icon = L.divIcon({ className: '', html: iconHtml, iconSize: [24, 24] });
-                    state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
-
-                    const jumpBtn = L.control({position: 'bottomright'});
-                    jumpBtn.onAdd = function(map) {
-                        const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                        const a = L.DomUtil.create('a', '', div);
-                        a.href = '#';
-                        a.title = 'Jump to UIU';
-                        a.innerHTML = '<i class="fas fa-university"></i>';
-                        a.onclick = (e) => {
-                            e.preventDefault();
-                            state.driverMap.setView(CONFIG.uiuCoords, 16);
-                        }
-                        return div;
-                    };
-                    jumpBtn.addTo(state.driverMap);
-                    
-                    requestAnimationFrame(() => { state.driverMap.invalidateSize(); });
-                }, 200);
-            },
-
-            // --- Driver Broadcasting ---
-            toggleBroadcast: () => {
-                if (state.isBroadcasting) app.stopBroadcast();
-                else app.startBroadcast();
-            },
-
-            startBroadcast: () => {
-                // 1. ANDROID NATIVE INTERFACE CHECK
-                if (typeof Android !== 'undefined') {
-                    try {
-                        Android.startNativeBroadcast(
-                            String(state.driverId || 'Unknown'),
-                            String(state.driverRoute || 'Unknown'),
-                            String(state.driverUsername || '')
-                        );
-                        
-                        // Update UI
-                        state.isBroadcasting = true;
-                        app.updateBroadcastUI(true);
-                        app.requestWakeLock();
-                        
-                        // Start uptime counter (even if Android handles GPS)
-                        state.tripStartTime = Date.now();
-                        if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                        state.uptimeInterval = setInterval(() => {
-                            const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-                            const m = Math.floor(diff / 60).toString().padStart(2, '0');
-                            const s = (diff % 60).toString().padStart(2, '0');
-                            const el = document.getElementById('val-uptime');
-                            if(el) el.innerText = `${m}:${s}`;
-                        }, 1000);
-
-                        console.log('✅ Android native service started');
-                        return; // Exit here - Android handles location
-                    } catch (error) {
-                        console.error('Error starting Android service:', error);
-                    }
-                }
-
-                // 2. WEB BROWSER FALLBACK
-                if (!navigator.geolocation) {
-                    alert("Geolocation not supported");
-                    return;
-                }
+                document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                 
-                try {
-                    state.isBroadcasting = true;
-                    app.updateBroadcastUI(true);
-
-                    if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
-                    state.currentSmoothedSpeed = 0;
-
-                    state.tripStartTime = Date.now();
-                    if (state.uptimeInterval) clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = setInterval(() => {
-                        const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
-                        const m = Math.floor(diff / 60).toString().padStart(2, '0');
-                        const s = (diff % 60).toString().padStart(2, '0');
-                        const el = document.getElementById('val-uptime');
-                        if(el) el.innerText = `${m}:${s}`;
-                    }, 1000);
-
-                    app.requestWakeLock();
-
-                    const options = {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    };
-
-                    state.watchId = navigator.geolocation.watchPosition(
-                        (position) => {
-                            app.processLocation(position.coords);
-                        },
-                        (error) => { console.error("GPS Error", error); },
-                        options
-                    );
-                } catch (e) {
-                    console.error("Start Broadcast Error:", e);
-                    alert("Error starting trip. Please refresh.");
-                    state.isBroadcasting = false;
-                    app.updateBroadcastUI(false);
-                }
-            },
-
-            // Unified location processor for both Web and Android sources
-            processLocation: (coords) => {
-                if (!state.isBroadcasting) return;
-
-                const { latitude, longitude, accuracy, speed } = coords;
-                const now = Date.now();
-
-                // --- DYNAMIC SPEED LOGIC ---
-                let rawSpeedKmh = (speed || 0) * 3.6;
-                let alpha = 0.15; 
-                if (state.currentSmoothedSpeed > rawSpeedKmh) alpha = 0.6; 
-                state.currentSmoothedSpeed = (state.currentSmoothedSpeed * (1 - alpha)) + (rawSpeedKmh * alpha);
-
-                if (rawSpeedKmh < 0.2 && state.currentSmoothedSpeed < 2.0) {
-                    state.currentSmoothedSpeed = 0;
+                if (username) {
+                    document.getElementById('driver-display-username-container').classList.remove('hidden');
+                    document.getElementById('driver-display-username').innerText = username;
                 }
 
-                const displaySpeed = state.currentSmoothedSpeed.toFixed(1);
+                document.getElementById('selection-loader').classList.add('hidden');
+                app.switchView('view-driver-dashboard');
+                app.initDriverMap();
+            }, 1000);
+        },
+
+        assignNextId: (prefix) => {
+            const activeIds = Object.keys(state.activeBuses)
+                .filter(id => id.startsWith(prefix))
+                .map(id => parseInt(id.replace(prefix, '')))
+                .filter(num => !isNaN(num)).sort((a, b) => a - b);
+            
+            let nextNum = 1;
+            for (const num of activeIds) {
+                if (num === nextNum) nextNum++;
+                else if (num > nextNum) break;
+            }
+            return prefix + nextNum;
+        },
+
+        calculateDistance: (lat1, lon1, lat2, lon2) => {
+            const R = 6371e3; 
+            const φ1 = lat1 * Math.PI/180;
+            const φ2 = lat2 * Math.PI/180;
+            const Δφ = (lat2-lat1) * Math.PI/180;
+            const Δλ = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        },
+
+        // --- Driver Map ---
+        initDriverMap: () => {
+            if (state.driverMap) state.driverMap.remove();
+            
+            const COORDS = {
+                'UIU': CONFIG.uiuCoords, 
+                'Kuril': [23.822339, 90.420163],
+                'Notun Bazar': [23.797881, 90.424652],
+                'Aftab Nagar': [23.767860, 90.425833],
+                'Transport': CONFIG.uiuCoords 
+            };
+
+            let start = (state.driverDirection === 'From UIU') ? COORDS['UIU'] : (COORDS[state.driverDestination] || COORDS['Transport']);
+            
+            setTimeout(() => {
+                if (!document.getElementById('driver-map')) return; 
+                state.driverMap = L.map('driver-map', { zoomControl: false }).setView(start, 13);
                 
-                document.getElementById('val-speed').innerHTML = `${displaySpeed}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
-                document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
-
-                if (state.driverMarker) {
-                    state.driverMarker.setLatLng([latitude, longitude]);
-                    if (state.driverMap) state.driverMap.panTo([latitude, longitude], { animate: true });
-                }
-
-                // Distance Calculation
-                if (state.lastLat && state.lastLng) {
-                    const dist = app.calculateDistance(state.lastLat, state.lastLng, latitude, longitude);
-                    if (dist > 0) {
-                        state.sessionDistance += dist;
-                    }
-                }
-                state.lastLat = latitude;
-                state.lastLng = longitude;
-
-                if (now - state.lastSentTime < 200) return;
-                state.lastSentTime = now;
-
-                if (state.client && state.isConnected) {
-                    const payload = JSON.stringify({
-                        id: state.driverId,
-                        uid: CONFIG.mqtt.clientId,
-                        route: state.driverRoute,
-                        username: state.driverUsername,
-                        lat: latitude,
-                        lng: longitude,
-                        acc: accuracy,
-                        speed: displaySpeed,
-                        ts: now
-                    });
-                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                }
-            },
-
-            // Called by the Global Window Function from Android
-            handleNativeLocationUpdate: (lat, lng, acc, speed) => {
-                console.log('📍 Location from Android:', { lat, lng, acc, speed });
-                // Pass raw data to the unified processor
-                app.processLocation({
-                    latitude: lat,
-                    longitude: lng,
-                    accuracy: acc,
-                    speed: speed 
-                });
-            },
-
-            stopBroadcast: async () => {
-                // 1. Stop Android Native Service
-                if (typeof Android !== 'undefined') {
-                    try {
-                        Android.stopNativeBroadcast();
-                        console.log('✅ Android native service stopped');
-                    } catch (error) {
-                        console.error('Error stopping Android service:', error);
-                    }
-                }
-
-                state.isBroadcasting = false;
-                app.updateBroadcastUI(false);
-                app.releaseWakeLock();
-                
-                // FORCE KILL GHOSTS
-                if (state.driverId && state.activeBuses[state.driverId]) {
-                    delete state.activeBuses[state.driverId];
-                }
-                
-                if (state.watchId) {
-                    navigator.geolocation.clearWatch(state.watchId);
-                    state.watchId = null;
-                }
-
-                if (state.uptimeInterval) {
-                    clearInterval(state.uptimeInterval);
-                    state.uptimeInterval = null;
-                }
-                const uptimeEl = document.getElementById('val-uptime');
-                if(uptimeEl) uptimeEl.innerText = "00:00";
-
-                if (state.client && state.isConnected) {
-                      state.client.publish(CONFIG.topics.location, JSON.stringify({
-                        id: state.driverId,
-                        status: 'offline'
-                      }), { retain: true });
-                }
-
-                app.showSummary();
-            },
-
-            showSummary: () => {
-                const modal = document.getElementById('trip-summary-modal');
-                modal.classList.remove('opacity-0', 'pointer-events-none', 'z-[-1]');
-                modal.classList.add('z-50');
-                modal.style.opacity = '1';
-                modal.style.pointerEvents = 'auto';
-
-                if (window.confetti) {
-                    confetti({
-                        particleCount: 150,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
-                }
-            },
-
-            closeSummary: () => {
-                if (window.confetti) {
-                    try { window.confetti.reset(); } catch(e) {}
-                }
-                const modal = document.getElementById('trip-summary-modal');
-                modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
-                modal.classList.remove('z-50');
-                modal.style.opacity = '0';
-                app.goHome(); 
-            },
-
-            updateBroadcastUI: (isActive) => {
-                const btn = document.getElementById('broadcast-btn');
-                const glow = document.getElementById('broadcast-glow');
-                const title = document.getElementById('broadcast-status-title');
-                const icon = document.getElementById('broadcast-icon');
-
-                if (isActive) {
-                    btn.innerText = "STOP TRIP";
-                    btn.classList.remove('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
-                    btn.classList.add('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
-
-                    glow.style.opacity = '1';
-                    glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
-                    title.innerText = "Broadcasting";
-                    icon.classList.remove('text-slate-300', 'dark:text-slate-600');
-                    icon.classList.add('text-green-500');
-                } else {
-                    btn.innerText = "START TRIP";
-                    // Restore gradients
-                    btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
-                    btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
-                    
-                    glow.style.opacity = '0';
-                    title.innerText = "Ready?";
-                    icon.classList.add('text-slate-300', 'dark:text-slate-600');
-                    icon.classList.remove('text-green-500');
-                }
-            },
-
-            // --- Student Map ---
-            initMap: () => {
-                setTimeout(() => {
-                    if (!state.map) {
-                        state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
-                        L.control.zoom({ position: 'bottomright' }).addTo(state.map);
-                        
-                        const jumpBtn = L.control({position: 'bottomright'});
-                        jumpBtn.onAdd = function(map) {
-                            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-                            // Use same structure as default leaflet controls but customized
-                            const a = L.DomUtil.create('a', '', div);
-                            a.href = '#';
-                            a.title = 'Jump to UIU';
-                            a.innerHTML = '<i class="fas fa-university"></i>';
-                            a.onclick = (e) => {
-                                e.preventDefault();
-                                state.map.setView(CONFIG.uiuCoords, 16);
-                            }
-                            return div;
-                        };
-                        jumpBtn.addTo(state.map);
-
-                        const uiuIcon = L.divIcon({
-                             className: '',
-                             html: '<div class="text-2xl">🎓</div>',
-                             iconSize: [30, 30]
-                        });
-                        L.marker(CONFIG.uiuCoords, {icon: uiuIcon}).addTo(state.map).bindPopup("UIU Campus");
-                        app.updateMapStyle();
-                    }
-                    requestAnimationFrame(() => { state.map.invalidateSize(); });
-                }, 100);
-            },
-
-            createBusIcon: (id, colorClass) => {
-                 return L.divIcon({
-                    className: 'custom-bus-pin', 
-                    html: `
-                        <div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">
-                            ${id}
-                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div>
-                        </div>
-                    `,
-                    iconSize: [40, 48], 
-                    iconAnchor: [20, 48], 
-                    popupAnchor: [0, -48]
-                });
-            },
-
-            updateMapStyle: () => {
-                if (!state.map) return;
-                state.map.eachLayer((layer) => {
-                    if (layer instanceof L.TileLayer) state.map.removeLayer(layer);
-                });
                 const isDark = document.documentElement.classList.contains('dark');
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     attribution: '© OSM',
                     className: isDark ? 'dark-map-tiles' : ''
-                }).addTo(state.map);
-            },
+                }).addTo(state.driverMap);
 
-            updateBusMarker: async (data) => {
-                const { id, lat, lng, acc } = data;
-
-                let colorClass = BUS_STYLES.default;
-                
-                if (id.startsWith('K')) colorClass = BUS_STYLES['K']; 
-                else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; 
-                else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; 
-                else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
-                else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
-
-                if (state.markers[id]) {
-                    state.markers[id].setLatLng([lat, lng]);
-                    const icon = app.createBusIcon(id, colorClass); 
-                    state.markers[id].setIcon(icon);
-                } else {
-                    const icon = app.createBusIcon(id, colorClass);
-                    const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
-                    
-                    const popupContent = document.createElement('div');
-                    popupContent.innerHTML = `
-                        <div class="text-center p-2">
-                            <b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b>
-                            <p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p>
-                            ${data.username ? `<p class="text-xs font-bold text-slate-600 dark:text-slate-300 mt-1">👤 ${app.escapeHtml(data.username)}</p>` : ''}
-                        </div>
-                    `;
-                    marker.bindPopup(popupContent);
-                    state.markers[id] = marker;
-                    app.updateBusCount();
-                }
-
-                if (acc && acc > 10) {
-                    if (state.circles[id]) {
-                        state.circles[id].setLatLng([lat, lng]);
-                        state.circles[id].setRadius(acc);
-                    } else {
-                        state.circles[id] = L.circle([lat, lng], {
-                            radius: acc,
-                            color: 'transparent',
-                            fillColor: '#3b82f6',
-                            fillOpacity: 0.2
-                        }).addTo(state.map);
-                    }
-                }
-            },
-
-            removeBusMarker: (id) => {
-                if (state.markers[id]) {
-                    state.map.removeLayer(state.markers[id]);
-                    delete state.markers[id];
-                }
-                if (state.circles[id]) {
-                    state.map.removeLayer(state.circles[id]);
-                    delete state.circles[id];
-                }
-                app.updateBusCount();
-            },
-
-            updateBusCount: () => {
-                document.getElementById('count-buses').innerText = Object.keys(state.markers).length;
-            },
-
-            updateBusList: () => {
-                const list = document.getElementById('bus-list');
-                const buses = Object.values(state.activeBuses);
-                if (buses.length === 0) {
-                    if (!list.querySelector('.fa-satellite-dish')) {
-                        list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
-                    }
-                    return;
-                }
-                
-                const loader = list.querySelector('.fa-satellite-dish');
-                if (loader) loader.parentElement.remove();
-
-                buses.forEach(bus => {
-                    let item = document.getElementById(`bus-${bus.id}`);
-                    if (!item) {
-                        item = document.createElement('div');
-                        item.id = `bus-${bus.id}`;
-                        // Updated to softer colors/glass effect
-                        item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
-                        item.onclick = () => app.focusBus(bus.id);
-                        
-                        let bgClass = "bg-orange-500";
-                        if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
-                        if (bus.id.startsWith('N')) bgClass = "bg-green-500";
-                        if (bus.id.startsWith('A')) bgClass = "bg-purple-500";
-
-                        item.innerHTML = `
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-full ${bgClass} text-white flex items-center justify-center font-bold">
-                                    ${app.escapeHtml(bus.id)}
-                                </div>
-                                <div>
-                                    <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
-                                        <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed || 0).toFixed(1)}</span> km/h</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 truncate max-w-[80px]">${app.escapeHtml(bus.username || '')}</span>
-                                <i class="fas fa-chevron-right text-slate-300"></i>
-                            </div>
-                        `;
-                        list.appendChild(item);
-                    } else {
-                        const speedEl = document.getElementById(`speed-${bus.id}`);
-                        if (speedEl) {
-                            speedEl.innerText = Number(bus.speed || 0).toFixed(1);
-                        }
-                    }
+                const icon = L.divIcon({ 
+                    className: '', 
+                    html: '<div class="bg-blue-600 w-6 h-6 rounded-full border-2 border-white shadow-lg flex items-center justify-center relative"><div class="w-2 h-2 bg-white rounded-full"></div></div>', 
+                    iconSize: [24, 24] 
                 });
+                state.driverMarker = L.marker(start, {icon: icon}).addTo(state.driverMap);
+            }, 200);
+        },
 
-                Array.from(list.children).forEach(child => {
-                    if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
-                        child.remove();
-                    }
-                });
-            },
+        // --- BROADCASTING (Web vs Android) ---
+        toggleBroadcast: () => {
+            if (state.isBroadcasting) app.stopBroadcast();
+            else app.startBroadcast();
+        },
 
-            focusBus: (id) => {
-                if (state.markers[id]) {
-                    state.map.setView(state.markers[id].getLatLng(), 16);
-                    state.markers[id].openPopup();
-                    app.toggleBottomSheet();
-                }
-            },
+        startBroadcast: () => {
+            // 1. Update State & UI First
+            state.isBroadcasting = true;
+            app.updateBroadcastUI(true);
+            app.requestWakeLock();
 
-            toggleBottomSheet: () => {
-                const sheet = document.getElementById('bottom-sheet');
-                if (sheet.classList.contains('translate-y-0')) {
-                    sheet.classList.remove('translate-y-0');
-                    sheet.classList.add('translate-y-[80%]');
-                } else {
-                    sheet.classList.remove('translate-y-[80%]');
-                    sheet.classList.add('translate-y-0');
+            // Start Uptime Timer (Visual only)
+            state.tripStartTime = Date.now();
+            if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+            state.uptimeInterval = setInterval(() => {
+                const diff = Math.floor((Date.now() - state.tripStartTime) / 1000);
+                const m = Math.floor(diff / 60).toString().padStart(2, '0');
+                const s = (diff % 60).toString().padStart(2, '0');
+                const el = document.getElementById('val-uptime');
+                if(el) el.innerText = `${m}:${s}`;
+            }, 1000);
+
+            // 2. CHECK FOR ANDROID NATIVE INTERFACE
+            if (typeof Android !== 'undefined') {
+                console.log("🚀 Starting Android Native Service...");
+                try {
+                    Android.startNativeBroadcast(
+                        String(state.driverId || 'Unknown'),
+                        String(state.driverRoute || 'Unknown'),
+                        String(state.driverUsername || '')
+                    );
+                    // IMPORTANT: We do NOT return here. We let the UI stay active.
+                    // We do NOT start navigator.geolocation to avoid conflict.
+                    return; 
+                } catch (error) {
+                    console.error('Error starting Android service:', error);
                 }
             }
-        };
 
-        window.app = app;
-        window.state = state;
-        window.addEventListener('DOMContentLoaded', app.init);
+            // 3. BROWSER FALLBACK (If not in Android App)
+            if (navigator.geolocation) {
+                const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+                state.watchId = navigator.geolocation.watchPosition(
+                    (pos) => app.processLocation(pos.coords),
+                    (err) => console.error("GPS Error", err),
+                    options
+                );
+            } else {
+                alert("Geolocation not supported");
+                app.stopBroadcast();
+            }
+        },
+
+        // Unified Location Processor
+        processLocation: (coords) => {
+            if (!state.isBroadcasting) return;
+
+            const { latitude, longitude, accuracy, speed } = coords;
+            
+            // Update Dashboard UI
+            let rawSpeedKmh = (speed || 0) * 3.6;
+            if (rawSpeedKmh < 0) rawSpeedKmh = 0;
+            document.getElementById('val-speed').innerHTML = `${rawSpeedKmh.toFixed(1)}<span class="text-[10px] ml-0.5 text-slate-400 font-sans">km/h</span>`;
+            document.getElementById('val-accuracy').innerText = Math.round(accuracy) + 'm';
+
+            // Map Update
+            if (state.driverMarker) {
+                state.driverMarker.setLatLng([latitude, longitude]);
+                if(state.driverMap) state.driverMap.panTo([latitude, longitude]);
+            }
+
+            // MQTT Publish (Throttled to 1 sec)
+            const now = Date.now();
+            if (now - state.lastSentTime < 1000) return; 
+            state.lastSentTime = now;
+
+            if (state.client && state.isConnected) {
+                const payload = JSON.stringify({
+                    id: state.driverId,
+                    route: state.driverRoute,
+                    username: state.driverUsername,
+                    lat: latitude,
+                    lng: longitude,
+                    acc: accuracy,
+                    speed: rawSpeedKmh.toFixed(1),
+                    ts: now
+                });
+                state.client.publish(CONFIG.topics.location, payload, { retain: true });
+            }
+        },
+
+        // Called by Android Java
+        handleNativeLocationUpdate: (lat, lng, acc, speed) => {
+            // Pass data to common processor
+            app.processLocation({
+                latitude: lat,
+                longitude: lng,
+                accuracy: acc,
+                speed: speed 
+            });
+        },
+
+        stopBroadcast: async () => {
+            if (typeof Android !== 'undefined') {
+                try { Android.stopNativeBroadcast(); } catch (e) {}
+            }
+
+            state.isBroadcasting = false;
+            app.updateBroadcastUI(false);
+            app.releaseWakeLock();
+            
+            if (state.watchId) {
+                navigator.geolocation.clearWatch(state.watchId);
+                state.watchId = null;
+            }
+            if (state.uptimeInterval) clearInterval(state.uptimeInterval);
+
+            // Send Offline Status
+            if (state.client && state.isConnected) {
+                  state.client.publish(CONFIG.topics.location, JSON.stringify({
+                    id: state.driverId,
+                    status: 'offline'
+                  }), { retain: true });
+            }
+            app.showSummary();
+        },
+
+        showSummary: () => {
+            const modal = document.getElementById('trip-summary-modal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('z-50');
+            modal.style.opacity = '1';
+            modal.style.pointerEvents = 'auto';
+            if (window.confetti) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        },
+
+        closeSummary: () => {
+            const modal = document.getElementById('trip-summary-modal');
+            modal.style.opacity = '0';
+            setTimeout(() => { modal.classList.add('pointer-events-none'); }, 300);
+            app.goHome(); 
+        },
+
+        updateBroadcastUI: (isActive) => {
+            const btn = document.getElementById('broadcast-btn');
+            const glow = document.getElementById('broadcast-glow');
+            const title = document.getElementById('broadcast-status-title');
+            const icon = document.getElementById('broadcast-icon');
+
+            if (isActive) {
+                btn.innerText = "STOP TRIP";
+                btn.classList.add('from-red-500', 'to-red-600', 'animate-pulse');
+                glow.style.opacity = '1';
+                title.innerText = "Broadcasting";
+                icon.classList.add('text-green-500');
+            } else {
+                btn.innerText = "START TRIP";
+                btn.classList.remove('from-red-500', 'to-red-600', 'animate-pulse');
+                glow.style.opacity = '0';
+                title.innerText = "Ready?";
+                icon.classList.remove('text-green-500');
+            }
+        },
+
+        // --- Student Map ---
+        initMap: () => {
+            setTimeout(() => {
+                if (!state.map) {
+                    state.map = L.map('map', { zoomControl: false }).setView(CONFIG.uiuCoords, 14);
+                    L.control.zoom({ position: 'bottomright' }).addTo(state.map);
+                    
+                    const isDark = document.documentElement.classList.contains('dark');
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OSM',
+                        className: isDark ? 'dark-map-tiles' : ''
+                    }).addTo(state.map);
+
+                    const uiuIcon = L.divIcon({ className: '', html: '<div class="text-2xl">🎓</div>', iconSize: [30, 30] });
+                    L.marker(CONFIG.uiuCoords, {icon: uiuIcon}).addTo(state.map);
+                }
+                state.map.invalidateSize();
+            }, 100);
+        },
+
+        updateMapStyle: () => {
+            if (!state.map) return;
+            state.map.eachLayer((layer) => { if (layer instanceof L.TileLayer) state.map.removeLayer(layer); });
+            const isDark = document.documentElement.classList.contains('dark');
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OSM',
+                className: isDark ? 'dark-map-tiles' : ''
+            }).addTo(state.map);
+        },
+
+        createBusIcon: (id, colorClass) => {
+             return L.divIcon({
+                className: 'custom-bus-pin', 
+                html: `<div class="${colorClass} w-10 h-10 rounded-full flex items-center justify-center text-white font-bold border-2 border-white shadow-lg relative z-10">${id}<div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 ${colorClass} rotate-45 z-0"></div></div>`,
+                iconSize: [40, 48], iconAnchor: [20, 48], popupAnchor: [0, -48]
+            });
+        },
+
+        updateBusMarker: async (data) => {
+            const { id, lat, lng, acc } = data;
+            let colorClass = BUS_STYLES.default;
+            if (id.startsWith('K')) colorClass = BUS_STYLES['K']; 
+            else if (id.startsWith('N')) colorClass = BUS_STYLES['N']; 
+            else if (id.startsWith('A')) colorClass = BUS_STYLES['A']; 
+            else if (data.route && data.route.includes('To UIU')) colorClass = BUS_STYLES.to_uiu;
+            else if (data.route && data.route.includes('From UIU')) colorClass = BUS_STYLES.from_uiu;
+
+            if (state.markers[id]) {
+                state.markers[id].setLatLng([lat, lng]);
+            } else {
+                const icon = app.createBusIcon(id, colorClass);
+                const marker = L.marker([lat, lng], { icon: icon }).addTo(state.map);
+                marker.bindPopup(`<div class="text-center p-2"><b class="text-brand-500 block mb-1">Bus ${app.escapeHtml(id)}</b><p class="text-xs text-slate-500">${app.escapeHtml(data.route)}</p></div>`);
+                state.markers[id] = marker;
+                app.updateBusCount();
+            }
+        },
+
+        removeBusMarker: (id) => {
+            if (state.markers[id]) {
+                state.map.removeLayer(state.markers[id]);
+                delete state.markers[id];
+                app.updateBusCount();
+            }
+        },
+
+        updateBusCount: () => { document.getElementById('count-buses').innerText = Object.keys(state.markers).length; },
         
-        if (typeof window.app === 'undefined') window.app = {};
-        window.app.handleAndroidLocation = window.handleAndroidLocation;
-    </script>
+        updateBusList: () => {
+            const list = document.getElementById('bus-list');
+            const buses = Object.values(state.activeBuses);
+            
+            // 1. Show Loading or Empty State
+            if (buses.length === 0) {
+                if (!list.querySelector('.fa-satellite-dish')) {
+                    list.innerHTML = `<div class="text-center py-8 text-slate-400 text-sm"><i class="fas fa-satellite-dish animate-pulse mb-2 block text-2xl"></i>Searching for buses...</div>`;
+                }
+                return;
+            }
+            
+            // Remove loader if exists
+            const loader = list.querySelector('.fa-satellite-dish');
+            if (loader) loader.parentElement.remove();
+
+            // 2. Add or Update Bus Items
+            buses.forEach(bus => {
+                let item = document.getElementById(`bus-${bus.id}`);
+                
+                // Create Item if not exists
+                if (!item) {
+                    item = document.createElement('div');
+                    item.id = `bus-${bus.id}`;
+                    item.className = "flex items-center justify-between p-4 mb-2 bg-slate-50/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-100 dark:border-slate-700/50 rounded-2xl cursor-pointer hover:bg-white dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md";
+                    item.onclick = () => app.focusBus(bus.id);
+                    
+                    let bgClass = "bg-orange-500";
+                    if (bus.id.startsWith('K')) bgClass = "bg-blue-500";
+                    else if (bus.id.startsWith('N')) bgClass = "bg-green-500";
+                    else if (bus.id.startsWith('A')) bgClass = "bg-purple-500";
+                    else if (bus.route && bus.route.includes('To UIU')) bgClass = "bg-green-600";
+                    else if (bus.route && bus.route.includes('From UIU')) bgClass = "bg-red-600";
+
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full ${bgClass} text-white flex items-center justify-center font-bold">
+                                ${app.escapeHtml(bus.id)}
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm text-slate-700 dark:text-slate-200">${app.escapeHtml(bus.route || 'Unknown')}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-[10px] text-green-500 transition-opacity duration-200">Active Now</p>
+                                    <p class="text-[10px] text-slate-400">| <span id="speed-${bus.id}">${Number(bus.speed || 0).toFixed(1)}</span> km/h</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 truncate max-w-[80px]">${app.escapeHtml(bus.username || '')}</span>
+                            <i class="fas fa-chevron-right text-slate-300"></i>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                } else {
+                    // Update Speed dynamically without re-rendering HTML
+                    const speedEl = document.getElementById(`speed-${bus.id}`);
+                    if (speedEl) {
+                        speedEl.innerText = Number(bus.speed || 0).toFixed(1);
+                    }
+                }
+            });
+
+            // 3. Remove Stale Items (Ghosts)
+            Array.from(list.children).forEach(child => {
+                if (child.id.startsWith('bus-') && !state.activeBuses[child.id.replace('bus-', '')]) {
+                    child.remove();
+                }
+            });
+        },
+
+        focusBus: (id) => {
+            if (state.markers[id]) {
+                state.map.setView(state.markers[id].getLatLng(), 16);
+                state.markers[id].openPopup();
+                app.toggleBottomSheet();
+            }
+        },
+
+        toggleBottomSheet: () => {
+            const sheet = document.getElementById('bottom-sheet');
+            if (sheet.classList.contains('translate-y-0')) {
+                sheet.classList.remove('translate-y-0');
+                sheet.classList.add('translate-y-[80%]');
+            } else {
+                sheet.classList.remove('translate-y-[80%]');
+                sheet.classList.add('translate-y-0');
+            }
+        }
+    };
+
+    window.app = app;
+    window.state = state;
+    window.addEventListener('DOMContentLoaded', app.init);
+    window.app.handleAndroidLocation = window.handleAndroidLocation;
+</script>
 </body>
 </html>
