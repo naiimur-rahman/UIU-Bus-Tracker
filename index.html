@@ -141,14 +141,14 @@
     </style>
 </head>
 <div id="welcome-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500">
-    <div class="glass w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-float" style="animation-duration: 5s;">
+    <div class="bg-orange-50 dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-float" style="animation-duration: 5s;">
         
         <div class="p-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/50 dark:bg-slate-800/50">
             <div class="flex items-center gap-3">
                 <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white">
                     <i class="fas fa-bullhorn text-sm"></i>
                 </div>
-                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Notice Board</h3>
+                <h3 class="font-bold text-lg text-slate-800 dark:text-white">Shuttle Tracker</h3>
             </div>
             <button onclick="closeWelcomeModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors">
                 <i class="fas fa-times text-slate-500"></i>
@@ -159,7 +159,7 @@
             <p class="font-bold text-brand-600 dark:text-brand-400">Welcome to UIU Bus Tracker v2.0!</p>
             
             <p>
-                This application is designed to help UIU students and transport staff coordinate bus locations in real-time.
+                This website is designed to help the UIU community find and track buses easily in real-time.❤️
             </p>
 
             <hr class="border-slate-200 dark:border-slate-700">
@@ -167,18 +167,17 @@
             <h4 class="font-bold text-slate-800 dark:text-white">✨ New Features:</h4>
             <ul class="list-disc pl-5 space-y-1">
                 <li>Real-time GPS Tracking with high accuracy.</li>
-                <li>Live Speedometer and Distance calculation.</li>
-                <li>Dark Mode support for night trips.</li>
+                <li>Live Speedometer and Dark Mode support.</li>
                 <li>"Wake Lock" to keep screen on for drivers.</li>
             </ul>
 
             <h4 class="font-bold text-slate-800 dark:text-white mt-4">⚠️ Important Note:</h4>
             <p>
-                Please ensure you have <strong>Location Services (GPS)</strong> enabled. If you are a driver/captain, do not close the browser tab while driving, or the broadcast will stop.
+                Do not close the browser tab while driving, or the broadcast will stop. Please ensure you have <strong>Location Services (GPS)</strong> enabled. 
             </p>
             
             <p class="italic text-xs opacity-70 mt-4">
-                "Development is a journey, not a destination. Thank you for being part of our testing phase." <br>
+                "Development is a journey, not a destination.<br> Thank you for being part of our testing phase." <br>
                 - Naimur Rahman
             </p>
             
@@ -187,7 +186,7 @@
 
         <div class="p-4 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
             <button onclick="closeWelcomeModal()" class="w-full py-3.5 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all">
-                I Understand, Let's Go!
+                Ok!
             </button>
         </div>
     </div>
