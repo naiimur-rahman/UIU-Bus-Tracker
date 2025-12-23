@@ -270,25 +270,70 @@
             <h2 class="text-2xl font-bold">Select Route</h2>
         </div>
 
-        <div id="route-sub-select" class="hidden absolute inset-0 bg-white/95 dark:bg-slate-900/95 z-20 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
-            <h3 class="text-2xl font-bold mb-6">Which Direction?</h3>
+        <div id="route-sub-select" class="hidden fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm transition-all duration-300">
+    
+    <div class="w-full max-w-[380px] bg-white dark:bg-slate-900 rounded-t-[30px] sm:rounded-[30px] shadow-[0_-10px_40px_rgba(0,0,0,0.2)] overflow-hidden transform transition-all">
+        
+        <div class="w-full flex justify-center pt-3 pb-1">
+            <div class="w-12 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+        </div>
 
-            <div class="w-full max-w-xs mb-4 text-left">
-                <label class="block text-xs font-bold text-slate-500 uppercase mb-1 ml-1">Your Name</label>
-                <input type="text" id="driver-username-input" placeholder="Captain (Optional)" maxlength="15"
-                       class="w-full glass bg-white/50 dark:bg-slate-800/50 p-4 rounded-xl outline-none focus:ring-2 ring-brand-500 transition-all font-bold text-slate-700 dark:text-white placeholder:font-normal">
+        <div class="p-5 pt-2">
+            
+            <div class="flex justify-between items-center mb-5">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-800 dark:text-white tracking-tight">Let's Go</h2>
+                    <p class="text-xs font-semibold text-slate-400">Select your direction</p>
+                </div>
+                <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="bg-slate-100 dark:bg-slate-800 p-1.5 rounded-full text-slate-400 hover:text-red-500 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
             </div>
 
-            <button onclick="app.confirmRoute('To UIU')" class="w-full max-w-xs glass p-6 rounded-xl mb-4 hover:bg-brand-50 transition-colors border-l-4 border-l-green-500 text-left">
-                <div class="font-bold text-lg">Going to Campus</div>
-                <div class="text-xs text-slate-500">From Destination &rarr; UIU</div>
-            </button>
-            <button onclick="app.confirmRoute('From UIU')" class="w-full max-w-xs glass p-6 rounded-xl hover:bg-brand-50 transition-colors border-l-4 border-l-blue-500 text-left">
-                <div class="font-bold text-lg">Leaving Campus</div>
-                <div class="text-xs text-slate-500">UIU &rarr; To Destination</div>
-            </button>
-            <button onclick="document.getElementById('route-sub-select').classList.add('hidden')" class="mt-8 text-slate-400 hover:text-slate-600">Cancel</button>
+            <div class="mb-5">
+                <div class="relative flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-1.5 focus-within:ring-2 ring-indigo-500 transition-all">
+                    <div class="p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm text-slate-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <input type="text" id="driver-username-input" placeholder="Captain Name (Optional)" maxlength="15"
+                        class="w-full bg-transparent border-none pl-3 text-base font-semibold text-slate-800 dark:text-white placeholder:text-slate-400 focus:ring-0 outline-none">
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                
+                <button onclick="app.confirmRoute('From UIU')" class="group w-full bg-rose-500 hover:bg-rose-600 text-white rounded-2xl p-2 pr-4 transition-all active:scale-95 shadow-lg shadow-rose-200/50 dark:shadow-none flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 h-12 w-12 rounded-xl flex items-center justify-center backdrop-blur-md">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base font-extrabold">FROM UIU</div>
+                            <div class="text-[10px] font-bold text-rose-100 uppercase tracking-wider opacity-90">Leaving Campus</div>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-rose-100 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
+                <button onclick="app.confirmRoute('To UIU')" class="group w-full bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl p-2 pr-4 transition-all active:scale-95 shadow-lg shadow-emerald-200/50 dark:shadow-none flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 h-12 w-12 rounded-xl flex items-center justify-center backdrop-blur-md">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                        </div>
+                        <div class="text-left">
+                            <div class="text-base font-extrabold">TO UIU</div>
+                            <div class="text-[10px] font-bold text-emerald-100 uppercase tracking-wider opacity-90">Going to Campus</div>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-emerald-100 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+
+            </div>
+            
+            <div class="h-4"></div>
         </div>
+    </div>
+</div>
 
         <div class="grid grid-cols-2 gap-4 overflow-y-auto pb-4">
             <button onclick="app.selectRoute('Kuril', 'K')" class="glass p-6 rounded-xl flex flex-col items-center justify-center hover:bg-brand-50 dark:hover:bg-slate-800 transition-all">
