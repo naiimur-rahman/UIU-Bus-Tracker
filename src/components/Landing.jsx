@@ -9,7 +9,7 @@ const Landing = ({ onStudent, onDriver }) => {
             <i className="fas fa-bus text-4xl text-white"></i>
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-1">
-            <span className="text-slate-800 dark:text-white">UIU</span>
+            <span className="text-slate-800 dark:text-white">UIU </span>
             <span className="text-brand-500">Bus Tracker</span>
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
