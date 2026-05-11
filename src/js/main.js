@@ -307,6 +307,8 @@ const app = {
         const glow = document.getElementById('broadcast-glow');
         const title = document.getElementById('broadcast-status-title');
         const icon = document.getElementById('broadcast-icon');
+        const controls = document.getElementById('driver-trip-controls');
+
         if (isActive) {
             btn.innerText = "STOP TRIP";
             btn.classList.remove('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
@@ -316,6 +318,7 @@ const app = {
             title.innerText = "Broadcasting";
             icon.classList.remove('text-slate-300', 'dark:text-slate-600');
             icon.classList.add('text-green-500');
+            if (controls) controls.classList.add('active');
         } else {
             btn.innerText = "START TRIP";
             btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
@@ -324,6 +327,11 @@ const app = {
             title.innerText = "Ready?";
             icon.classList.add('text-slate-300', 'dark:text-slate-600');
             icon.classList.remove('text-green-500');
+            if (controls) controls.classList.remove('active');
+            
+            // Reset visual states
+            app.setStatus('cap', 'seats');
+            app.setStatus('msg', null);
         }
     },
     showSummary: () => {
@@ -344,8 +352,29 @@ const app = {
     },
     toggleBottomSheet: () => ui.toggleBottomSheet(),
     setStatus: (type, value) => {
-        if (type === 'cap') state.driverCap = value;
-        if (type === 'msg') state.driverMsg = value;
+        if (type === 'cap') {
+            state.driverCap = value;
+            ['cap-seats', 'cap-mod', 'cap-full'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('status-btn-active');
+            });
+            const activeId = `cap-${value}`;
+            const activeEl = document.getElementById(activeId);
+            if (activeEl) activeEl.classList.add('status-btn-active');
+        }
+        if (type === 'msg') {
+            state.driverMsg = value;
+            ['msg-traffic', 'msg-breakdown', 'msg-fast', 'msg-clear'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('status-btn-active');
+            });
+            const activeId = value === 'Traffic Jam' ? 'msg-traffic' : 
+                             value === 'Breakdown' ? 'msg-breakdown' :
+                             value === 'Moving Fast' ? 'msg-fast' : 'msg-clear';
+            const activeEl = document.getElementById(activeId);
+            if (activeEl) activeEl.classList.add('status-btn-active');
+        }
+        
         // Trigger immediate MQTT update if broadcasting
         if (state.isBroadcasting && state.lastLat) {
             const payload = JSON.stringify({

@@ -91,3 +91,25 @@
 .hide-welcome #welcome-modal {
     display: none !important;
 }
+
+.status-btn-active {
+    border-color: currentColor !important;
+    background-color: white !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: scale(1.05);
+}
+
+.driver-trip-controls {
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.driver-trip-controls.active {
+    max-height: 500px;
+    opacity: 1;
+    pointer-events: auto;
+    margin-top: 1rem;
+}

@@ -298,42 +298,45 @@
                 <button id="broadcast-btn" onclick="app.toggleBroadcast()" class="w-full bg-gradient-to-b from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white font-bold py-5 rounded-2xl shadow-[0_10px_20px_-5px_rgba(249,115,22,0.4),0_4px_6px_-2px_rgba(0,0,0,0.1),inset_0_2px_0_rgba(255,255,255,0.2)] active:shadow-[inset_0_4px_8px_rgba(0,0,0,0.2)] active:translate-y-[2px] transition-all duration-150 mb-4 relative z-50 uppercase tracking-widest text-sm border-b-4 border-brand-900/20 active:border-b-0">
                     START TRIP
                 </button>
-                <!-- Bus Status -->
-                <div class="glass p-4 rounded-2xl mb-4">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <i class="fas fa-users text-brand-500"></i> Bus Capacity
-                    </h3>
-                    <div class="grid grid-cols-3 gap-2">
-                        <button onclick="app.setStatus('cap', 'seats')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-green-50 text-green-600 font-bold text-xs transition-all flex flex-col items-center gap-1">
-                            <i class="fas fa-chair"></i> SEATS
-                        </button>
-                        <button onclick="app.setStatus('cap', 'mod')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-orange-50 text-orange-600 font-bold text-xs transition-all flex flex-col items-center gap-1">
-                            <i class="fas fa-user-friends"></i> MOD
-                        </button>
-                        <button onclick="app.setStatus('cap', 'full')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-red-50 text-red-600 font-bold text-xs transition-all flex flex-col items-center gap-1">
-                            <i class="fas fa-users"></i> FULL
-                        </button>
+                <!-- Conditional Controls (Visible only after starting trip) -->
+                <div id="driver-trip-controls" class="driver-trip-controls">
+                    <!-- Bus Status -->
+                    <div class="glass p-4 rounded-2xl mb-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <i class="fas fa-users text-brand-500"></i> Bus Capacity
+                        </h3>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button id="cap-seats" onclick="app.setStatus('cap', 'seats')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-green-50 text-green-600 font-bold text-xs transition-all flex flex-col items-center gap-1 status-btn-active">
+                                <i class="fas fa-chair"></i> SEATS
+                            </button>
+                            <button id="cap-mod" onclick="app.setStatus('cap', 'mod')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-orange-50 text-orange-600 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                <i class="fas fa-user-friends"></i> MOD
+                            </button>
+                            <button id="cap-full" onclick="app.setStatus('cap', 'full')" class="status-btn p-3 rounded-xl border-2 border-transparent bg-red-50 text-red-600 font-bold text-xs transition-all flex flex-col items-center gap-1">
+                                <i class="fas fa-users"></i> FULL
+                            </button>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Quick Alerts -->
-                <div class="glass p-4 rounded-2xl">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <i class="fas fa-bullhorn text-brand-500"></i> Quick Alerts
-                    </h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="app.setStatus('msg', 'Traffic Jam')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all hover:bg-brand-50 hover:text-brand-600">
-                            🚦 TRAFFIC JAM
-                        </button>
-                        <button onclick="app.setStatus('msg', 'Breakdown')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all hover:bg-red-50 hover:text-red-600">
-                            🛠️ BREAKDOWN
-                        </button>
-                        <button onclick="app.setStatus('msg', 'Moving Fast')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all hover:bg-green-50 hover:text-green-600">
-                            ⚡ MOVING FAST
-                        </button>
-                        <button onclick="app.setStatus('msg', null)" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all hover:bg-blue-50 hover:text-blue-600">
-                            ✅ CLEAR STATUS
-                        </button>
+                    <!-- Quick Alerts -->
+                    <div class="glass p-4 rounded-2xl">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                            <i class="fas fa-bullhorn text-brand-500"></i> Quick Alerts
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="msg-traffic" onclick="app.setStatus('msg', 'Traffic Jam')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all border-2 border-transparent">
+                                🚦 TRAFFIC JAM
+                            </button>
+                            <button id="msg-breakdown" onclick="app.setStatus('msg', 'Breakdown')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all border-2 border-transparent">
+                                🛠️ BREAKDOWN
+                            </button>
+                            <button id="msg-fast" onclick="app.setStatus('msg', 'Moving Fast')" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all border-2 border-transparent">
+                                ⚡ MOVING FAST
+                            </button>
+                            <button id="msg-clear" onclick="app.setStatus('msg', null)" class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-[10px] transition-all border-2 border-transparent status-btn-active">
+                                ✅ CLEAR STATUS
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
