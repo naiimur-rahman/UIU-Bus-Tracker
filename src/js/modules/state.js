@@ -30,5 +30,9 @@ export const state = {
     autoFollowTimeout: null,
     userLat: null,
     userLng: null,
-    etaCache: {} 
+    etaCache: {},
+    pathHistory: {}, // { busId: [[lat, lng], ...] }
+    polylines: {},   // { busId: L.polyline }
+    driverCap: 'seats',
+    driverMsg: null
 };

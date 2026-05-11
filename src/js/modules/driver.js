@@ -125,6 +125,8 @@ export const startBroadcast = (callbacks) => {
                         lng: longitude,
                         acc: accuracy,
                         speed: displaySpeed,
+                        cap: state.driverCap,
+                        msg: state.driverMsg,
                         ts: now
                     });
                     state.client.publish(CONFIG.topics.location, payload, { retain: true });

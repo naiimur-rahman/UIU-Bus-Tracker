@@ -201,7 +201,21 @@ const app = {
                                         <i class="fas fa-location-dot mr-0.5"></i> ${(state.etaCache[bus.id].distance / 1000).toFixed(1)} km
                                     </span>
                                 ` : ''}
+                                ${bus.cap ? `
+                                    <span class="text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                                        bus.cap === 'seats' ? 'bg-green-100 text-green-600' : 
+                                        bus.cap === 'mod' ? 'bg-orange-100 text-orange-600' : 
+                                        'bg-red-100 text-red-600'
+                                    }">
+                                        ${bus.cap === 'seats' ? 'Seats' : bus.cap === 'mod' ? 'Moderate' : 'Full'}
+                                    </span>
+                                ` : ''}
                             </div>
+                            ${bus.msg ? `
+                                <div class="mt-2 text-[10px] bg-brand-50 text-brand-700 px-2 py-1 rounded-lg border border-brand-100 font-bold flex items-center gap-2 animate-pulse">
+                                    <i class="fas fa-bullhorn text-[8px]"></i> ${utils.escapeHtml(bus.msg)}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                     <i class="fas fa-chevron-right text-slate-300 group-hover:text-brand-500 transition-colors text-xs"></i>
@@ -328,7 +342,28 @@ const app = {
         modal.style.opacity = '0';
         app.goHome(); 
     },
-    toggleBottomSheet: () => ui.toggleBottomSheet()
+    toggleBottomSheet: () => ui.toggleBottomSheet(),
+    setStatus: (type, value) => {
+        if (type === 'cap') state.driverCap = value;
+        if (type === 'msg') state.driverMsg = value;
+        // Trigger immediate MQTT update if broadcasting
+        if (state.isBroadcasting && state.lastLat) {
+            const payload = JSON.stringify({
+                id: state.driverId,
+                uid: CONFIG.mqtt.clientId,
+                route: state.driverRoute,
+                username: state.driverUsername,
+                lat: state.lastLat,
+                lng: state.lastLng,
+                acc: 10,
+                speed: state.currentSmoothedSpeed.toFixed(1),
+                cap: state.driverCap,
+                msg: state.driverMsg,
+                ts: Date.now()
+            });
+            state.client.publish(CONFIG.topics.location, payload, { retain: true });
+        }
+    }
 };
 
 // Global exports for HTML events

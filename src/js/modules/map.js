@@ -207,6 +207,27 @@ export const updateBusMarker = (data, callbacks) => {
         }
     }
 
+    // Update or Create Polyline (Breadcrumbs)
+    if (!state.pathHistory[id]) state.pathHistory[id] = [];
+    state.pathHistory[id].push([data.lat, data.lng]);
+    if (state.pathHistory[id].length > 25) state.pathHistory[id].shift(); // Keep last 25 points
+
+    if (!state.polylines[id]) {
+        const prefix = id.charAt(0);
+        const colorMap = { 'K': '#f97316', 'N': '#8b5cf6', 'A': '#10b981', 'default': '#3b82f6' };
+        const color = colorMap[prefix] || colorMap['default'];
+        
+        state.polylines[id] = L.polyline(state.pathHistory[id], {
+            color: color,
+            weight: 3,
+            opacity: 0.4,
+            dashArray: '5, 10',
+            lineJoin: 'round'
+        }).addTo(state.map);
+    } else {
+        state.polylines[id].setLatLngs(state.pathHistory[id]);
+    }
+
     const popupHtml = `
         <div class="p-1 min-w-[150px]">
             <div class="font-bold text-slate-800">${callbacks.escapeHtml(data.route)}</div>
@@ -228,5 +249,10 @@ export const removeBusMarker = (id) => {
     if (state.circles[id]) {
         state.map.removeLayer(state.circles[id]);
         delete state.circles[id];
+    }
+    if (state.polylines[id]) {
+        state.map.removeLayer(state.polylines[id]);
+        delete state.polylines[id];
+        delete state.pathHistory[id];
     }
 };
