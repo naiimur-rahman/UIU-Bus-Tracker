@@ -47,6 +47,20 @@ const app = {
         if (role === 'student') {
             ui.switchView('view-student');
             map.initStudentMap({ escapeHtml: utils.escapeHtml });
+            
+            // Track user location for ETA
+            if (navigator.geolocation) {
+                if (state.studentWatchId) navigator.geolocation.clearWatch(state.studentWatchId);
+                state.studentWatchId = navigator.geolocation.watchPosition(
+                    (pos) => {
+                        state.userLat = pos.coords.latitude;
+                        state.userLng = pos.coords.longitude;
+                        app.updateBusList(); // Re-render to update ETA
+                    },
+                    (err) => console.error("User Location Error:", err),
+                    { enableHighAccuracy: true }
+                );
+            }
         } else if (role === 'driver-select') {
             ui.switchView('view-driver-select');
         } else if (role === 'driver-dashboard') {
@@ -144,6 +158,18 @@ const app = {
         if (state.role === 'student') {
             map.updateBusMarker(data, { escapeHtml: utils.escapeHtml });
             app.updateBusList();
+
+            // Fetch Road-based ETA if user location is known
+            if (state.userLat && state.userLng) {
+                const now = Date.now();
+                // Fetch ETA instantly on every update
+                utils.fetchRoadETA(state.userLat, state.userLng, data.lat, data.lng).then(eta => {
+                    if (eta) {
+                        state.etaCache[data.id] = { ...eta, ts: now };
+                        app.updateBusList();
+                    }
+                });
+            }
         }
     },
     updateBusList: () => {
@@ -166,8 +192,15 @@ const app = {
                         <div>
                             <h4 class="font-bold text-sm leading-tight">${utils.escapeHtml(bus.route)}</h4>
                             <div class="flex items-center gap-2 mt-0.5">
-                                <span class="text-[9px] text-slate-400 font-medium">ID: ${bus.id}</span>
                                 <span class="text-[9px] px-1.5 py-0.5 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400 rounded-full font-bold uppercase tracking-wider">${bus.speed} KM/H</span>
+                                ${state.etaCache[bus.id] ? `
+                                    <span class="text-[9px] text-brand-600 dark:text-brand-400 font-bold">
+                                        <i class="fas fa-clock mr-0.5"></i> ${utils.formatTime(state.etaCache[bus.id].duration)}
+                                    </span>
+                                    <span class="text-[9px] text-slate-400 font-medium">
+                                        <i class="fas fa-location-dot mr-0.5"></i> ${(state.etaCache[bus.id].distance / 1000).toFixed(1)} km
+                                    </span>
+                                ` : ''}
                             </div>
                         </div>
                     </div>

@@ -27,5 +27,8 @@ export const state = {
     uptimeInterval: null,
     currentSmoothedSpeed: 0,
     isFollowingDriver: true,
-    autoFollowTimeout: null
+    autoFollowTimeout: null,
+    userLat: null,
+    userLng: null,
+    etaCache: {} 
 };

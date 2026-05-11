@@ -18,3 +18,28 @@ export const escapeHtml = (text) => {
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
 };
+export const formatTime = (seconds) => {
+    if (seconds < 60) return "1 min";
+    const mins = Math.round(seconds / 60);
+    if (mins < 60) return `${mins} min`;
+    const hrs = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${hrs}h ${m}m`;
+};
+
+export const fetchRoadETA = async (lat1, lon1, lat2, lon2) => {
+    try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`;
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.code === 'Ok' && data.routes && data.routes[0]) {
+            return {
+                distance: data.routes[0].distance, // meters
+                duration: data.routes[0].duration  // seconds
+            };
+        }
+    } catch (e) {
+        console.error("OSRM Error:", e);
+    }
+    return null;
+};
