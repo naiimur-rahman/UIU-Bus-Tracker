@@ -1,0 +1,25 @@
+{
+  "name": "uiu-bus-tracker",
+  "version": "1.0.0",
+  "description": "Next Gen Campus Transport for UIU",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/naiimur-rahman/UIU-Bus-Tracker.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/naiimur-rahman/UIU-Bus-Tracker/issues"
+  },
+  "homepage": "https://github.com/naiimur-rahman/UIU-Bus-Tracker#readme",
+  "devDependencies": {
+    "vite": "^8.0.12"
+  }
+}

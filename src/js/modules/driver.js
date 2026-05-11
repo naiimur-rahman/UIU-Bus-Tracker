@@ -184,3 +184,8 @@ export const assignNextId = (prefix) => {
     }
     return prefix + nextNum;
 };
+
+export const toggleBroadcast = (callbacks) => {
+    if (state.isBroadcasting) callbacks.stopBroadcast();
+    else callbacks.startBroadcast();
+};

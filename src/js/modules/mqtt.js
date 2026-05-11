@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { state } from './state.js';
 
-export const connectMqtt = (callbacks) => {
+export const connect = (callbacks) => {
     console.log("Connecting to MQTT...");
     const connectUrl = `wss://${CONFIG.mqtt.host}:${CONFIG.mqtt.port}/mqtt`;
     
