@@ -76,3 +76,6 @@ export const toggleBottomSheet = () => {
         sheet.classList.add('translate-y-0');
     }
 };
+
+// Placeholder for future UI-specific connection status logic
+export const updateConnectionStatus = null;
