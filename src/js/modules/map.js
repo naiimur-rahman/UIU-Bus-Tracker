@@ -25,6 +25,8 @@ export const initStudentMap = (callbacks) => {
                 a.href = '#';
                 a.title = 'Jump to UIU';
                 a.innerHTML = '<i class="fas fa-university"></i>';
+                a.style.backgroundColor = 'white';
+                a.style.color = '#334155';
                 a.onclick = (e) => {
                     e.preventDefault();
                     state.map.setView(CONFIG.uiuCoords, 16);
@@ -32,6 +34,27 @@ export const initStudentMap = (callbacks) => {
                 return div;
             };
             jumpBtn.addTo(state.map);
+
+            const locateBtn = L.control({position: 'bottomright'});
+            locateBtn.onAdd = function(map) {
+                const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+                const a = L.DomUtil.create('a', '', div);
+                a.href = '#';
+                a.title = 'My Location';
+                a.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+                a.style.backgroundColor = 'white';
+                a.style.color = '#f97316';
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition((pos) => {
+                            state.map.setView([pos.coords.latitude, pos.coords.longitude], 16);
+                        });
+                    }
+                }
+                return div;
+            };
+            locateBtn.addTo(state.map);
 
             const uiuIcon = L.divIcon({
                  className: '',
@@ -111,6 +134,8 @@ export const initDriverMap = () => {
             a.href = '#';
             a.title = 'Jump to UIU';
             a.innerHTML = '<i class="fas fa-university"></i>';
+            a.style.backgroundColor = 'white';
+            a.style.color = '#334155';
             a.onclick = (e) => {
                 e.preventDefault();
                 state.driverMap.setView(CONFIG.uiuCoords, 16);
@@ -119,7 +144,27 @@ export const initDriverMap = () => {
         };
         jumpBtn.addTo(state.driverMap);
 
-        state.driverMap.on('movestart', () => {
+        const locateBtn = L.control({position: 'bottomright'});
+        locateBtn.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            const a = L.DomUtil.create('a', '', div);
+            a.href = '#';
+            a.title = 'My Location';
+            a.innerHTML = '<i class="fas fa-location-crosshairs"></i>';
+            a.style.backgroundColor = 'white';
+            a.style.color = '#f97316';
+            a.onclick = (e) => {
+                e.preventDefault();
+                state.isFollowingDriver = true; // Force re-follow
+                if (state.lastLat && state.lastLng) {
+                    state.driverMap.setView([state.lastLat, state.lastLng], 16);
+                }
+            }
+            return div;
+        };
+        locateBtn.addTo(state.driverMap);
+
+        state.driverMap.on('dragstart zoomstart', () => {
             state.isFollowingDriver = false;
             if (state.autoFollowTimeout) clearTimeout(state.autoFollowTimeout);
             state.autoFollowTimeout = setTimeout(() => {
