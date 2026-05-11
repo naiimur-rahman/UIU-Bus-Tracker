@@ -161,7 +161,7 @@ const app = {
                 <div onclick="app.focusBus('${bus.id}')" class="glass p-3 rounded-xl flex items-center justify-between hover:border-brand-500 transition-all cursor-pointer group">
                     <div class="flex items-center gap-3">
                         <div class="${colorClass} w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-lg shadow-brand-500/10">
-                            <i class="fas fa-bus text-sm"></i>
+                            <span class="font-black text-xs">${bus.id}</span>
                         </div>
                         <div>
                             <h4 class="font-bold text-sm leading-tight">${utils.escapeHtml(bus.route)}</h4>

@@ -183,7 +183,7 @@ export const updateBusMarker = (data, callbacks) => {
         const colorClass = BUS_STYLES[prefix] || BUS_STYLES['default'];
         const iconHtml = `
             <div class="${colorClass} w-10 h-10 rounded-2xl border-2 border-white shadow-xl flex flex-col items-center justify-center text-white relative transform transition-all duration-500">
-                <i class="fas fa-bus text-lg"></i>
+                <span class="font-black text-sm">${id}</span>
                 <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center">
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 </div>
