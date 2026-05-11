@@ -41,6 +41,12 @@
             }
         }
     </script>
+    <script>
+        // Instant check to avoid modal flicker
+        if (localStorage.getItem('welcome_closed') === 'true') {
+            document.documentElement.classList.add('hide-welcome');
+        }
+    </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -79,10 +79,15 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3) !important;
         }
         .leaflet-bar a:hover {
-            background-color: #f8fafc !important;
-            transform: scale(1.05);
-            color: #f97316 !important;
-        }
-        .dark .leaflet-bar a:hover {
-            background-color: #334155 !important;
-        }
+    background-color: #f8fafc !important;
+    transform: scale(1.05);
+    color: #f97316 !important;
+}
+.dark .leaflet-bar a:hover {
+    background-color: #334155 !important;
+}
+
+/* Instant Modal Hide */
+.hide-welcome #welcome-modal {
+    display: none !important;
+}

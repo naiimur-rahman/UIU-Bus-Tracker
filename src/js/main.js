@@ -11,11 +11,6 @@ const app = {
         ui.loadTheme();
         app.connectMqtt();
         console.log("App Version: Modular Structure");
-
-        if (localStorage.getItem('welcome_closed') === 'true') {
-            const modal = document.getElementById('welcome-modal');
-            if (modal) modal.style.display = 'none';
-        }
         
         const savedDriverId = localStorage.getItem('active_driver_id');
         const savedRoute = localStorage.getItem('active_driver_route');

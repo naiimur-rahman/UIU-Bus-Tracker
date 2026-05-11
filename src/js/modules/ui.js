@@ -4,6 +4,7 @@ export const closeWelcomeModal = () => {
     const modal = document.getElementById('welcome-modal');
     if (modal) {
         localStorage.setItem('welcome_closed', 'true');
+        document.documentElement.classList.add('hide-welcome');
         modal.style.opacity = '0';
         modal.style.pointerEvents = 'none';
         setTimeout(() => {
