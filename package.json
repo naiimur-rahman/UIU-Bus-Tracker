@@ -2,7 +2,10 @@
   "name": "uiu-bus-tracker",
   "version": "1.0.0",
   "description": "Next Gen Campus Transport for UIU",
-  "type": "commonjs",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
