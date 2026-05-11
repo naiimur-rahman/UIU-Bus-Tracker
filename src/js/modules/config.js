@@ -1,23 +1,17 @@
 export const CONFIG = {
-    mqtt: {
-        protocol: 'wss',
-        host: '09872002dac9410e9af391b1a7066483.s1.eu.hivemq.cloud',
-        port: 8884,
-        path: '/mqtt',
-        username: 'naimur',
-        password: 'Sohan786@',
-        clientId: (() => {
-            let id = localStorage.getItem('mqtt_client_id');
-            if (!id) {
-                id = 'uiu-' + Math.random().toString(16).substr(2, 8);
-                localStorage.setItem('mqtt_client_id', id);
-            }
-            return id;
-        })()
+    firebase: {
+        apiKey: "AIzaSyASCF3rzBkBIPGbN-W63KgYVPCuZ2hZi7I",
+        authDomain: "bustrackernaimur.firebaseapp.com",
+        databaseURL: "https://bustrackernaimur-default-rtdb.firebaseio.com",
+        projectId: "bustrackernaimur",
+        storageBucket: "bustrackernaimur.firebasestorage.app",
+        messagingSenderId: "253035446783",
+        appId: "1:253035446783:web:58edcbbb0d5453407467ca",
+        measurementId: "G-8C2YD6EWJT"
     },
-    topics: {
-        location: 'uiu/bus/location',
-        presence: 'uiu/presence'
+    paths: {
+        locations: 'locations',
+        presence: 'presence'
     },
     uiuCoords: [23.79790, 90.44970], 
     presenceInterval: 15000,

@@ -2,15 +2,19 @@ import { CONFIG, BUS_STYLES } from './modules/config.js';
 import { state } from './modules/state.js';
 import * as utils from './modules/utils.js';
 import * as ui from './modules/ui.js';
-import * as mqtt from './modules/mqtt.js';
+import * as firebase from './modules/firebase.js';
 import * as map from './modules/map.js';
 import * as driver from './modules/driver.js';
 
 const app = {
     init: () => {
         ui.loadTheme();
-        app.connectMqtt();
-        console.log("App Version: Modular Structure");
+        
+        // Generate anonymous user ID for presence tracking
+        state.userId = 'user-' + Math.random().toString(16).substring(2, 10);
+        
+        app.connectFirebase();
+        console.log("App Version: Firebase Migration");
         
         const savedDriverId = localStorage.getItem('active_driver_id');
         const savedRoute = localStorage.getItem('active_driver_route');
@@ -24,11 +28,14 @@ const app = {
             state.driverUsername = localStorage.getItem('active_driver_username');
             
             app.setRole('driver-dashboard');
-            document.getElementById('driver-assigned-id').innerText = `${state.driverRoute} [${state.driverId}]`;
+            const el = document.getElementById('driver-assigned-id');
+            if (el) el.innerText = `${state.driverRoute} [${state.driverId}]`;
 
             if (state.driverUsername) {
-                document.getElementById('driver-display-username-container').classList.remove('hidden');
-                document.getElementById('driver-display-username').innerText = state.driverUsername;
+                const nameContainer = document.getElementById('driver-display-username-container');
+                const nameEl = document.getElementById('driver-display-username');
+                if (nameContainer) nameContainer.classList.remove('hidden');
+                if (nameEl) nameEl.innerText = state.driverUsername;
             }
 
             ui.switchView('view-driver-dashboard');
@@ -37,6 +44,60 @@ const app = {
 
         setInterval(app.sendHeartbeat, CONFIG.presenceInterval);
         setInterval(app.cleanupStaleUsers, 10000);
+    },
+
+    // --- Firebase ---
+    connectFirebase: () => firebase.connect({
+        onConnect: () => app.updateConnectionStatus('connected'),
+        onDisconnect: (status) => app.updateConnectionStatus(status),
+        onLocationSnapshot: (data) => app.syncLocations(data),
+        onPresenceSnapshot: (data) => app.syncPresence(data)
+    }),
+    sendHeartbeat: () => firebase.sendHeartbeat(),
+    
+    syncPresence: (data) => {
+        state.activeUsers = new Map(Object.entries(data));
+        app.updateUserCount();
+    },
+
+    syncLocations: (data) => {
+        const now = Date.now();
+        const incomingIds = Object.keys(data);
+        
+        // 1. Remove markers for buses that are no longer in the snapshot
+        Object.keys(state.activeBuses).forEach(id => {
+            if (!incomingIds.includes(id)) {
+                map.removeBusMarker(id);
+            }
+        });
+
+        // 2. Update local state
+        state.activeBuses = {};
+        incomingIds.forEach(id => {
+            const busData = data[id];
+            // Filter out truly stale data (older than 2 mins)
+            if (now - busData.ts < 120000) {
+                state.activeBuses[id] = busData;
+                
+                if (state.role === 'student' && (!state.isBroadcasting || id !== state.driverId)) {
+                    map.updateBusMarker(busData, { escapeHtml: utils.escapeHtml });
+                    
+                    // Fetch Road-based ETA
+                    if (state.userLat && state.userLng) {
+                        utils.fetchRoadETA(state.userLat, state.userLng, busData.lat, busData.lng).then(eta => {
+                            if (eta) {
+                                state.etaCache[id] = { ...eta, ts: Date.now() };
+                                app.updateBusList();
+                            }
+                        });
+                    }
+                }
+            } else {
+                map.removeBusMarker(id);
+            }
+        });
+
+        app.updateBusList();
     },
 
     // --- UI & Theme ---
@@ -93,15 +154,11 @@ const app = {
         ui.switchView('view-landing');
     },
 
-    // --- MQTT ---
-    connectMqtt: () => mqtt.connect({
-        onConnect: () => app.updateConnectionStatus('connected'),
-        onDisconnect: (status) => app.updateConnectionStatus(status),
-        onLocationUpdate: (data) => app.handleLocationUpdate(data),
-        onPresenceUpdate: (data) => app.handlePresenceUpdate(data),
-        sendHeartbeat: () => app.sendHeartbeat()
-    }),
-    updateConnectionStatus: (status) => ui.updateConnectionStatus ? ui.updateConnectionStatus(status) : app._updateConnectionStatus(status),
+    updateConnectionStatus: (status) => {
+        state.isConnected = (status === 'connected');
+        if (ui.updateConnectionStatus) ui.updateConnectionStatus(status);
+        else app._updateConnectionStatus(status);
+    },
     _updateConnectionStatus: (status) => {
         const dot = document.getElementById('driver-connection-dot');
         const text = document.getElementById('driver-connection-text');
@@ -122,11 +179,6 @@ const app = {
             }
         }
     },
-    sendHeartbeat: () => mqtt.sendHeartbeat(),
-    handlePresenceUpdate: (data) => {
-        state.activeUsers.set(data.id, data.ts);
-        app.updateUserCount();
-    },
     cleanupStaleUsers: () => {
         const now = Date.now();
         for (const [id, ts] of state.activeUsers) { if (now - ts > 45000) state.activeUsers.delete(id); }
@@ -141,7 +193,15 @@ const app = {
     },
     updateUserCount: () => {
         const el = document.getElementById('count-users');
-        if (el) el.innerText = state.activeUsers.size;
+        if (el) {
+            // Always show at least 1 (the current user)
+            const count = Math.max(1, state.activeUsers.size);
+            el.innerText = count;
+        }
+    },
+    updateBusCount: () => {
+        const el = document.getElementById('count-buses');
+        if (el) el.innerText = Object.keys(state.activeBuses).length;
     },
 
     // --- Location & Bus Logic ---
@@ -173,6 +233,7 @@ const app = {
         }
     },
     updateBusList: () => {
+        app.updateBusCount();
         const list = document.getElementById('bus-list');
         if (!list) return;
         const buses = Object.values(state.activeBuses).sort((a, b) => a.route.localeCompare(b.route));
@@ -276,9 +337,10 @@ const app = {
                 document.getElementById('driver-assigned-id').innerText = fullRouteName + ' [' + assignedId + ']';
                 const nameContainer = document.getElementById('driver-display-username-container');
                 if (username) {
-                    nameContainer.classList.remove('hidden');
-                    document.getElementById('driver-display-username').innerText = username;
-                } else nameContainer.classList.add('hidden');
+                    if (nameContainer) nameContainer.classList.remove('hidden');
+                    const nameEl = document.getElementById('driver-display-username');
+                    if (nameEl) nameEl.innerText = username;
+                } else if (nameContainer) nameContainer.classList.add('hidden');
 
                 document.getElementById('selection-loader').classList.add('hidden');
                 state.isBroadcasting = false;
@@ -292,15 +354,17 @@ const app = {
         startBroadcast: () => app.startBroadcast(),
         stopBroadcast: () => app.stopBroadcast()
     }),
-    // Re-wrapping driver functions to provide callbacks
     startBroadcast: () => driver.startBroadcast({
         updateBroadcastUI: (isActive) => app.updateBroadcastUI(isActive),
         calculateDistance: utils.calculateDistance,
-        stopBroadcast: () => app.stopBroadcast()
+        stopBroadcast: () => app.stopBroadcast(),
+        sendLocation: (data) => firebase.sendLocation(data),
+        stopLocation: (id) => firebase.stopLocation(id)
     }),
     stopBroadcast: () => driver.stopBroadcast({
         updateBroadcastUI: (isActive) => app.updateBroadcastUI(isActive),
-        showSummary: () => app.showSummary()
+        showSummary: () => app.showSummary(),
+        stopLocation: (id) => firebase.stopLocation(id)
     }),
     updateBroadcastUI: (isActive) => {
         const btn = document.getElementById('broadcast-btn');
@@ -375,22 +439,9 @@ const app = {
             if (activeEl) activeEl.classList.add('status-btn-active');
         }
         
-        // Trigger immediate MQTT update if broadcasting
-        if (state.isBroadcasting && state.lastLat) {
-            const payload = JSON.stringify({
-                id: state.driverId,
-                uid: CONFIG.mqtt.clientId,
-                route: state.driverRoute,
-                username: state.driverUsername,
-                lat: state.lastLat,
-                lng: state.lastLng,
-                acc: 10,
-                speed: state.currentSmoothedSpeed.toFixed(1),
-                cap: state.driverCap,
-                msg: state.driverMsg,
-                ts: Date.now()
-            });
-            state.client.publish(CONFIG.topics.location, payload, { retain: true });
+        // Trigger immediate Firebase update if broadcasting
+        if (state.isBroadcasting && state.driverId) {
+            firebase.setDriverStatus(state.driverId, type, value);
         }
     }
 };

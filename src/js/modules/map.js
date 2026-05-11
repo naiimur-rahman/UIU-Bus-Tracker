@@ -169,7 +169,11 @@ export const initDriverMap = () => {
             if (state.autoFollowTimeout) clearTimeout(state.autoFollowTimeout);
             state.autoFollowTimeout = setTimeout(() => {
                 state.isFollowingDriver = true;
-            }, 10000); 
+                // Immediate re-center on timeout
+                if (state.lastLat && state.lastLng) {
+                    state.driverMap.panTo([state.lastLat, state.lastLng]);
+                }
+            }, 5000); 
         });
         
         requestAnimationFrame(() => { state.driverMap.invalidateSize(); });

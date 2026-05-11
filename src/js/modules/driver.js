@@ -115,22 +115,18 @@ export const startBroadcast = (callbacks) => {
                 if (now - state.lastSentTime < 200) return;
                 state.lastSentTime = now;
 
-                if (state.client && state.isConnected) {
-                    const payload = JSON.stringify({
-                        id: state.driverId,
-                        uid: CONFIG.mqtt.clientId,
-                        route: state.driverRoute,
-                        username: state.driverUsername,
-                        lat: latitude,
-                        lng: longitude,
-                        acc: accuracy,
-                        speed: displaySpeed,
-                        cap: state.driverCap,
-                        msg: state.driverMsg,
-                        ts: now
-                    });
-                    state.client.publish(CONFIG.topics.location, payload, { retain: true });
-                }
+                callbacks.sendLocation({
+                    id: state.driverId,
+                    route: state.driverRoute,
+                    username: state.driverUsername,
+                    lat: latitude,
+                    lng: longitude,
+                    acc: accuracy,
+                    speed: displaySpeed,
+                    cap: state.driverCap,
+                    msg: state.driverMsg,
+                    ts: now
+                });
             },
             (error) => { console.error("GPS Error", error); },
             options
@@ -148,8 +144,9 @@ export const stopBroadcast = async (callbacks) => {
     callbacks.updateBroadcastUI(false);
     releaseWakeLock();
     
-    if (state.driverId && state.activeBuses[state.driverId]) {
-        delete state.activeBuses[state.driverId];
+    if (state.driverId) {
+        callbacks.stopLocation(state.driverId);
+        if (state.activeBuses[state.driverId]) delete state.activeBuses[state.driverId];
     }
     
     if (state.watchId) {
