@@ -118,6 +118,14 @@ export const initDriverMap = () => {
             return div;
         };
         jumpBtn.addTo(state.driverMap);
+
+        state.driverMap.on('movestart', () => {
+            state.isFollowingDriver = false;
+            if (state.autoFollowTimeout) clearTimeout(state.autoFollowTimeout);
+            state.autoFollowTimeout = setTimeout(() => {
+                state.isFollowingDriver = true;
+            }, 10000); 
+        });
         
         requestAnimationFrame(() => { state.driverMap.invalidateSize(); });
     }, 200);

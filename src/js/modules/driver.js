@@ -104,7 +104,9 @@ export const startBroadcast = (callbacks) => {
 
                 if (state.driverMarker) {
                     state.driverMarker.setLatLng([latitude, longitude]);
-                    if (state.driverMap) state.driverMap.panTo([latitude, longitude]);
+                    if (state.driverMap && state.isFollowingDriver) {
+                        state.driverMap.panTo([latitude, longitude]);
+                    }
                 }
 
                 state.lastLat = latitude;

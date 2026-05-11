@@ -25,5 +25,7 @@ export const state = {
     lastLng: null,
     tripStartTime: null,
     uptimeInterval: null,
-    currentSmoothedSpeed: 0
+    currentSmoothedSpeed: 0,
+    isFollowingDriver: true,
+    autoFollowTimeout: null
 };
