@@ -370,8 +370,10 @@ const app = {
         const btn = document.getElementById('broadcast-btn');
         const glow = document.getElementById('broadcast-glow');
         const title = document.getElementById('broadcast-status-title');
+        const desc = document.getElementById('broadcast-status-desc');
         const icon = document.getElementById('broadcast-icon');
         const controls = document.getElementById('driver-trip-controls');
+        const statsRow = document.getElementById('driver-stats-row');
 
         if (isActive) {
             btn.innerText = "STOP TRIP";
@@ -380,18 +382,22 @@ const app = {
             glow.style.opacity = '1';
             glow.className = "absolute inset-0 rounded-full animate-pulse-glow bg-green-400";
             title.innerText = "Broadcasting";
+            if (desc) desc.innerText = "Live Location Sharing Active";
             icon.classList.remove('text-slate-300', 'dark:text-slate-600');
             icon.classList.add('text-green-500');
             if (controls) controls.classList.add('active');
+            if (statsRow) statsRow.classList.remove('hidden');
         } else {
             btn.innerText = "START TRIP";
             btn.classList.remove('from-red-500', 'to-red-600', 'hover:from-red-400', 'hover:to-red-500', 'animate-pulse');
             btn.classList.add('from-brand-500', 'to-brand-600', 'hover:from-brand-400', 'hover:to-brand-500');
             glow.style.opacity = '0';
-            title.innerText = "Ready?";
+            title.innerText = "Ready to Drive?";
+            if (desc) desc.innerText = "Start trip to broadcast";
             icon.classList.add('text-slate-300', 'dark:text-slate-600');
             icon.classList.remove('text-green-500');
             if (controls) controls.classList.remove('active');
+            if (statsRow) statsRow.classList.add('hidden');
             
             // Reset visual states
             app.setStatus('cap', 'seats');
@@ -400,19 +406,50 @@ const app = {
     },
     showSummary: () => {
         const modal = document.getElementById('trip-summary-modal');
-        modal.classList.remove('opacity-0', 'pointer-events-none', 'z-[-1]');
-        modal.classList.add('z-50');
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-        if (window.confetti) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        const card = document.getElementById('summary-card');
+        const nameEl = document.getElementById('summary-driver-name');
+        
+        if (nameEl) {
+            nameEl.innerText = state.driverUsername || "Captain";
+        }
+
+        modal.classList.remove('opacity-0', 'pointer-events-none');
+        modal.classList.add('opacity-100');
+        
+        if (card) {
+            card.classList.remove('scale-90');
+            card.classList.add('scale-100');
+        }
+
+        if (window.confetti) {
+            // Fountain burst
+            const duration = 3 * 1000;
+            const animationEnd = Date.now() + duration;
+            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 300 };
+
+            const interval = setInterval(function() {
+                const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                const particleCount = 50 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } });
+            }, 250);
+        }
     },
     closeSummary: () => {
-        if (window.confetti) try { window.confetti.reset(); } catch(e) {}
         const modal = document.getElementById('trip-summary-modal');
-        modal.classList.add('opacity-0', 'pointer-events-none', 'z-[-1]');
-        modal.classList.remove('z-50');
-        modal.style.opacity = '0';
-        app.goHome(); 
+        const card = document.getElementById('summary-card');
+        
+        if (card) {
+            card.classList.remove('scale-100');
+            card.classList.add('scale-90');
+        }
+        
+        modal.classList.add('opacity-0', 'pointer-events-none');
+        modal.classList.remove('opacity-100');
+        
+        setTimeout(() => {
+            app.goHome(); 
+        }, 500);
     },
     toggleBottomSheet: () => ui.toggleBottomSheet(),
     setStatus: (type, value) => {

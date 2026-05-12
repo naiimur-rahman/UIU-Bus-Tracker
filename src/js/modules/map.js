@@ -213,8 +213,15 @@ export const updateBusMarker = (data, callbacks) => {
 
     // Update or Create Polyline (Breadcrumbs)
     if (!state.pathHistory[id]) state.pathHistory[id] = [];
-    state.pathHistory[id].push([data.lat, data.lng]);
-    if (state.pathHistory[id].length > 25) state.pathHistory[id].shift(); // Keep last 25 points
+    
+    // Only push if location has changed significantly
+    const lastPoint = state.pathHistory[id][state.pathHistory[id].length - 1];
+    const hasMoved = !lastPoint || lastPoint[0] !== data.lat || lastPoint[1] !== data.lng;
+    
+    if (hasMoved) {
+        state.pathHistory[id].push([data.lat, data.lng]);
+        if (state.pathHistory[id].length > 40) state.pathHistory[id].shift(); // Keep last 40 points
+    }
 
     if (!state.polylines[id]) {
         const prefix = id.charAt(0);
@@ -224,11 +231,12 @@ export const updateBusMarker = (data, callbacks) => {
         state.polylines[id] = L.polyline(state.pathHistory[id], {
             color: color,
             weight: 3,
-            opacity: 0.4,
-            dashArray: '5, 10',
-            lineJoin: 'round'
+            opacity: 0.6,
+            dashArray: '8, 12',
+            lineJoin: 'round',
+            lineCap: 'round'
         }).addTo(state.map);
-    } else {
+    } else if (hasMoved) {
         state.polylines[id].setLatLngs(state.pathHistory[id]);
     }
 
