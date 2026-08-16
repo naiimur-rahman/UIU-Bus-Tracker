@@ -54,7 +54,7 @@ const processLocationUpdate = (position, callbacks) => {
         
         // Trigger Push Notifications to all students
         try {
-            fetch('/api/notify', {
+            fetch('https://uiubustracker.vercel.app/api/notify', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
