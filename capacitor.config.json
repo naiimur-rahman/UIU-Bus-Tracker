@@ -1,0 +1,9 @@
+{
+  "appId": "com.uiubustracker.app",
+  "appName": "UIU Bus Tracker",
+  "webDir": "dist",
+  "server": {
+    "url": "https://uiubustracker.vercel.app/",
+    "cleartext": true
+  }
+}

@@ -63,3 +63,88 @@ export const setDriverStatus = async (busId, type, value) => {
     updates[type] = value;
     return update(busRef, updates);
 };
+
+export const requestNotificationPermission = async (vapidKey) => {
+    try {
+        const { Capacitor } = await import('@capacitor/core');
+
+        if (Capacitor.isNativePlatform()) {
+            console.log("Using Native Capacitor Push Notifications...");
+            const { PushNotifications } = await import('@capacitor/push-notifications');
+            
+            let permStatus = await PushNotifications.checkPermissions();
+            if (permStatus.receive === 'prompt') {
+                permStatus = await PushNotifications.requestPermissions();
+            }
+
+            if (permStatus.receive !== 'granted') {
+                console.log('User denied Native Push permissions');
+                return null;
+            }
+            
+            return new Promise((resolve) => {
+                PushNotifications.addListener('registration', async (token) => {
+                    const fcmToken = token.value;
+                    console.log('Native FCM Token retrieved:', fcmToken);
+                    const tokenRef = ref(db, `fcm_tokens/${fcmToken}`);
+                    await set(tokenRef, true);
+                    resolve(fcmToken);
+                });
+                
+                PushNotifications.addListener('registrationError', (error) => {
+                    console.error('Error on Native registration:', error);
+                    resolve(null);
+                });
+
+                PushNotifications.addListener('pushNotificationReceived', (notification) => {
+                    alert(`🚌 ${notification.title}\n\n${notification.body}`);
+                });
+
+                PushNotifications.register();
+            });
+        }
+
+        // --- Web Push Fallback ---
+        const { getMessaging, getToken, onMessage } = await import("firebase/messaging");
+        const app = initializeApp(CONFIG.firebase);
+        const messaging = getMessaging(app);
+        
+        console.log('Requesting Web notification permission...');
+        const permission = await Notification.requestPermission();
+        if (permission === 'granted') {
+            console.log('Web Notification permission granted.');
+            const currentToken = await getToken(messaging, { vapidKey });
+            if (currentToken) {
+                console.log('Web FCM Token retrieved');
+                const tokenRef = ref(db, `fcm_tokens/${currentToken}`);
+                await set(tokenRef, true);
+                
+                onMessage(messaging, (payload) => {
+                    console.log('Foreground Web Message received. ', payload);
+                    alert(`🚌 ${payload.notification.title}\n\n${payload.notification.body}`);
+                });
+
+                return currentToken;
+            } else {
+                console.log('No Web registration token available.');
+            }
+        } else {
+            console.log('Unable to get permission to notify on Web.');
+        }
+    } catch (err) {
+        console.error('An error occurred while retrieving token. ', err);
+    }
+    return null;
+};
+
+export const disableNotificationPermission = async (token) => {
+    if (!token || !db) return false;
+    try {
+        const tokenRef = ref(db, `fcm_tokens/${token}`);
+        await remove(tokenRef);
+        return true;
+    } catch (err) {
+        console.error('Error removing token: ', err);
+        return false;
+    }
+};

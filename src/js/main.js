@@ -9,6 +9,13 @@ import * as driver from './modules/driver.js';
 const app = {
     init: () => {
         ui.loadTheme();
+
+        // Setup notification button state
+        const storedToken = localStorage.getItem('fcm_token');
+        if (storedToken) {
+            const btn = document.getElementById('btn-alerts');
+            if (btn) btn.innerHTML = '<i class="fas fa-bell-slash"></i> Disable Push Alerts';
+        }
         
         // Generate anonymous user ID for presence tracking
         state.userId = 'user-' + Math.random().toString(16).substring(2, 10);
@@ -56,8 +63,41 @@ const app = {
     sendHeartbeat: () => firebase.sendHeartbeat(),
     
     syncPresence: (data) => {
-        state.activeUsers = new Map(Object.entries(data));
+        const now = Date.now();
+        state.activeUsers = new Map();
+        for (const [id, ts] of Object.entries(data)) {
+            if (now - ts <= 45000) {
+                state.activeUsers.set(id, ts);
+            }
+        }
         app.updateUserCount();
+    },
+
+    toggleAlerts: async () => {
+        const storedToken = localStorage.getItem('fcm_token');
+        const btn = document.getElementById('btn-alerts');
+        
+        if (storedToken) {
+            // Disable alerts
+            const success = await firebase.disableNotificationPermission(storedToken);
+            if (success) {
+                localStorage.removeItem('fcm_token');
+                if (btn) btn.innerHTML = '<i class="fas fa-bell"></i> Enable Push Alerts';
+                alert('Alerts disabled. You will no longer receive notifications.');
+            } else {
+                alert('Failed to disable alerts. Please try again.');
+            }
+        } else {
+            // Enable alerts
+            const token = await firebase.requestNotificationPermission('BAK3a97T5bNYwlL-0Si-1z3K4PrP9Aj-c5AEVa1D_qtH_VekPQnddfjpLbKwDXJCCGRpipcmaZoKr9U2aD_PZUs');
+            if (token) {
+                localStorage.setItem('fcm_token', token);
+                if (btn) btn.innerHTML = '<i class="fas fa-bell-slash"></i> Disable Push Alerts';
+                alert('Alerts enabled successfully! You will be notified when a bus starts.');
+            } else {
+                alert('Failed to enable alerts. Please ensure notifications are allowed in your browser settings.');
+            }
+        }
     },
 
     syncLocations: (data) => {
@@ -192,16 +232,18 @@ const app = {
         app.updateBusList();
     },
     updateUserCount: () => {
-        const el = document.getElementById('count-users');
-        if (el) {
-            // Always show at least 1 (the current user)
-            const count = Math.max(1, state.activeUsers.size);
-            el.innerText = count;
-        }
+        const el1 = document.getElementById('count-users');
+        const el2 = document.getElementById('count-users-landing');
+        const count = Math.max(1, state.activeUsers.size);
+        if (el1) el1.innerText = count;
+        if (el2) el2.innerText = count;
     },
     updateBusCount: () => {
-        const el = document.getElementById('count-buses');
-        if (el) el.innerText = Object.keys(state.activeBuses).length;
+        const el1 = document.getElementById('count-buses');
+        const el2 = document.getElementById('count-buses-landing');
+        const count = Object.keys(state.activeBuses).length;
+        if (el1) el1.innerText = count;
+        if (el2) el2.innerText = count;
     },
 
     // --- Location & Bus Logic ---

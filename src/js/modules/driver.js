@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { state } from './state.js';
+import { Geolocation } from '@capacitor/geolocation';
 
 export const requestWakeLock = async () => {
     if ('wakeLock' in navigator) {
@@ -25,17 +26,15 @@ export const releaseWakeLock = () => {
     }
 };
 
-export const startBroadcast = (callbacks) => {
-    if (!navigator.geolocation) {
-        alert("Geolocation not supported");
-        return;
-    }
+export const startBroadcast = async (callbacks) => {
     
     try {
         state.isBroadcasting = true;
         callbacks.updateBroadcastUI(true);
 
-        if (state.watchId) navigator.geolocation.clearWatch(state.watchId);
+        if (state.watchId) {
+            await Geolocation.clearWatch({ id: state.watchId });
+        }
         state.currentSmoothedSpeed = 0;
 
         state.tripStartTime = Date.now();
@@ -58,9 +57,9 @@ export const startBroadcast = (callbacks) => {
 
         let isFirstFix = true;
 
-        state.watchId = navigator.geolocation.watchPosition(
-            (position) => {
-                if (!state.isBroadcasting) return;
+        state.watchId = await Geolocation.watchPosition(options, (position, err) => {
+            if (err || !position) return;
+            if (!state.isBroadcasting) return;
 
                 const { latitude, longitude, accuracy, speed } = position.coords;
                 const now = Date.now();
@@ -85,6 +84,19 @@ export const startBroadcast = (callbacks) => {
                         return; 
                     }
                     isFirstFix = false; 
+                    
+                    // Trigger Push Notifications to all students
+                    try {
+                        fetch('/api/notify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                busRoute: state.driverRoute,
+                                busDirection: state.driverDirection,
+                                secretKey: 'bus_tracker_secret_2026'
+                            })
+                        }).catch(e => console.error('Failed to trigger notifications', e));
+                    } catch (e) { }
                 }
 
                 // 2. Hybrid Speed Calculation
@@ -161,7 +173,7 @@ export const stopBroadcast = async (callbacks) => {
     }
     
     if (state.watchId) {
-        navigator.geolocation.clearWatch(state.watchId);
+        Geolocation.clearWatch({ id: state.watchId });
         state.watchId = null;
     }
 

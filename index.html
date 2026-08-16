@@ -46,6 +46,19 @@
         if (localStorage.getItem('welcome_closed') === 'true') {
             document.documentElement.classList.add('hide-welcome');
         }
+        
+        window.closeWelcomeModal = function() {
+            const modal = document.getElementById('welcome-modal');
+            if (modal) {
+                localStorage.setItem('welcome_closed', 'true');
+                document.documentElement.classList.add('hide-welcome');
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 500);
+            }
+        };
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -57,7 +70,6 @@
     <link rel="stylesheet" href="src/css/style.css"> 
 </head>
 <body class="bg-gray-50 dark:bg-slate-950 text-slate-800 dark:text-gray-100 font-sans h-[100dvh] w-screen overflow-hidden transition-colors duration-300 relative selection:bg-brand-500 selection:text-white dot-pattern">
-
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div class="absolute -top-20 -left-20 w-64 h-64 bg-brand-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
         <div class="absolute top-1/2 -right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 2s"></div>
@@ -78,19 +90,19 @@
                 </button>
             </div>
             <div class="p-6 overflow-y-auto text-sm leading-relaxed text-slate-600 dark:text-slate-300 space-y-4">
-                <p class="font-bold text-brand-600 dark:text-brand-400">Welcome to UIU Bus Tracker v3.5</p>
-                <p>Experience ultra-accurate location tracking, real-time road ETA, and smart driver dashboard features.❤️</p>
+                <p class="font-bold text-brand-600 dark:text-brand-400">Welcome to UIU Bus Tracker v4.0</p>
+                <p>Experience the brand new Native Android App with true background tracking!❤️</p>
                 <hr class="border-slate-200 dark:border-slate-700">
-                <h4 class="font-bold text-slate-800 dark:text-white">✨ New in v3.5:</h4>
+                <h4 class="font-bold text-slate-800 dark:text-white">✨ New in v4.0:</h4>
                 <ul class="list-disc pl-5 space-y-1">
+                    <li>📱 <b>Native Android App</b>: Faster, smoother, and built for your phone.</li>
+                    <li>🌍 <b>True Background Tracking</b>: Drivers can now safely use WhatsApp or YouTube while sharing location!</li>
+                    <li>🔔 <b>Native Push Notifications</b>: Get instant alerts directly to your phone's notification center.</li>
                     <li>🛰️ <b>Precision GPS</b>: Intelligent speed calculation & smoothing.</li>
-                    <li>🎯 <b>Smart Re-center</b>: Driver map auto-locks back in 5s.</li>
-                    <li>📊 <b>Live Dash</b>: Integrated speed, accuracy, and trip timer.</li>
-                    <li>🛣️ <b>Live Route Paths</b>: See the exact road taken.</li>
-                    <li>🚦 <b>One-Tap Alerts</b>: Traffic & breakdown notifications.</li>
+                    <li>🚦 <b>Smart Dashboard</b>: Real-time road ETA and driver controls.</li>
                 </ul>
                 <h4 class="font-bold text-slate-800 dark:text-white mt-4">⚠️ Important Note:</h4>
-                <p>Do not close the browser tab while driving, or the broadcast will stop. Please ensure you have <strong>Location Services (GPS)</strong> enabled. </p>
+                <p>For drivers: Please ensure you select <strong>"Allow all the time"</strong> for location permissions so tracking continues while the app is in the background!</p>
                 <p class="italic text-xs opacity-70 mt-4">"Development is a journey, not a destination.<br> Thank you for being part of our testing phase." <br>- Naimur Rahman</p>
                 <div class="h-10"></div> 
             </div>
@@ -101,11 +113,11 @@
     </div>
 
     <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
-        <a href="https://naiimur-rahman.github.io/UIU-CGPA-Calculator/" target="_blank" class="fixed top-4 left-4 pointer-events-auto glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
-            <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white shadow-md shadow-green-500/20">
-                <i class="fas fa-calculator text-[10px]"></i>
+        <a href="https://uiulinks.vercel.app/" target="_blank" class="fixed top-4 left-4 pointer-events-auto glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
+            <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                <i class="fas fa-link text-[10px]"></i>
             </div>
-            <span class="text-xs font-bold pr-1 group-hover:text-green-500 transition-colors">CGPA</span>
+            <span class="text-xs font-bold pr-1 group-hover:text-blue-500 transition-colors">LinkSphere</span>
         </a>
         <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
             <i class="fas fa-moon dark:hidden"></i>
@@ -123,7 +135,17 @@
                     <span class="text-slate-800 dark:text-white">UIU</span>
                     <span class="text-brand-500">Bus Tracker</span>
                 </h1>
-                <p class="text-slate-500 dark:text-slate-400 text-sm">Next Gen Campus Transport</p>
+                <p class="text-slate-500 dark:text-slate-400 text-sm mb-4">Next Gen Campus Transport</p>
+                
+                <div class="flex items-center justify-center gap-4 text-xs font-medium text-slate-600 dark:text-slate-300 bg-white/50 dark:bg-slate-800/50 px-4 py-2 rounded-full shadow-inner border border-slate-200 dark:border-slate-700 mb-4">
+                    <span class="flex items-center gap-1.5"><i class="fas fa-users text-brand-500"></i> <span id="count-users-landing">0</span> Online</span>
+                    <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
+                    <span class="flex items-center gap-1.5"><i class="fas fa-bus text-orange-500"></i> <span id="count-buses-landing">0</span> Active</span>
+                </div>
+
+                <button id="btn-alerts" onclick="app.toggleAlerts()" class="mx-auto px-4 py-2 bg-brand-500/10 text-brand-500 hover:bg-brand-500 hover:text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm border border-brand-500/20 hover:border-brand-500">
+                    <i class="fas fa-bell"></i> Enable Push Alerts
+                </button>
             </div>
 
             <div class="grid gap-3 w-full"> 
@@ -376,8 +398,10 @@
                         </div>
                     </div>
                 </div>
-                <div id="student-status" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-500 flex items-center gap-2">
-                    <div class="w-2 h-2 bg-slate-400 rounded-full"></div> Connect
+                <div class="flex items-center gap-2">
+                    <div id="student-status" class="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-[10px] font-bold text-slate-500 flex items-center gap-2">
+                        <div class="w-2 h-2 bg-slate-400 rounded-full"></div> Connect
+                    </div>
                 </div>
             </div>
         </div>
