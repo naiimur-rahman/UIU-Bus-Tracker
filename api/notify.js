@@ -1,12 +1,14 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getDatabase } = require('firebase-admin/database');
+const { getMessaging } = require('firebase-admin/messaging');
 
 let initError = null;
 
-// Initialize Firebase Admin (only once)
-if (!admin.apps.length) {
+// Initialize Firebase Admin (only once) using v14+ modular syntax
+if (getApps().length === 0) {
     try {
-        admin.initializeApp({
-            credential: admin.credential.cert({
+        initializeApp({
+            credential: cert({
                 projectId: process.env.FIREBASE_PROJECT_ID,
                 clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                 privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n')
@@ -27,10 +29,9 @@ module.exports = async function handler(req, res) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    if (initError || !admin.apps.length) {
+    if (initError || getApps().length === 0) {
         return res.status(500).json({ error: 'Firebase Admin Init Failed', detail: initError || 'Unknown initialization error' });
     }
-
 
     try {
         const { busRoute, busDirection, secretKey } = req.body;
@@ -40,7 +41,7 @@ module.exports = async function handler(req, res) {
         }
 
         // Fetch all FCM tokens from Firebase Realtime Database
-        const db = admin.database();
+        const db = getDatabase();
         const tokensSnapshot = await db.ref('fcm_tokens').once('value');
         const tokensObj = tokensSnapshot.val();
 
@@ -77,7 +78,7 @@ module.exports = async function handler(req, res) {
                 tokens: chunk
             };
 
-            const response = await admin.messaging().sendEachForMulticast(message);
+            const response = await getMessaging().sendEachForMulticast(message);
             successCount += response.successCount;
             failureCount += response.failureCount;
 
