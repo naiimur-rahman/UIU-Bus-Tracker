@@ -153,19 +153,6 @@ export const startBroadcast = async (callbacks) => {
                     await PushNotifications.requestPermissions();
                 }
 
-                // Explicitly start the Foreground Service to guarantee the notification shows
-                try {
-                    const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
-                    await ForegroundService.startForegroundService({
-                        id: 1001,
-                        title: 'UIU Bus Tracker Active',
-                        body: 'Sharing live location with students.',
-                        smallIcon: 'ic_stat_tracker'
-                    });
-                } catch (fsErr) {
-                    console.error("Foreground Service start failed:", fsErr);
-                }
-
                 const { registerPlugin } = await import('@capacitor/core');
                 const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
 
@@ -228,15 +215,6 @@ export const stopBroadcast = async (callbacks) => {
     
     const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
                      (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-
-    if (isNative) {
-        try {
-            const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
-            await ForegroundService.stopForegroundService();
-        } catch (fsErr) {
-            console.error("Foreground Service stop failed:", fsErr);
-        }
-    }
 
     if (state.watchId) {
         if (isNative) {
