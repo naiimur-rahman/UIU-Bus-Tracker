@@ -139,6 +139,13 @@ export const startBroadcast = async (callbacks) => {
             if(el) el.innerText = `${m}:${s}`;
         }, 1000);
 
+        // Silent Audio Trick to prevent WebView from freezing and WebSockets from closing in background
+        if (!state.keepAwakeAudio) {
+            state.keepAwakeAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+            state.keepAwakeAudio.loop = true;
+        }
+        state.keepAwakeAudio.play().catch(e => console.error("Audio block", e));
+
         requestWakeLock();
 
         const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
@@ -227,6 +234,10 @@ export const stopBroadcast = async (callbacks) => {
             Geolocation.clearWatch({ id: state.watchId });
         }
         state.watchId = null;
+    }
+
+    if (state.keepAwakeAudio) {
+        state.keepAwakeAudio.pause();
     }
 
     if (state.uptimeInterval) {
