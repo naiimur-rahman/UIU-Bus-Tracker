@@ -31,8 +31,8 @@ const processLocationUpdate = (position, callbacks) => {
     const { latitude, longitude, accuracy, speed } = position.coords;
     const now = Date.now();
 
-    // 1. Filter out poor accuracy fixes to prevent jumping
-    if (accuracy > 80) return; 
+    // 1. Filter out poor accuracy fixes to prevent jumping (relaxed for background)
+    if (accuracy > 150) return; 
 
     if (state.isFirstFix) {
         let conflict = false;
@@ -101,6 +101,7 @@ const processLocationUpdate = (position, callbacks) => {
 
     state.lastLat = latitude;
     state.lastLng = longitude;
+    state.lastAcc = accuracy;
     state.lastLocationTime = now;
 
     if (now - state.lastSentTime < 800 && Math.abs(rawSpeedKmh - state.lastSentSpeed) < 2) return;
@@ -138,6 +139,28 @@ export const startBroadcast = async (callbacks) => {
             const el = document.getElementById('val-uptime');
             if(el) el.innerText = `${m}:${s}`;
         }, 1000);
+
+        // Periodic Location Keep-Alive Heartbeat: ensures bus doesn't go stale if stationary or in background
+        if (state.driverHeartbeatInterval) clearInterval(state.driverHeartbeatInterval);
+        state.driverHeartbeatInterval = setInterval(() => {
+            if (!state.isBroadcasting || !state.lastLat || !state.lastLng) return;
+            const now = Date.now();
+            if (now - (state.lastSentTime || 0) >= 8000) {
+                state.lastSentTime = now;
+                callbacks.sendLocation({
+                    id: state.driverId,
+                    route: state.driverRoute,
+                    username: state.driverUsername,
+                    lat: state.lastLat,
+                    lng: state.lastLng,
+                    acc: state.lastAcc || 20,
+                    speed: (state.currentSmoothedSpeed || 0).toFixed(1),
+                    cap: state.driverCap,
+                    msg: state.driverMsg,
+                    ts: now
+                });
+            }
+        }, 5000);
 
         // Silent Audio Trick to prevent WebView from freezing and WebSockets from closing in background
         if (!state.keepAwakeAudio) {
@@ -243,6 +266,10 @@ export const stopBroadcast = async (callbacks) => {
     if (state.uptimeInterval) {
         clearInterval(state.uptimeInterval);
         state.uptimeInterval = null;
+    }
+    if (state.driverHeartbeatInterval) {
+        clearInterval(state.driverHeartbeatInterval);
+        state.driverHeartbeatInterval = null;
     }
     const uptimeEl = document.getElementById('val-uptime');
     if(uptimeEl) uptimeEl.innerText = "00:00";

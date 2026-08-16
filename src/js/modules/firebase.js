@@ -36,10 +36,6 @@ export const connect = async (callbacks) => {
 export const sendLocation = async (busData) => {
     if (!db) return;
     const busRef = ref(db, `${CONFIG.paths.locations}/${busData.id}`);
-    
-    // Set up auto-cleanup if driver disconnects
-    onDisconnect(busRef).remove();
-    
     return set(busRef, busData);
 };
 

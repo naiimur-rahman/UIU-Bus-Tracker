@@ -224,7 +224,7 @@ const app = {
         for (const [id, ts] of state.activeUsers) { if (now - ts > 45000) state.activeUsers.delete(id); }
         app.updateUserCount();
         for (const id in state.activeBuses) {
-            if (now - state.activeBuses[id].ts > 45000) { 
+            if (now - state.activeBuses[id].ts > 120000) { 
                 delete state.activeBuses[id];
                 map.removeBusMarker(id);
             }
