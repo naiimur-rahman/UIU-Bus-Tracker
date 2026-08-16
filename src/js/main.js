@@ -95,7 +95,7 @@ const app = {
                 if (btn) btn.innerHTML = '<i class="fas fa-bell-slash"></i> Disable Push Alerts';
                 alert('Alerts enabled successfully! You will be notified when a bus starts.');
             } else {
-                alert('Failed to enable alerts. Please ensure notifications are allowed in your browser settings.');
+                alert('Failed to enable alerts. Please ensure notifications are allowed in your device settings.');
             }
         }
     },

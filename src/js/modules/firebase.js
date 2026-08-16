@@ -66,14 +66,15 @@ export const setDriverStatus = async (busId, type, value) => {
 
 export const requestNotificationPermission = async (vapidKey) => {
     try {
-        const { Capacitor } = await import('@capacitor/core');
+        const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+                         (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
 
-        if (Capacitor.isNativePlatform()) {
+        if (isNative) {
             console.log("Using Native Capacitor Push Notifications...");
             const { PushNotifications } = await import('@capacitor/push-notifications');
             
             let permStatus = await PushNotifications.checkPermissions();
-            if (permStatus.receive === 'prompt') {
+            if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
                 permStatus = await PushNotifications.requestPermissions();
             }
 
@@ -83,21 +84,30 @@ export const requestNotificationPermission = async (vapidKey) => {
             }
             
             return new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    console.warn("FCM registration timed out");
+                    resolve(null);
+                }, 12000);
+
                 PushNotifications.addListener('registration', async (token) => {
+                    clearTimeout(timeout);
                     const fcmToken = token.value;
                     console.log('Native FCM Token retrieved:', fcmToken);
-                    const tokenRef = ref(db, `fcm_tokens/${fcmToken}`);
-                    await set(tokenRef, true);
+                    if (db) {
+                        const tokenRef = ref(db, `fcm_tokens/${fcmToken}`);
+                        await set(tokenRef, true);
+                    }
                     resolve(fcmToken);
                 });
                 
                 PushNotifications.addListener('registrationError', (error) => {
+                    clearTimeout(timeout);
                     console.error('Error on Native registration:', error);
                     resolve(null);
                 });
 
                 PushNotifications.addListener('pushNotificationReceived', (notification) => {
-                    alert(`🚌 ${notification.title}\n\n${notification.body}`);
+                    console.log('Foreground push notification received:', notification);
                 });
 
                 PushNotifications.register();
@@ -105,6 +115,11 @@ export const requestNotificationPermission = async (vapidKey) => {
         }
 
         // --- Web Push Fallback ---
+        if (typeof Notification === 'undefined') {
+            console.warn('Notifications not supported in this environment');
+            return null;
+        }
+
         const { getMessaging, getToken, onMessage } = await import("firebase/messaging");
         const app = initializeApp(CONFIG.firebase);
         const messaging = getMessaging(app);
@@ -116,12 +131,16 @@ export const requestNotificationPermission = async (vapidKey) => {
             const currentToken = await getToken(messaging, { vapidKey });
             if (currentToken) {
                 console.log('Web FCM Token retrieved');
-                const tokenRef = ref(db, `fcm_tokens/${currentToken}`);
-                await set(tokenRef, true);
+                if (db) {
+                    const tokenRef = ref(db, `fcm_tokens/${currentToken}`);
+                    await set(tokenRef, true);
+                }
                 
                 onMessage(messaging, (payload) => {
-                    console.log('Foreground Web Message received. ', payload);
-                    alert(`🚌 ${payload.notification.title}\n\n${payload.notification.body}`);
+                    console.log('Foreground Web Message received: ', payload);
+                    if (payload.notification) {
+                        alert(`🚌 ${payload.notification.title}\n\n${payload.notification.body}`);
+                    }
                 });
 
                 return currentToken;
@@ -132,7 +151,7 @@ export const requestNotificationPermission = async (vapidKey) => {
             console.log('Unable to get permission to notify on Web.');
         }
     } catch (err) {
-        console.error('An error occurred while retrieving token. ', err);
+        console.error('An error occurred while retrieving notification token: ', err);
     }
     return null;
 };

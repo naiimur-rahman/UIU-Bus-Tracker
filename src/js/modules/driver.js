@@ -57,20 +57,24 @@ export const startBroadcast = async (callbacks) => {
 
         let isFirstFix = true;
 
-        if (Capacitor.isNativePlatform()) {
+        const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+                         (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+
+        if (isNative) {
             try {
                 // Request Notification Permission for Android 13+
                 const { PushNotifications } = await import('@capacitor/push-notifications');
                 let permStatus = await PushNotifications.checkPermissions();
-                if (permStatus.receive === 'prompt') {
+                if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
                     await PushNotifications.requestPermissions();
                 }
 
                 const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
                 await ForegroundService.startForegroundService({
-                    id: 1,
+                    id: 1001,
                     title: 'UIU Bus Tracker',
-                    body: 'Location broadcasting is active.'
+                    body: 'Location broadcasting is active.',
+                    smallIcon: 'ic_stat_tracker'
                 });
             } catch (fsErr) {
                 console.error("Foreground Service start failed:", fsErr);
@@ -197,7 +201,10 @@ export const stopBroadcast = async (callbacks) => {
         state.watchId = null;
     }
 
-    if (Capacitor.isNativePlatform()) {
+    const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+                     (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+
+    if (isNative) {
         try {
             const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
             await ForegroundService.stopForegroundService();
