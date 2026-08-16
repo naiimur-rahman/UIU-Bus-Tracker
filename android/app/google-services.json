@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "253035446783",
+    "firebase_url": "https://bustrackernaimur-default-rtdb.firebaseio.com",
+    "project_id": "bustrackernaimur",
+    "storage_bucket": "bustrackernaimur.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:253035446783:android:e1873e7ed3fb6ac07467ca",
+        "android_client_info": {
+          "package_name": "com.uiubustracker.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQ5Q4qo_61Ri78vTRdTfEL1g3n5oCOIto"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
