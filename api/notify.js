@@ -1,5 +1,7 @@
 const admin = require('firebase-admin');
 
+let initError = null;
+
 // Initialize Firebase Admin (only once)
 if (!admin.apps.length) {
     try {
@@ -12,6 +14,7 @@ if (!admin.apps.length) {
             databaseURL: "https://bustrackernaimur-default-rtdb.firebaseio.com"
         });
     } catch (error) {
+        initError = error.message;
         console.error('Firebase Admin Init Error:', error.message);
     }
 }
@@ -23,6 +26,11 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+    if (initError || !admin.apps.length) {
+        return res.status(500).json({ error: 'Firebase Admin Init Failed', detail: initError || 'Unknown initialization error' });
+    }
+
 
     try {
         const { busRoute, busDirection, secretKey } = req.body;
