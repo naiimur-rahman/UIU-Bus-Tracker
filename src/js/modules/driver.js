@@ -59,12 +59,18 @@ export const startBroadcast = async (callbacks) => {
 
         if (Capacitor.isNativePlatform()) {
             try {
+                // Request Notification Permission for Android 13+
+                const { PushNotifications } = await import('@capacitor/push-notifications');
+                let permStatus = await PushNotifications.checkPermissions();
+                if (permStatus.receive === 'prompt') {
+                    await PushNotifications.requestPermissions();
+                }
+
                 const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
                 await ForegroundService.startForegroundService({
                     id: 1,
                     title: 'UIU Bus Tracker',
-                    body: 'Location broadcasting is active.',
-                    smallIcon: 'ic_launcher'
+                    body: 'Location broadcasting is active.'
                 });
             } catch (fsErr) {
                 console.error("Foreground Service start failed:", fsErr);
