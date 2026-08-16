@@ -3,7 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/notify.cjs": {
+    "api/notify.js": {
       "memory": 256,
       "maxDuration": 10
     }
