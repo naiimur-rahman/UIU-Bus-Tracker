@@ -1,5 +1,3 @@
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
 const admin = require('firebase-admin');
 
 // Initialize Firebase Admin (only once)
@@ -18,7 +16,7 @@ if (!admin.apps.length) {
     }
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -33,7 +31,7 @@ export default async function handler(req, res) {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        // Fetch all FCM tokens from Realtime Database
+        // Fetch all FCM tokens from Firebase Realtime Database
         const db = admin.database();
         const tokensSnapshot = await db.ref('fcm_tokens').once('value');
         const tokensObj = tokensSnapshot.val();
@@ -56,10 +54,9 @@ export default async function handler(req, res) {
         // Send in chunks of 500 (Firebase limit)
         let successCount = 0;
         let failureCount = 0;
-        const chunkSize = 500;
 
-        for (let i = 0; i < tokens.length; i += chunkSize) {
-            const chunk = tokens.slice(i, i + chunkSize);
+        for (let i = 0; i < tokens.length; i += 500) {
+            const chunk = tokens.slice(i, i + 500);
             const message = {
                 notification: {
                     title: '🚌 UIU Shuttle is on the move!',
@@ -71,6 +68,7 @@ export default async function handler(req, res) {
                 },
                 tokens: chunk
             };
+
             const response = await admin.messaging().sendEachForMulticast(message);
             successCount += response.successCount;
             failureCount += response.failureCount;
@@ -78,10 +76,10 @@ export default async function handler(req, res) {
             // Auto-cleanup invalid/expired tokens
             response.responses.forEach((resp, idx) => {
                 if (!resp.success) {
-                    const errCode = resp.error?.code;
+                    const errCode = resp.error && resp.error.code;
                     if (errCode === 'messaging/invalid-registration-token' ||
                         errCode === 'messaging/registration-token-not-registered') {
-                        db.ref(`fcm_tokens/${chunk[idx]}`).remove().catch(() => {});
+                        db.ref('fcm_tokens/' + chunk[idx]).remove().catch(function() {});
                     }
                 }
             });
@@ -89,11 +87,11 @@ export default async function handler(req, res) {
 
         return res.status(200).json({
             success: true,
-            message: `Sent to ${successCount} devices, failed ${failureCount}`
+            message: 'Sent to ' + successCount + ' devices, failed ' + failureCount
         });
 
     } catch (error) {
         console.error('Notify API Error:', error.message);
         return res.status(500).json({ error: 'Internal server error', detail: error.message });
     }
-}
+};

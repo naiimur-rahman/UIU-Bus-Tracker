@@ -111,7 +111,7 @@ export const startBroadcast = async (callbacks) => {
                     
                     // Trigger Push Notifications to all students
                     try {
-                        fetch('/api/notify', {
+                        fetch('/api/notify.cjs', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
