@@ -4,7 +4,8 @@
   "outputDirectory": "dist",
   "functions": {
     "api/notify.cjs": {
-      "runtime": "nodejs20.x"
+      "memory": 256,
+      "maxDuration": 10
     }
   },
   "rewrites": [
