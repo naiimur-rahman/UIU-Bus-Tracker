@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { state } from './state.js';
 import { Geolocation } from '@capacitor/geolocation';
-
+import { Capacitor } from '@capacitor/core';
 export const requestWakeLock = async () => {
     if ('wakeLock' in navigator) {
         try {
@@ -56,6 +56,20 @@ export const startBroadcast = async (callbacks) => {
         };
 
         let isFirstFix = true;
+
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
+                await ForegroundService.startForegroundService({
+                    id: 1,
+                    title: 'UIU Bus Tracker',
+                    body: 'Location broadcasting is active.',
+                    smallIcon: 'ic_launcher'
+                });
+            } catch (fsErr) {
+                console.error("Foreground Service start failed:", fsErr);
+            }
+        }
 
         state.watchId = await Geolocation.watchPosition(options, (position, err) => {
             if (err || !position) return;
@@ -175,6 +189,15 @@ export const stopBroadcast = async (callbacks) => {
     if (state.watchId) {
         Geolocation.clearWatch({ id: state.watchId });
         state.watchId = null;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+        try {
+            const { ForegroundService } = await import('@capawesome-team/capacitor-android-foreground-service');
+            await ForegroundService.stopForegroundService();
+        } catch (fsErr) {
+            console.error("Foreground Service stop failed:", fsErr);
+        }
     }
 
     if (state.uptimeInterval) {
