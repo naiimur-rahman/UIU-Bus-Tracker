@@ -2,13 +2,6 @@
   "appId": "com.uiubustracker.app",
   "appName": "UIU Bus Tracker",
   "webDir": "dist",
-  "server": {
-    "url": "https://uiubustracker.vercel.app",
-    "cleartext": true,
-    "allowNavigation": [
-      "uiubustracker.vercel.app"
-    ]
-  },
   "plugins": {
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
