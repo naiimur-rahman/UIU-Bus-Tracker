@@ -49,14 +49,49 @@
         
         window.closeWelcomeModal = function() {
             const modal = document.getElementById('welcome-modal');
+            const card = document.getElementById('welcome-modal-card');
             if (modal) {
                 localStorage.setItem('welcome_closed', 'true');
                 document.documentElement.classList.add('hide-welcome');
                 modal.style.opacity = '0';
                 modal.style.pointerEvents = 'none';
+                if (card) {
+                    card.style.transform = 'scale(0.95) translateY(10px)';
+                    card.style.opacity = '0';
+                }
                 setTimeout(() => {
                     modal.style.display = 'none';
-                }, 500);
+                }, 400);
+            }
+        };
+
+        window.openInfoModal = function() {
+            const modal = document.getElementById('info-modal');
+            const card = document.getElementById('info-modal-card');
+            if (modal && card) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                requestAnimationFrame(() => {
+                    modal.style.opacity = '1';
+                    modal.style.pointerEvents = 'auto';
+                    card.style.transform = 'scale(1) translateY(0)';
+                    card.style.opacity = '1';
+                });
+            }
+        };
+
+        window.closeInfoModal = function() {
+            const modal = document.getElementById('info-modal');
+            const card = document.getElementById('info-modal-card');
+            if (modal && card) {
+                modal.style.opacity = '0';
+                modal.style.pointerEvents = 'none';
+                card.style.transform = 'scale(0.95) translateY(10px)';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }, 300);
             }
         };
     </script>
@@ -76,8 +111,120 @@
         <div class="absolute -bottom-20 left-1/3 w-80 h-80 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float" style="animation-delay: 4s"></div>
     </div>
 
-    <div id="welcome-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-500">
-        <div class="bg-orange-50 dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-float" style="animation-duration: 5s;">
+    <!-- Info / Guide Modal -->
+    <div id="info-modal" onclick="if(event.target === this) closeInfoModal()" class="fixed inset-0 z-[10000] hidden items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div id="info-modal-card" class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200/80 dark:border-slate-800 transform transition-all duration-300 opacity-0 scale-95 translate-y-2">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-200/60 dark:border-slate-800 flex justify-between items-center bg-slate-50/80 dark:bg-slate-800/50 backdrop-blur-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center font-bold text-lg border border-blue-500/20">
+                        <i class="fas fa-circle-info"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base sm:text-lg text-slate-800 dark:text-white leading-tight">How It Works & Setup Guide</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Web & Android Background GPS Tracking</p>
+                    </div>
+                </div>
+                <button onclick="closeInfoModal()" class="w-8 h-8 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 flex items-center justify-center transition-colors text-slate-500">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 sm:p-6 overflow-y-auto text-sm leading-relaxed text-slate-600 dark:text-slate-300 space-y-5">
+                <div class="bg-orange-500/5 dark:bg-orange-500/10 border border-orange-500/20 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center gap-2 text-brand-600 dark:text-brand-400 font-bold text-sm">
+                        <i class="fas fa-layer-group text-base"></i>
+                        <h4>1. How the App & Web Platform Works</h4>
+                    </div>
+                    <div class="grid gap-2 text-xs">
+                        <div class="flex gap-2.5 items-start">
+                            <span class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-user-graduate text-[10px]"></i></span>
+                            <p><b>For Students (Bus Kothay):</b> Track active university buses in real time on the interactive map with road-accurate speed, distance, and live ETA calculation.</p>
+                        </div>
+                        <div class="flex gap-2.5 items-start">
+                            <span class="w-5 h-5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 font-bold flex items-center justify-center shrink-0 mt-0.5"><i class="fas fa-bus text-[10px]"></i></span>
+                            <p><b>For Drivers / Captains (Start a Trip):</b> Pick your route (e.g., <i>Notun Bazar ➔ UIU</i>) and tap Start Driving to broadcast your live GPS to everyone.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Community Contribution Callout -->
+                <div class="bg-gradient-to-r from-orange-500/10 via-pink-500/10 to-purple-500/10 border border-orange-500/20 rounded-2xl p-3.5 flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-500 to-rose-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-orange-500/20">
+                        <i class="fas fa-hand-holding-heart text-xs"></i>
+                    </div>
+                    <div class="space-y-1">
+                        <h5 class="font-bold text-xs text-slate-800 dark:text-white">Help Thousands of Classmates! ❤️</h5>
+                        <p class="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                            Whenever you are riding a UIU bus, simply tap <b>"Start a Trip"</b>. Sharing your location takes just 5 seconds and helps thousands of fellow students track their bus and reach class on time.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Section 2: Android App Setup -->
+                <div class="border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-2xl p-4 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            <i class="fa-brands fa-android text-lg"></i>
+                            <h4>2. Android Background & Lock Screen Setup</h4>
+                        </div>
+                        <span class="text-[9px] font-extrabold uppercase px-2 py-0.5 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 rounded-full">Important</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Modern Android aggressively puts apps to sleep when the screen locks. Follow these <b>3 quick steps</b> after installing the APK to ensure non-stop background GPS tracking:
+                    </p>
+
+                    <!-- Step 1 -->
+                    <div class="bg-white/80 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm space-y-1">
+                        <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-xs">
+                            <span class="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">1</span>
+                            <span>Allow Location: "Allow all the time"</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 pl-7">
+                            Go to <b>App Info ➔ Permissions ➔ Location</b> and choose <b class="text-emerald-600 dark:text-emerald-400">"Allow all the time"</b>. This allows GPS updates even when phone is locked.
+                        </p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="bg-white/80 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm space-y-1">
+                        <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-xs">
+                            <span class="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">2</span>
+                            <span>Disable Battery Optimization</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 pl-7">
+                            Go to <b>App Info ➔ Battery</b> and select <b class="text-emerald-600 dark:text-emerald-400">"Unrestricted"</b> or <b>"Don't optimize"</b> <i>(For Xiaomi/MIUI/Vivo/Oppo: enable "Autostart" and set Battery Saver to "No restrictions")</i>.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="bg-white/80 dark:bg-slate-800/80 rounded-xl p-3 border border-slate-200/60 dark:border-slate-700/60 shadow-sm space-y-1">
+                        <div class="flex items-center gap-2 font-bold text-slate-800 dark:text-white text-xs">
+                            <span class="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px]">3</span>
+                            <span>Keep Foreground Service Active</span>
+                        </div>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 pl-7">
+                            Allow notifications so the background service stays active in your status bar. Location sharing will continue uninterrupted even when the screen is locked or while multitasking in other apps!
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50/80 dark:bg-slate-900/80 border-t border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm flex gap-2.5">
+                <a href="./UIU%20Bus%20Tracker.apk" download="UIU Bus Tracker.apk" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 text-center flex items-center justify-center gap-2 active:scale-95 transition-all text-xs sm:text-sm">
+                    <i class="fa-brands fa-android text-base"></i> Download APK
+                </a>
+                <button onclick="closeInfoModal()" class="flex-1 py-3 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all text-xs sm:text-sm">
+                    Got it!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div id="welcome-modal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
+        <div id="welcome-modal-card" class="bg-orange-50 dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] transform transition-all duration-300">
             <div class="p-5 border-b border-slate-200/50 dark:border-slate-700/50 flex justify-between items-center bg-white/50 dark:bg-slate-800/50">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-brand-500 rounded-lg flex items-center justify-center text-white">
@@ -96,7 +243,7 @@
                 <h4 class="font-bold text-slate-800 dark:text-white">✨ New in v4.0:</h4>
                 <ul class="list-disc pl-5 space-y-1">
                     <li>📱 <b>Native Android App</b>: Faster, smoother, and built for your phone.</li>
-                    <li>🌍 <b>True Background Tracking</b>: Drivers can now safely use WhatsApp or YouTube while sharing location!</li>
+                    <li>🌍 <b>True Background Tracking</b>: Continuous GPS streaming even when the screen is locked or while multitasking!</li>
                     <li>🔔 <b>Native Push Notifications</b>: Get instant alerts directly to your phone's notification center.</li>
                     <li>🛰️ <b>Precision GPS</b>: Intelligent speed calculation & smoothing.</li>
                     <li>🚦 <b>Smart Dashboard</b>: Real-time road ETA and driver controls.</li>
@@ -116,24 +263,16 @@
     </div>
 
     <div id="global-controls" class="z-[500] relative transition-opacity duration-300 pointer-events-none">
-        <a href="https://uiulinks.vercel.app/" target="_blank" class="fixed top-4 left-4 pointer-events-auto glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
-            <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                <i class="fas fa-link text-[10px]"></i>
+        <a href="./UIU%20Bus%20Tracker.apk" download="UIU Bus Tracker.apk" class="fixed top-4 left-4 pointer-events-auto glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
+            <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                <i class="fa-brands fa-android text-xs"></i>
             </div>
-            <span class="text-xs font-bold pr-1 group-hover:text-blue-500 transition-colors">LinkSphere</span>
+            <span class="text-xs font-bold pr-1 group-hover:text-emerald-500 transition-colors">Get App</span>
         </a>
-        <div class="fixed top-4 right-4 flex items-center gap-2 pointer-events-auto">
-            <a href="./UIU%20Bus%20Tracker.apk" download="UIU Bus Tracker.apk" class="glass px-3 py-2 rounded-full flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:scale-105 transition-transform shadow-lg group border border-white/20 active:scale-95">
-                <div class="w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
-                    <i class="fa-brands fa-android text-xs"></i>
-                </div>
-                <span class="text-xs font-bold pr-1 group-hover:text-emerald-500 transition-colors">Get App</span>
-            </a>
-            <button onclick="app.toggleTheme()" class="w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer">
-                <i class="fas fa-moon dark:hidden"></i>
-                <i class="fas fa-sun hidden dark:block"></i>
-            </button>
-        </div>
+        <button onclick="app.toggleTheme()" class="fixed top-4 right-4 w-10 h-10 rounded-full glass flex items-center justify-center text-slate-600 dark:text-yellow-400 shadow-lg hover:scale-110 transition-transform cursor-pointer pointer-events-auto">
+            <i class="fas fa-moon dark:hidden"></i>
+            <i class="fas fa-sun hidden dark:block"></i>
+        </button>
     </div>
 
     <div id="view-landing" class="view-section view-active p-4 h-full z-10 flex flex-col justify-between">
@@ -154,9 +293,14 @@
                     <span class="flex items-center gap-1.5"><i class="fas fa-bus text-orange-500"></i> <span id="count-buses-landing">0</span> Active</span>
                 </div>
 
-                <button id="btn-alerts" onclick="app.toggleAlerts()" class="mx-auto px-4 py-2 bg-brand-500/10 text-brand-500 hover:bg-brand-500 hover:text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm border border-brand-500/20 hover:border-brand-500">
-                    <i class="fas fa-bell"></i> Enable Push Alerts
-                </button>
+                <div class="flex items-center justify-center gap-2">
+                    <button id="btn-alerts" onclick="app.toggleAlerts()" class="px-4 py-2 bg-brand-500/10 text-brand-500 hover:bg-brand-500 hover:text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 shadow-sm border border-brand-500/20 hover:border-brand-500">
+                        <i class="fas fa-bell"></i> Enable Push Alerts
+                    </button>
+                    <button onclick="openInfoModal()" class="w-9 h-9 bg-brand-500/10 text-brand-500 hover:bg-brand-500 hover:text-white rounded-full flex items-center justify-center transition-all duration-300 shadow-sm border border-brand-500/20 hover:border-brand-500 cursor-pointer" title="How It Works & Setup Guide">
+                        <i class="fas fa-circle-info text-sm"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="grid gap-3 w-full"> 
@@ -185,6 +329,17 @@
                         </div>
                     </div>
                 </button>
+            </div>
+
+            <!-- LinkSphere Directory Callout -->
+            <div class="mt-4 text-center w-full">
+                <a href="https://uiulinks.vercel.app/" target="_blank" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-2xl glass border border-white/20 text-xs text-slate-600 dark:text-slate-300 hover:text-blue-500 dark:hover:text-blue-400 hover:scale-[1.02] transition-all group shadow-sm w-full">
+                    <div class="w-5 h-5 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
+                        <i class="fas fa-link text-[10px]"></i>
+                    </div>
+                    <span class="text-[11px] leading-tight">Find all essential UIU links & portals on <strong class="text-blue-500 group-hover:underline">LinkSphere</strong></span>
+                    <i class="fas fa-arrow-up-right-from-square text-[10px] opacity-60 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0"></i>
+                </a>
             </div>
         </div>
         
