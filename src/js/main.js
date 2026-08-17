@@ -521,6 +521,7 @@ const app = {
         // Trigger immediate Firebase update if broadcasting
         if (state.isBroadcasting && state.driverId) {
             firebase.setDriverStatus(state.driverId, type, value);
+            driver.updateNativeLocationBroadcast();
         }
     }
 };

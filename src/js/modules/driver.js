@@ -1,7 +1,53 @@
 import { CONFIG } from './config.js';
 import { state } from './state.js';
 import { Geolocation } from '@capacitor/geolocation';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+const NativeLocationBroadcast = registerPlugin('NativeLocationBroadcast');
+
+const isNativePlatform = () => (
+    (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
+    (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform())
+);
+
+const getNativeBusPayload = () => ({
+    id: state.driverId,
+    route: state.driverRoute,
+    username: state.driverUsername,
+    cap: state.driverCap,
+    msg: state.driverMsg
+});
+
+const startNativeLocationBroadcast = async () => {
+    if (!isNativePlatform() || !state.driverId) return;
+    try {
+        await NativeLocationBroadcast.start({
+            databaseUrl: CONFIG.firebase.databaseURL,
+            path: CONFIG.paths.locations,
+            bus: getNativeBusPayload()
+        });
+    } catch (err) {
+        console.error("Native broadcast service start failed:", err);
+    }
+};
+
+export const updateNativeLocationBroadcast = async () => {
+    if (!isNativePlatform() || !state.isBroadcasting || !state.driverId) return;
+    try {
+        await NativeLocationBroadcast.update({ bus: getNativeBusPayload() });
+    } catch (err) {
+        console.error("Native broadcast service update failed:", err);
+    }
+};
+
+const stopNativeLocationBroadcast = async () => {
+    if (!isNativePlatform()) return;
+    try {
+        await NativeLocationBroadcast.stop();
+    } catch (err) {
+        console.error("Native broadcast service stop failed:", err);
+    }
+};
 export const requestWakeLock = async () => {
     if ('wakeLock' in navigator) {
         try {
@@ -171,8 +217,7 @@ export const startBroadcast = async (callbacks) => {
 
         requestWakeLock();
 
-        const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
-                         (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+        const isNative = isNativePlatform();
 
         if (isNative) {
             try {
@@ -182,6 +227,8 @@ export const startBroadcast = async (callbacks) => {
                 if (permStatus.receive === 'prompt' || permStatus.receive === 'prompt-with-rationale') {
                     await PushNotifications.requestPermissions();
                 }
+
+                await startNativeLocationBroadcast();
 
                 const { registerPlugin } = await import('@capacitor/core');
                 const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
@@ -243,8 +290,7 @@ export const stopBroadcast = async (callbacks) => {
         if (state.activeBuses[state.driverId]) delete state.activeBuses[state.driverId];
     }
     
-    const isNative = (typeof window !== 'undefined' && window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) ||
-                     (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
+    const isNative = isNativePlatform();
 
     if (state.watchId) {
         if (isNative) {
@@ -258,6 +304,8 @@ export const stopBroadcast = async (callbacks) => {
         }
         state.watchId = null;
     }
+
+    await stopNativeLocationBroadcast();
 
     if (state.keepAwakeAudio) {
         state.keepAwakeAudio.pause();
